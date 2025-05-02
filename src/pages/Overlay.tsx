@@ -7,6 +7,7 @@ import RoundIndicator from '@/components/overlay/RoundIndicator';
 import MiddleSection from '@/components/overlay/MiddleSection';
 import WinnerDisplay from '@/components/overlay/WinnerDisplay';
 import ConfettiEffect from '@/components/overlay/ConfettiEffect';
+import InfoBar from '@/components/overlay/InfoBar';
 
 const Overlay = () => {
   const { 
@@ -20,6 +21,7 @@ const Overlay = () => {
   } = useGameContext();
 
   const [showConfetti, setShowConfetti] = useState(false);
+  const [gameEvents, setGameEvents] = useState<string[]>([]);
   
   // Show confetti when winners are announced
   useEffect(() => {
@@ -30,8 +32,32 @@ const Overlay = () => {
       const victorySound = new Audio('/sounds/victory.mp3');
       victorySound.volume = 0.7;
       victorySound.play().catch(e => console.log('Error playing sound:', e));
+      
+      // Dodaj wydarzenie o zakończeniu gry
+      const winnerNames = winnerIds
+        .map(id => players.find(p => p.id === id)?.name || "Nieznany gracz")
+        .join(", ");
+      addGameEvent(`Gra zakończona! Zwycięzca(y): ${winnerNames}`);
     }
-  }, [round, winnerIds]);
+  }, [round, winnerIds, players]);
+  
+  // Symulacja dodawania wydarzeń dla demonstracji
+  useEffect(() => {
+    // Przy pierwszym renderowaniu dodajmy kilka przykładowych wydarzeń
+    if (gameEvents.length === 0) {
+      setGameEvents([
+        "Rozpoczynamy teleturniej!",
+        "Gracz3 otrzymał kartę specjalną: Podwójne punkty",
+        "Gracz5 został wyeliminowany z gry",
+        "Rozpoczynamy rundę drugą",
+        "Gracz1 zdobył 15 punktów za poprawną odpowiedź"
+      ]);
+    }
+  }, [gameEvents.length]);
+  
+  const addGameEvent = (event: string) => {
+    setGameEvents(prev => [event, ...prev]);
+  };
   
   // Filter players based on current round
   const activePlayers = players.filter(p => !p.isEliminated);
@@ -52,13 +78,23 @@ const Overlay = () => {
       {/* Overlay grid layout */}
       <div className="w-full h-full grid grid-rows-[1fr_auto_1fr] p-4 gap-4">
         {/* Top row with first 5 players */}
-        <PlayerGrid players={activePlayers} maxPlayers={maxPlayers} position="top" />
+        <PlayerGrid 
+          players={activePlayers} 
+          maxPlayers={maxPlayers} 
+          position="top" 
+          activePlayerId={activePlayerId}
+        />
         
         {/* Middle row with host camera and question board */}
         <MiddleSection round={round} hostCameraUrl={hostCameraUrl} />
         
         {/* Bottom row with remaining 5 players */}
-        <PlayerGrid players={activePlayers} maxPlayers={maxPlayers} position="bottom" />
+        <PlayerGrid 
+          players={activePlayers} 
+          maxPlayers={maxPlayers} 
+          position="bottom" 
+          activePlayerId={activePlayerId}
+        />
       </div>
       
       {/* Round indicator */}
@@ -76,6 +112,9 @@ const Overlay = () => {
         secondaryColor={secondaryColor} 
         show={showConfetti} 
       />
+      
+      {/* Info Bar */}
+      <InfoBar events={gameEvents} />
     </div>
   );
 };

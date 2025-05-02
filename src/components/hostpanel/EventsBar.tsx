@@ -1,29 +1,59 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface EventsBarProps {
   lastEvents: string[];
+  className?: string;
 }
 
-const EventsBar = ({ lastEvents }: EventsBarProps) => {
+const EventsBar = ({ lastEvents, className }: EventsBarProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const visibleEvents = isExpanded ? lastEvents : lastEvents.slice(0, 5);
+
   return (
-    <div className="mt-4 bg-black/70 backdrop-blur-md p-2 rounded-lg border border-white/10 overflow-hidden">
-      <div className="flex items-center">
-        <span className="text-neon-green font-bold mr-2">Ostatnie wydarzenia:</span>
-        <div className="overflow-x-auto whitespace-nowrap">
-          {lastEvents.map((event, index) => (
-            <span 
-              key={index} 
-              className={cn(
-                "inline-block mx-2 px-3 py-1 rounded-full text-sm",
-                index === 0 ? "bg-neon-blue/30 text-white" : "bg-black/50 text-white/70"
-              )}
+    <div className={cn(
+      "bg-black/70 backdrop-blur-md p-3 rounded-lg border border-white/10 overflow-hidden",
+      className
+    )}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-neon-green font-bold">Ostatnie wydarzenia:</span>
+        <button 
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="text-xs text-white/70 hover:text-white transition-colors"
+        >
+          {isExpanded ? 'Zwiń' : 'Rozwiń wszystkie'}
+        </button>
+      </div>
+      
+      <div className="space-y-2">
+        <AnimatePresence>
+          {visibleEvents.map((event, index) => (
+            <motion.div 
+              key={`${event}-${index}`}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
             >
-              {event}
-            </span>
+              <div
+                className={cn(
+                  "px-3 py-2 rounded text-sm",
+                  index === 0 ? "bg-neon-blue/30 text-white" : "bg-black/50 text-white/70"
+                )}
+              >
+                {event}
+              </div>
+            </motion.div>
           ))}
-        </div>
+        </AnimatePresence>
+        
+        {!isExpanded && lastEvents.length > 5 && (
+          <div className="text-center text-xs text-white/50 mt-1">
+            + {lastEvents.length - 5} więcej wydarzeń
+          </div>
+        )}
       </div>
     </div>
   );

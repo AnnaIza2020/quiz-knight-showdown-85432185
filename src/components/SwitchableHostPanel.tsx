@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameContext, GameRound } from '@/context/GameContext';
 import Host from '@/pages/Host';
 import HostPanel from '@/pages/HostPanel';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Maximize2, Minimize2, ExternalLink } from 'lucide-react';
+import { Maximize2, Minimize2, ExternalLink, Bell } from 'lucide-react';
+import EventsBar from '@/components/hostpanel/EventsBar';
 
 interface SwitchableHostPanelProps {
   view: 'classic' | 'modern';
@@ -13,8 +14,28 @@ interface SwitchableHostPanelProps {
 
 const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [events, setEvents] = useState<string[]>([]);
   const { round } = useGameContext();
   const navigate = useNavigate();
+  
+  // Symulacja dodawania wydarzeń dla demonstracji
+  useEffect(() => {
+    // Przy pierwszym renderowaniu dodajmy kilka przykładowych wydarzeń
+    if (events.length === 0) {
+      setEvents([
+        "Gra została zainicjowana",
+        "Gracz3 otrzymał kartę specjalną: Podwójne punkty",
+        "Gracz5 został wyeliminowany z gry",
+        "Rozpoczęto rundę drugą",
+        "Gracz1 zdobył 15 punktów za poprawną odpowiedź"
+      ]);
+    }
+  }, [events.length]);
+  
+  // Funkcja do dodawania nowych wydarzeń
+  const addEvent = (event: string) => {
+    setEvents(prev => [event, ...prev]);
+  };
   
   const toggleFullscreen = () => {
     const element = document.documentElement;
@@ -62,6 +83,15 @@ const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
           <Button 
             variant="outline" 
             size="sm"
+            onClick={() => addEvent("Nowe testowe wydarzenie: " + new Date().toLocaleTimeString())}
+            className="border-white/20 text-white hover:bg-white/10 flex items-center"
+          >
+            <Bell size={16} className="mr-1" />
+            Test wydarzenia
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
             onClick={openOverlay}
             className="border-white/20 text-white hover:bg-white/10 flex items-center"
           >
@@ -78,6 +108,8 @@ const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
           </Button>
         </div>
       </div>
+      
+      <EventsBar lastEvents={events} className="mb-4" />
       
       <div className="flex-grow overflow-auto">
         {view === 'modern' ? <HostPanel /> : <Host />}
