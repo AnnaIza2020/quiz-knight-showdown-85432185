@@ -70,6 +70,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     advanceToRoundTwo,
     advanceToRoundThree,
     finishGame,
+    checkRoundThreeEnd,
     resetGame
   } = useGameLogic(players, setPlayers, setRound, setWinnerIds);
 
@@ -96,6 +97,13 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       if (interval) clearInterval(interval);
     };
   }, [timerRunning, timerSeconds, setTimerSeconds, setTimerRunning, playSound]);
+
+  // Sprawdzaj koniec rundy 3 gdy gracz jest eliminowany
+  useEffect(() => {
+    if (round === 'round_three') {
+      checkRoundThreeEnd();
+    }
+  }, [players, round, checkRoundThreeEnd]);
 
   const value: GameContextType = {
     // State
@@ -132,6 +140,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     advanceToRoundTwo,
     advanceToRoundThree,
     finishGame,
+    checkRoundThreeEnd,
     resetGame,
     setWinnerIds,
     setGameLogo,

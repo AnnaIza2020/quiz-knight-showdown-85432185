@@ -1,3 +1,4 @@
+
 import { Player, GameRound } from '@/types/game-types';
 
 export const useGameLogic = (
@@ -49,39 +50,40 @@ export const useGameLogic = (
 
   // Round advancement
   const advanceToRoundTwo = () => {
-    // Sort players by health and points
-    const sortedPlayers = [...players].sort((a, b) => {
-      if (a.health !== b.health) return b.health - a.health;
-      return b.points - a.points;
-    });
+    // Aktualizacja mechanizmu lucky loser zgodnie z nowymi zasadami:
+    // 1. Top 5 graczy z życiem przechodzi dalej
+    // 2. 1 gracz z najwyższą punktacją spośród tych, którzy stracili życie, też przechodzi (lucky loser)
     
-    // Top 5 players with health
-    const topPlayers = sortedPlayers.filter(player => player.health > 0).slice(0, 5);
+    // Najpierw rozdzielamy graczy na tych z życiem i bez
+    const playersWithHealth = players.filter(player => player.health > 0 && !player.isEliminated);
+    const playersWithoutHealth = players.filter(player => player.health === 0 && !player.isEliminated);
     
-    // Lucky loser (player with 0 health but at least 15 points)
-    const luckyLosers = sortedPlayers.filter(
-      player => player.health === 0 && player.points >= 15 && !topPlayers.includes(player)
-    ).sort((a, b) => b.points - a.points);
+    // Sortujemy graczy z życiem według punktów (od najwyższych)
+    const sortedPlayersWithHealth = [...playersWithHealth].sort((a, b) => b.points - a.points);
     
-    const luckyLoser = luckyLosers.length > 0 ? [luckyLosers[0]] : [];
+    // Bierzemy top 5 graczy z życiem
+    const topPlayers = sortedPlayersWithHealth.slice(0, 5);
     
-    // Set remaining players for round 2
+    // Sortujemy graczy bez życia według punktów i bierzemy najlepszego jako lucky loser
+    const sortedPlayersWithoutHealth = [...playersWithoutHealth].sort((a, b) => b.points - a.points);
+    const luckyLoser = sortedPlayersWithoutHealth.length > 0 ? [sortedPlayersWithoutHealth[0]] : [];
+    
+    // Łączymy top graczy i lucky losera dla rundy 2
     const round2Players = [...topPlayers, ...luckyLoser].map(player => ({
       ...player,
-      lives: 3, // Reset to 3 lives for round 2
+      lives: 3, // Reset do 3 żyć dla rundy 2
+      health: 100, // Reset zdrowia
       isEliminated: false
     }));
     
-    // Mark eliminated players
-    const eliminatedIds = players
-      .filter(player => !round2Players.some(p => p.id === player.id))
-      .map(player => player.id);
+    // Oznaczamy wyeliminowanych graczy
+    const advancingPlayerIds = round2Players.map(player => player.id);
     
     setPlayers(prev => 
       prev.map(player => 
-        eliminatedIds.includes(player.id)
-          ? { ...player, isEliminated: true }
-          : round2Players.find(p => p.id === player.id) || player
+        advancingPlayerIds.includes(player.id)
+          ? round2Players.find(p => p.id === player.id) || player
+          : { ...player, isEliminated: true }
       )
     );
     
@@ -89,7 +91,7 @@ export const useGameLogic = (
   };
 
   const advanceToRoundThree = () => {
-    // Get players from round 2 who have lives left
+    // Pobieramy graczy z rundy 2, którzy mają życia
     const remainingPlayers = players
       .filter(player => !player.isEliminated && player.lives > 0)
       .sort((a, b) => b.lives - a.lives || b.points - a.points)
@@ -99,16 +101,14 @@ export const useGameLogic = (
         isEliminated: false
       }));
     
-    // Mark eliminated players
-    const eliminatedIds = players
-      .filter(player => !remainingPlayers.some(p => p.id === player.id) || player.lives === 0)
-      .map(player => player.id);
+    // Oznaczamy wyeliminowanych graczy
+    const advancingPlayerIds = remainingPlayers.map(player => player.id);
     
     setPlayers(prev => 
       prev.map(player => 
-        eliminatedIds.includes(player.id)
-          ? { ...player, isEliminated: true }
-          : remainingPlayers.find(p => p.id === player.id) || player
+        advancingPlayerIds.includes(player.id)
+          ? remainingPlayers.find(p => p.id === player.id) || player
+          : { ...player, isEliminated: true }
       )
     );
     
@@ -120,11 +120,35 @@ export const useGameLogic = (
     setRound(GameRound.FINISHED);
   };
 
+  // W rundzie 3 kończenie gry gdy wszyscy stracą życie
+  const checkRoundThreeEnd = () => {
+    // Sprawdzamy czy w rundzie 3 są jeszcze gracze z życiem
+    const activePlayers = players.filter(player => 
+      !player.isEliminated && player.lives > 0
+    );
+    
+    if (activePlayers.length === 0) {
+      // Jeśli wszyscy stracili życie, zakończ grę
+      // Znajdź gracza z największą liczbą punktów jako zwycięzcę
+      const sortedByPoints = [...players]
+        .filter(player => !player.isEliminated)
+        .sort((a, b) => b.points - a.points);
+      
+      if (sortedByPoints.length > 0) {
+        finishGame([sortedByPoints[0].id]);
+      } else {
+        finishGame([]); // Brak zwycięzcy
+      }
+      return true;
+    }
+    return false;
+  };
+
   const resetGame = () => {
     setRound(GameRound.SETUP);
     setWinnerIds([]);
     
-    // Reset all player statuses but keep their info
+    // Resetuj wszystkie statusy graczy, ale zachowaj ich informacje
     setPlayers(prev => prev.map(player => ({
       ...player,
       points: 0,
@@ -143,6 +167,7 @@ export const useGameLogic = (
     advanceToRoundTwo,
     advanceToRoundThree,
     finishGame,
+    checkRoundThreeEnd,
     resetGame
   };
 };

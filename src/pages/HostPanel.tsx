@@ -15,6 +15,7 @@ const HostPanel = () => {
     advanceToRoundTwo,
     advanceToRoundThree,
     finishGame,
+    checkRoundThreeEnd,
     timerRunning,
     startTimer,
     stopTimer,
@@ -68,7 +69,16 @@ const HostPanel = () => {
   };
 
   const handleFinishGame = () => {
-    // For demonstration, just select the player with highest points as winner
+    // Sprawdzamy koniec rundy 3
+    if (round === GameRound.ROUND_THREE) {
+      const isEnded = checkRoundThreeEnd();
+      if (isEnded) {
+        addEvent("Runda 3 zakończona - wszyscy stracili życie");
+        return;
+      }
+    }
+
+    // Dla innych rund lub ręcznego zakończenia
     const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
     if (sortedPlayers.length > 0) {
       finishGame([sortedPlayers[0].id]);

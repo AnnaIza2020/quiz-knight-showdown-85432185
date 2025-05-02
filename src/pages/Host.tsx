@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { GameRound, Player } from '@/types/game-types';
@@ -16,6 +17,7 @@ const Host = () => {
     advanceToRoundTwo,
     advanceToRoundThree,
     finishGame,
+    checkRoundThreeEnd,
     awardPoints,
     deductHealth,
     deductLife,
@@ -54,19 +56,32 @@ const Host = () => {
   const handleDeductHealth = () => {
     if (!activePlayerId) return;
     
-    // In round 1, deduct 20 health points
+    // W zależności od rundy, różne zachowanie
     if (round === GameRound.ROUND_ONE) {
       deductHealth(activePlayerId, 20);
-    }
-    
-    // In round 2, deduct 1 life
-    if (round === GameRound.ROUND_TWO) {
+    } else if (round === GameRound.ROUND_TWO) {
       deductLife(activePlayerId);
       
-      // Check if player has no lives left
+      // Sprawdź czy gracz ma życia
       const player = players.find(p => p.id === activePlayerId);
       if (player && player.lives <= 1) {
         eliminatePlayer(activePlayerId);
+        
+        // Sprawdź czy runda 3 się zakończyła (wszyscy stracili życie)
+        if (round === GameRound.ROUND_THREE) {
+          checkRoundThreeEnd();
+        }
+      }
+    } else if (round === GameRound.ROUND_THREE) {
+      deductLife(activePlayerId);
+      
+      // Sprawdź czy gracz ma życia
+      const player = players.find(p => p.id === activePlayerId);
+      if (player && player.lives <= 1) {
+        eliminatePlayer(activePlayerId);
+        
+        // Sprawdź czy wszyscy zostali wyeliminowani
+        checkRoundThreeEnd();
       }
     }
     
@@ -89,11 +104,22 @@ const Host = () => {
     
     eliminatePlayer(activePlayerId);
     
+    // Sprawdź czy runda 3 się zakończyła (wszyscy stracili życie)
+    if (round === GameRound.ROUND_THREE) {
+      checkRoundThreeEnd();
+    }
+    
     // Play eliminate sound using the new hook
     playSound('eliminate');
   };
   
   const handleFinishGame = () => {
+    // Sprawdź czy runda 3 się zakończyła (wszyscy stracili życie)
+    if (round === GameRound.ROUND_THREE) {
+      const isEnded = checkRoundThreeEnd();
+      if (isEnded) return;
+    }
+    
     // Sort players by points to determine the winner
     const sortedPlayers = [...activePlayers].sort((a, b) => b.points - a.points);
     if (sortedPlayers.length > 0) {

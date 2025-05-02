@@ -77,6 +77,7 @@ export interface GameContextType {
   advanceToRoundTwo: () => void;
   advanceToRoundThree: () => void;
   finishGame: (winnerIds: string[]) => void;
+  checkRoundThreeEnd: () => boolean;
   resetGame: () => void;
   setWinnerIds: (winnerIds: string[]) => void;
   
