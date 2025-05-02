@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Player, GameRound, Category, Question } from '@/types/game-types';
 import { useSubscription } from './useSubscription';
+import { toast } from 'sonner';
 
 export interface GameState {
   players: Player[];
@@ -31,11 +32,10 @@ export const useGameState = (gameId: string) => {
     error: null
   });
 
-  // Załaduj początkowy stan gry
+  // Load initial game state
   useEffect(() => {
     const loadGameState = async () => {
       try {
-        // Przykład - w rzeczywistości pobieraj dane z Supabase
         const { data: gameData, error } = await supabase
           .from('games')
           .select('*')
@@ -54,7 +54,7 @@ export const useGameState = (gameId: string) => {
           }));
         }
 
-        // Pobierz graczy
+        // Load players
         const { data: playersData, error: playersError } = await supabase
           .from('players')
           .select('*')
@@ -69,7 +69,7 @@ export const useGameState = (gameId: string) => {
           }));
         }
 
-        // Pobierz kategorie i pytania
+        // Load categories and questions
         const { data: categoriesData, error: categoriesError } = await supabase
           .from('categories')
           .select('*, questions(*)')
@@ -85,7 +85,7 @@ export const useGameState = (gameId: string) => {
           }));
         }
       } catch (err) {
-        console.error('Błąd podczas ładowania stanu gry:', err);
+        console.error('Error loading game state:', err);
         setGameState(prevState => ({
           ...prevState,
           error: err instanceof Error ? err : new Error(String(err)),
@@ -97,8 +97,8 @@ export const useGameState = (gameId: string) => {
     loadGameState();
   }, [gameId]);
 
-  // Subskrybuj zmiany w stanie gry
-  useSubscription<Partial<GameState>>(
+  // Subscribe to game state updates with enhanced options
+  const { broadcast } = useSubscription<Partial<GameState>>(
     `game:${gameId}`,
     'game_state_update',
     (updatedState) => {
@@ -106,10 +106,33 @@ export const useGameState = (gameId: string) => {
         ...prevState,
         ...updatedState
       }));
+      
+      // Show toast notifications for important updates
+      if (updatedState.currentRound !== undefined && 
+          updatedState.currentRound !== gameState.currentRound) {
+        toast.info(`Runda zmieniona na: ${updatedState.currentRound}`);
+      }
+      
+      if (updatedState.activePlayerId !== undefined && 
+          updatedState.activePlayerId !== gameState.activePlayerId) {
+        const player = gameState.players.find(p => p.id === updatedState.activePlayerId);
+        if (player) {
+          toast.info(`Aktywny gracz: ${player.name}`);
+        }
+      }
+      
+      if (updatedState.currentQuestion !== null && 
+          updatedState.currentQuestion !== gameState.currentQuestion) {
+        toast.info('Nowe pytanie');
+      }
+    },
+    {
+      reconnect: true,
+      retryInterval: 3000
     }
   );
 
-  // Funkcje do aktualizacji stanu gry
+  // Update game state function
   const updateGameState = async (update: Partial<GameState>) => {
     try {
       setGameState(prevState => ({
@@ -117,7 +140,7 @@ export const useGameState = (gameId: string) => {
         ...update
       }));
 
-      // Zapisz zmiany w bazie danych
+      // Save changes to the database
       await supabase
         .from('games')
         .update({
@@ -128,18 +151,27 @@ export const useGameState = (gameId: string) => {
         })
         .eq('id', gameId);
 
-      // Nadaj aktualizację do innych klientów
-      await supabase
-        .channel(`game:${gameId}`)
-        .send({
-          type: 'broadcast',
-          event: 'game_state_update',
-          payload: update
-        });
+      // Broadcast update to other clients
+      await broadcast(update);
+      
+      // Broadcast game events for overlay and other listeners
+      if (update.activePlayerId && update.activePlayerId !== gameState.activePlayerId) {
+        await supabase
+          .channel('game_events')
+          .send({
+            type: 'broadcast',
+            event: 'new_event',
+            payload: {
+              type: 'player_active',
+              playerId: update.activePlayerId,
+              event: `Gracz aktywny: ${gameState.players.find(p => p.id === update.activePlayerId)?.name || 'Nieznany'}`
+            }
+          });
+      }
 
       return true;
     } catch (err) {
-      console.error('Błąd podczas aktualizacji stanu gry:', err);
+      console.error('Error updating game state:', err);
       setGameState(prevState => ({
         ...prevState,
         error: err instanceof Error ? err : new Error(String(err))
