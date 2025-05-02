@@ -151,7 +151,7 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
                   repeatType: 'reverse',
                 }}
               >
-                <NeonLogo size="xl" />
+                <NeonLogo size="lg" />
               </motion.div>
             </div>
             

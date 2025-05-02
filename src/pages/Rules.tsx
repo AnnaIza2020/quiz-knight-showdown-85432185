@@ -24,62 +24,70 @@ const Rules = () => {
         
         <div className="space-y-12">
           {/* Game Overview */}
-          <Section title="Przegląd Teleturnieju">
-            <p>
-              Quiz Knight Showdown to interaktywny teleturniej składający się z 3 rund, podczas których 
-              uczestnicy odpowiadają na pytania o różnym poziomie trudności i tematyce. Gra łączy wiedzę, refleks 
-              i szczęście, oferując dynamiczne i angażujące doświadczenie.
+          <Section title="Zasady Discord Game Show">
+            <p className="mb-6">
+              Discord Game Show to interaktywny teleturniej łączący wiedzę o polskim internecie, 
+              refleks i szczęście w dynamicznym i angażującym doświadczeniu.
             </p>
           </Section>
           
           {/* Round 1 */}
-          <Section title="Runda 1: Zróżnicowana Wiedza z Polskiego Internetu" colorClass="text-neon-pink">
+          <Section title="Runda 1 – Zróżnicowana Wiedza z Polskiego Internetu" colorClass="text-neon-pink">
+            <p className="mb-4">
+              Gracze mają na start 100% życia (HP). Odpowiadają na pytania z 6 kategorii:
+            </p>
             <ul className="list-disc pl-6 space-y-2">
-              <li>W rundzie bierze udział 10 graczy.</li>
-              <li>Każdy gracz ma 100 HP (punktów życia) oraz możliwość zdobywania punktów.</li>
-              <li>Pytania podzielone są na kategorie i poziomy trudności (5, 10, 15, 20 punktów).</li>
-              <li>Za poprawną odpowiedź gracz otrzymuje punkty odpowiadające trudności pytania.</li>
-              <li>Za błędną odpowiedź gracz traci 20 HP.</li>
-              <li>Do rundy 2 przechodzi 5 graczy z najwyższą liczbą HP oraz 1 "lucky loser" (gracz z największą liczbą punktów spośród tych, którzy stracili wszystkie HP).</li>
+              <li>Pytania pułapki</li>
+              <li>Memy, Virale i Easter Eggi</li>
+              <li>Top roku</li>
+              <li>Internet i YouTube</li>
+              <li>Gry i gaming</li>
+              <li>Wiedza ogólna</li>
             </ul>
+            <p className="mt-4">
+              Za błędną odpowiedź tracą % życia. Do rundy 2 przechodzi 5 graczy z najwyższym procentem życia oraz 1 lucky loser.
+            </p>
           </Section>
           
           {/* Round 2 */}
-          <Section title="Runda 2: 5 Sekund" colorClass="text-neon-blue">
-            <ul className="list-disc pl-6 space-y-2">
-              <li>W rundzie bierze udział 6 graczy.</li>
-              <li>Każdy gracz otrzymuje 3 życia.</li>
-              <li>Gracze kolejno otrzymują pytania i mają 5 sekund na odpowiedź.</li>
-              <li>Za poprawną odpowiedź gracz otrzymuje punkty (zwykle 10).</li>
-              <li>Za błędną odpowiedź lub brak odpowiedzi w czasie, gracz traci jedno życie.</li>
-              <li>Utrata wszystkich żyć oznacza eliminację.</li>
-              <li>Do rundy 3 przechodzi 3 graczy z największą liczbą żyć (w przypadku remisu decyduje liczba punktów).</li>
-            </ul>
+          <Section title="Runda 2 – Runda 5 sekund" colorClass="text-neon-blue">
+            <p>
+              Gracze mają 5 sekund na podanie 3 poprawnych przykładów w zadanej kategorii.
+              Nieudane próby kosztują życie.
+              Do finału przechodzi 3 najlepszych graczy.
+            </p>
           </Section>
           
           {/* Round 3 */}
-          <Section title="Runda 3: Koło Fortuny" colorClass="text-neon-purple">
+          <Section title="Runda 3 – Koło Fortuny" colorClass="text-neon-purple">
+            <p className="mb-4">
+              Koło losuje kategorię i typ pytania (quiz, zagadka, kalambury wizualne itp.). Kategorie to:
+            </p>
             <ul className="list-disc pl-6 space-y-2">
-              <li>W rundzie bierze udział 3 graczy.</li>
-              <li>Gracze zachowują swoje pozostałe życia.</li>
-              <li>Każdy gracz w swojej turze kręci Kołem Fortuny, które wyznacza kategorię pytania.</li>
-              <li>Za poprawną odpowiedź gracz otrzymuje punkty (zwykle 15).</li>
-              <li>Za błędną odpowiedź gracz traci jedno życie.</li>
-              <li>Gra toczy się do momentu, gdy wszyscy gracze stracą wszystkie życia lub do wyznaczonej liczby rund.</li>
-              <li>Zwycięzca to gracz z największą liczbą punktów na koniec rundy.</li>
+              <li>Język polskiego internetu</li>
+              <li>Polska scena Twitcha</li>
+              <li>Zagadki</li>
+              <li>Czy jesteś mądrzejszy od 8-klasisty</li>
+              <li>Gry, które podbiły Polskę</li>
+              <li>Technologie i internet w Polsce</li>
             </ul>
+            <p className="mt-4">
+              Walka o punkty i zwycięstwo opiera się na wiedzy i odrobinie szczęścia.
+            </p>
           </Section>
           
           {/* Special Cards */}
-          <Section title="Karty Specjalne" colorClass="text-neon-yellow">
+          <Section title="Karty specjalne" colorClass="text-neon-yellow">
+            <p className="mb-4">
+              Gracze mogą zdobywać specjalne karty, np.:
+            </p>
             <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Druga Szansa:</strong> Pozwala graczowi na ponowną próbę odpowiedzi w przypadku błędu.</li>
-              <li><strong>Odbicie Pytania:</strong> Gracz może przekierować pytanie do innego uczestnika.</li>
-              <li><strong>Podwójne Punkty:</strong> Zwiększa wartość punktową kolejnej poprawnej odpowiedzi gracza.</li>
-              <li><strong>Ochrona:</strong> Chroni gracza przed utratą życia/HP przy jednej błędnej odpowiedzi.</li>
+              <li>Druga szansa</li>
+              <li>Odbicie pytania</li>
+              <li>Zamiana pytania</li>
             </ul>
             <p className="mt-4 italic">
-              Prowadzący może przydzielać karty specjalne według własnego uznania lub jako nagrody za określone osiągnięcia.
+              i inne, które mogą odmienić losy gry.
             </p>
           </Section>
           
