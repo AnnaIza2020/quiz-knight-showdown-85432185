@@ -26,7 +26,7 @@ const App = () => (
             <Route path="/overlay" element={<Overlay />} />
             <Route path="/unified-host" element={<UnifiedHostPanel />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/player/:playerId" element={<PlayerView />} />
+            <Route path="/player/:playerToken" element={<PlayerView />} />
             
             {/* Redirect all deprecated routes */}
             <Route path="/host" element={<Navigate to="/unified-host" replace />} />

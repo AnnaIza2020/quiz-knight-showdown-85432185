@@ -10,10 +10,13 @@ import { useFullscreen } from '@/hooks/useFullscreen';
 import { useGamePersistence } from '@/hooks/useGamePersistence';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
+import { usePlayerManagement } from '@/hooks/usePlayerManagement';
 import EventsBar from './hostpanel/EventsBar';
 import SwitchableHostPanel from './SwitchableHostPanel';
 import TopBarControls from './hostpanel/TopBarControls';
-import GameActionButtons from './hostpanel/GameActionButtons';
+import PlayerManagement from './host/panels/PlayerManagement';
+import MenuPanel from './host/panels/MenuPanel';
+import EditionManager from './host/panels/EditionManager';
 import PreparationView from './hostpanel/PreparationView';
 
 const UnifiedHostPanel = () => {
@@ -115,15 +118,6 @@ const UnifiedHostPanel = () => {
       action: soundMuted ? 'play' : 'stop'
     });
   };
-  
-  // Load intro setting from localStorage
-  useEffect(() => {
-    const savedSetting = localStorage.getItem('showIntroOnLoad');
-    if (savedSetting !== null) {
-      // Remove this setting as we're not using it anymore
-      localStorage.removeItem('showIntroOnLoad');
-    }
-  }, []);
   
   // Handle save edition
   const handleSaveEdition = async () => {
@@ -284,44 +278,28 @@ const UnifiedHostPanel = () => {
         <EventsBar lastEvents={lastEvents} className="mb-4" />
       </div>
       
-      <div className="mb-4 flex flex-wrap gap-2">
-        {round === GameRound.SETUP && (
-          <button
-            className="bg-neon-green text-black hover:bg-neon-green/80 rounded-md px-4 py-2 flex items-center"
-            onClick={startGame}
-          >
-            Start gry
-          </button>
-        )}
-        
-        <button
-          className="border-neon-blue text-neon-blue hover:bg-neon-blue/20 border rounded-md px-4 py-2 flex items-center"
-          onClick={startNewGame}
-        >
-          Nowa gra
-        </button>
-        
-        <button
-          className="border-neon-yellow text-neon-yellow hover:bg-neon-yellow/20 border rounded-md px-4 py-2 flex items-center"
-          onClick={handleSaveLocal}
-        >
-          Zapisz lokalnie
-        </button>
-        
-        <button
-          className="border-neon-purple text-neon-purple hover:bg-neon-purple/20 border rounded-md px-4 py-2 flex items-center"
-          onClick={handleLoadLocal}
-        >
-          Wczytaj lokalnie
-        </button>
-        
-        <button
-          className="border-neon-pink text-neon-pink hover:bg-neon-pink/20 border rounded-md px-4 py-2 flex items-center"
-          onClick={toggleSound}
-        >
-          {soundMuted ? "Włącz dźwięk" : "Wycisz dźwięk"}
-        </button>
-      </div>
+      <MenuPanel
+        round={round}
+        soundMuted={soundMuted}
+        toggleSound={toggleSound}
+        startGame={startGame}
+        startNewGame={startNewGame}
+        handleSaveLocal={handleSaveLocal}
+        handleLoadLocal={handleLoadLocal}
+        players={players}
+      />
+      
+      <EditionManager
+        saveDialogOpen={saveDialogOpen}
+        setSaveDialogOpen={setSaveDialogOpen}
+        loadDialogOpen={loadDialogOpen}
+        setLoadDialogOpen={setLoadDialogOpen}
+        editionName={editionName}
+        setEditionName={setEditionName}
+        handleSaveEdition={handleSaveEdition}
+        handleLoadEdition={handleLoadEdition}
+        availableEditions={availableEditions}
+      />
       
       <Tabs value={activeView} onValueChange={setActiveView} className="flex-grow flex flex-col">
         <TabsList className="w-full grid grid-cols-3 mb-6">
@@ -342,14 +320,9 @@ const UnifiedHostPanel = () => {
         <div className="mt-4 flex-grow">
           {/* Preparation Tab */}
           <TabsContent value="preparation" className="h-full">
-            <PreparationView
+            <PlayerManagement
               players={players}
               addEvent={addEvent}
-              handleTimerStart={handleTimerStart}
-              timerRunning={timerRunning}
-              timerSeconds={timerSeconds}
-              stopTimer={stopTimer}
-              startGame={startGame}
             />
           </TabsContent>
           

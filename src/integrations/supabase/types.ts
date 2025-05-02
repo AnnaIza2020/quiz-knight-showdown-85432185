@@ -68,42 +68,51 @@ export type Database = {
       players: {
         Row: {
           avatar_url: string | null
+          camera_url: string | null
           cards: Json | null
           color: string | null
           created_at: string | null
           id: string
+          is_active: boolean | null
           life_percent: number | null
           nickname: string
           points: number | null
           status: string | null
           token: string
           token_expires_at: string | null
+          unique_link_token: string | null
         }
         Insert: {
           avatar_url?: string | null
+          camera_url?: string | null
           cards?: Json | null
           color?: string | null
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           life_percent?: number | null
           nickname: string
           points?: number | null
           status?: string | null
           token: string
           token_expires_at?: string | null
+          unique_link_token?: string | null
         }
         Update: {
           avatar_url?: string | null
+          camera_url?: string | null
           cards?: Json | null
           color?: string | null
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           life_percent?: number | null
           nickname?: string
           points?: number | null
           status?: string | null
           token?: string
           token_expires_at?: string | null
+          unique_link_token?: string | null
         }
         Relationships: []
       }
@@ -112,7 +121,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_unique_player_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
