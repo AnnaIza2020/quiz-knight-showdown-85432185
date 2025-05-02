@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { saveGameEdition, loadGameEdition } from '@/lib/supabase';
 import { useFullscreen } from '@/hooks/useFullscreen';
 import { useGamePersistence } from '@/hooks/useGamePersistence';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 import EventsBar from './hostpanel/EventsBar';
 import SwitchableHostPanel from './SwitchableHostPanel';
 import TopBarControls from './hostpanel/TopBarControls';
@@ -22,6 +24,7 @@ const UnifiedHostPanel = () => {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [isIntroPlaying, setIsIntroPlaying] = useState(false);
+  const [showIntroOnLoad, setShowIntroOnLoad] = useState(true);
   const [lastEvents, setLastEvents] = useState<string[]>([
     "Panel hosta uruchomiony",
     "Przygotowanie do gry rozpoczęte"
@@ -32,8 +35,6 @@ const UnifiedHostPanel = () => {
   const { 
     loadGameData, 
     saveGameData, 
-    setEnabled: setSoundsEnabled, 
-    playSound, 
     resetGame,
     setRound,
     round,
@@ -51,6 +52,10 @@ const UnifiedHostPanel = () => {
   });
 
   const { saveGame, loadGame, getSavedGames } = useGamePersistence();
+  const { broadcast } = useSubscription('game_events', 'new_event', () => {}, { immediate: false });
+  const { playSound, stopAllSounds, enabled: soundsEnabled, setEnabled: setSoundsEnabled } = useSoundEffects({
+    useLocalStorage: true
+  });
 
   // Helper function to add events to the event bar
   const addEvent = (event: string) => {
@@ -78,7 +83,10 @@ const UnifiedHostPanel = () => {
     };
     
     fetchEditions();
-  }, [loadGameData]);
+    
+    // Check sound mute status
+    setSoundMuted(!soundsEnabled);
+  }, [loadGameData, soundsEnabled]);
 
   // Save game data whenever important game state changes
   useEffect(() => {
@@ -97,7 +105,29 @@ const UnifiedHostPanel = () => {
     setSoundsEnabled(soundMuted);
     toast.info(soundMuted ? 'Dźwięki włączone' : 'Dźwięki wyciszone');
     addEvent(soundMuted ? 'Dźwięki włączone' : 'Dźwięki wyciszone');
+    
+    // Broadcast sound setting to overlay
+    broadcast({
+      type: 'sound_control',
+      action: soundMuted ? 'play' : 'stop'
+    });
   };
+  
+  // Toggle intro display on overlay load
+  const toggleShowIntroOnLoad = () => {
+    setShowIntroOnLoad(!showIntroOnLoad);
+    localStorage.setItem('showIntroOnLoad', (!showIntroOnLoad).toString());
+    toast.info(!showIntroOnLoad ? 'Intro będzie pokazywane przy starcie' : 'Intro wyłączone przy starcie');
+    addEvent(!showIntroOnLoad ? 'Włączono wyświetlanie intro przy starcie' : 'Wyłączono wyświetlanie intro przy starcie');
+  };
+  
+  // Load intro setting from localStorage
+  useEffect(() => {
+    const savedSetting = localStorage.getItem('showIntroOnLoad');
+    if (savedSetting !== null) {
+      setShowIntroOnLoad(savedSetting === 'true');
+    }
+  }, []);
   
   // Handle save edition
   const handleSaveEdition = async () => {
@@ -214,12 +244,27 @@ const UnifiedHostPanel = () => {
     playSound('round-start');
     addEvent('Rozpoczynanie gry - odtwarzanie czołówki');
     
+    // Show intro on overlay
+    broadcast({
+      type: 'intro_control',
+      action: 'show',
+      event: 'Wyświetlanie czołówki na scenie'
+    });
+    
     // After intro finishes, start round 1
     setTimeout(() => {
       setIsIntroPlaying(false);
       setRound(GameRound.ROUND_ONE);
       addEvent('Runda 1 rozpoczęta!');
       playSound('success');
+      
+      // Hide intro on overlay
+      broadcast({
+        type: 'intro_control',
+        action: 'hide',
+        event: 'Czołówka zakończona, rozpoczynamy grę'
+      });
+      
       // Switch to gamemanagement view
       setActiveView('gamemanagement');
       toast.success('Runda 1 rozpoczęta!');
@@ -231,6 +276,16 @@ const UnifiedHostPanel = () => {
     resetGame();
     setRound(GameRound.SETUP);
     setActiveView('preparation');
+    
+    // Show intro if enabled
+    if (showIntroOnLoad) {
+      broadcast({
+        type: 'intro_control',
+        action: 'show',
+        event: 'Nowa gra - wyświetlanie czołówki'
+      });
+    }
+    
     toast.success('Nowa gra przygotowana!', {
       description: 'Wszystkie dane zostały zresetowane.'
     });
@@ -281,6 +336,10 @@ const UnifiedHostPanel = () => {
         startNewGame={startNewGame}
         handleSaveLocal={handleSaveLocal}
         handleLoadLocal={handleLoadLocal}
+        isMuted={soundMuted}
+        toggleMute={toggleSound}
+        showIntroOnLoad={showIntroOnLoad}
+        toggleShowIntroOnLoad={toggleShowIntroOnLoad}
       />
       
       <Tabs value={activeView} onValueChange={setActiveView} className="flex-grow flex flex-col">

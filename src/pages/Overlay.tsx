@@ -8,9 +8,11 @@ import MiddleSection from '@/components/overlay/MiddleSection';
 import WinnerDisplay from '@/components/overlay/WinnerDisplay';
 import ConfettiEffect from '@/components/overlay/ConfettiEffect';
 import InfoBar from '@/components/overlay/InfoBar';
+import IntroScreen from '@/components/overlay/IntroScreen';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useFullscreen } from '@/hooks/useFullscreen';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 const Overlay = () => {
   const { 
@@ -28,10 +30,17 @@ const Overlay = () => {
 
   const [showConfetti, setShowConfetti] = useState(false);
   const [gameEvents, setGameEvents] = useState<string[]>([]);
-  const [showIntro, setShowIntro] = useState(false);
+  const [showIntro, setShowIntro] = useState(true); // Start with intro visible
   const [showRoundTransition, setShowRoundTransition] = useState(false);
   const [lastActivePlayer, setLastActivePlayer] = useState<string | null>(null);
   const [latestPoints, setLatestPoints] = useState<{playerId: string, points: number} | null>(null);
+  const [introFinished, setIntroFinished] = useState(false);
+  
+  // Sound effects
+  const { playSound, stopAllSounds } = useSoundEffects({
+    useLocalStorage: true,
+    defaultVolume: 0.7
+  });
   
   // Refs for fullscreen and container
   const containerRef = useRef<HTMLDivElement>(null);
@@ -44,6 +53,17 @@ const Overlay = () => {
     (payload) => {
       if (payload.event) {
         addGameEvent(payload.event);
+      }
+      
+      // Handle intro control
+      if (payload.type === 'intro_control') {
+        if (payload.action === 'show') {
+          setShowIntro(true);
+          setIntroFinished(false);
+        } else if (payload.action === 'hide') {
+          setShowIntro(false);
+          setIntroFinished(true);
+        }
       }
       
       // Handle other event types
@@ -67,8 +87,23 @@ const Overlay = () => {
           setLatestPoints(null);
         }, 3000);
       }
+      
+      // Handle sound control
+      if (payload.type === 'sound_control') {
+        if (payload.action === 'play') {
+          playSound(payload.sound, { volume: payload.volume || 0.7 });
+        } else if (payload.action === 'stop') {
+          stopAllSounds();
+        }
+      }
     }
   );
+  
+  // Handle intro completion
+  const handleIntroFinished = () => {
+    setIntroFinished(true);
+    setShowIntro(false);
+  };
   
   // Show confetti when winners are announced
   useEffect(() => {
@@ -76,9 +111,7 @@ const Overlay = () => {
       setShowConfetti(true);
       
       // Play victory sound
-      const victorySound = new Audio('/sounds/victory.mp3');
-      victorySound.volume = 0.7;
-      victorySound.play().catch(e => console.log('Error playing sound:', e));
+      playSound('victory');
       
       // Add game event about game completion
       const winnerNames = winnerIds
@@ -86,7 +119,7 @@ const Overlay = () => {
         .join(", ");
       addGameEvent(`Gra zakończona! Zwycięzca(y): ${winnerNames}`);
     }
-  }, [round, winnerIds, players]);
+  }, [round, winnerIds, players, playSound]);
   
   // Show round transition animation when round changes
   useEffect(() => {
@@ -98,9 +131,7 @@ const Overlay = () => {
         setShowRoundTransition(true);
         
         // Play round start sound
-        const roundSound = new Audio('/sounds/round-start.mp3');
-        roundSound.volume = 0.5;
-        roundSound.play().catch(e => console.log('Error playing sound:', e));
+        playSound('round-start');
         
         // Hide transition after animation
         const timeout = setTimeout(() => {
@@ -116,57 +147,29 @@ const Overlay = () => {
         return () => clearTimeout(timeout);
       }
     }
-  }, [round]);
+  }, [round, playSound]);
   
-  // Show intro animation on component mount
+  // Auto-hide intro when game starts
   useEffect(() => {
-    const hasShownIntro = sessionStorage.getItem('hasShownOverlayIntro');
-    
-    if (!hasShownIntro && round !== GameRound.SETUP) {
-      setShowIntro(true);
-      
-      // Play intro sound
-      const introSound = new Audio('/sounds/round-start.mp3');
-      introSound.volume = 0.7;
-      introSound.play().catch(e => console.log('Error playing sound:', e));
-      
-      // Hide intro after animation
-      const timeout = setTimeout(() => {
-        setShowIntro(false);
-        setShowConfetti(true);
-        
-        // Mark intro as shown
-        sessionStorage.setItem('hasShownOverlayIntro', 'true');
-      }, 4000);
-      
-      // Hide confetti after time
-      const confettiTimeout = setTimeout(() => {
-        setShowConfetti(false);
-      }, 10000);
-      
-      return () => {
-        clearTimeout(timeout);
-        clearTimeout(confettiTimeout);
-      };
+    if (round !== GameRound.SETUP && showIntro && !introFinished) {
+      // Auto-hide intro when game starts
+      setShowIntro(false);
+      setIntroFinished(true);
     }
-  }, [round]);
+  }, [round, showIntro, introFinished]);
   
   // Handle timer sounds
   useEffect(() => {
     if (timerRunning && timerSeconds <= 5 && timerSeconds > 0) {
       // Play tick sound for last 5 seconds
-      const tickSound = new Audio('/sounds/wheel-tick.mp3');
-      tickSound.volume = 0.3;
-      tickSound.play().catch(e => console.log('Error playing sound:', e));
+      playSound('wheel-tick', 0.3);
     } else if (timerSeconds === 0) {
       // Play timeout sound when timer ends
-      const timeoutSound = new Audio('/sounds/timeout.mp3');
-      timeoutSound.volume = 0.5;
-      timeoutSound.play().catch(e => console.log('Error playing sound:', e));
+      playSound('timeout', 0.5);
       
       addGameEvent("Czas minął!");
     }
-  }, [timerRunning, timerSeconds]);
+  }, [timerRunning, timerSeconds, playSound]);
   
   // Track question changes
   useEffect(() => {
@@ -241,37 +244,13 @@ const Overlay = () => {
       className="w-full h-screen bg-neon-background overflow-hidden relative"
       onDoubleClick={handleDoubleClick}
     >
-      {/* Intro animation */}
-      <AnimatePresence>
-        {showIntro && (
-          <motion.div 
-            className="fixed inset-0 bg-black z-50 flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 1.2, opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-center"
-            >
-              <h1 
-                className="text-6xl font-bold mb-4" 
-                style={{ 
-                  color: primaryColor || '#ff00ff',
-                  textShadow: `0 0 10px ${primaryColor || '#ff00ff'}, 0 0 20px ${primaryColor || '#ff00ff'}`
-                }}
-              >
-                Discord Game Show
-              </h1>
-              <p className="text-white text-2xl">Rozpoczynamy już za chwilę!</p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Intro Screen */}
+      <IntroScreen 
+        show={showIntro && !introFinished} 
+        onFinished={handleIntroFinished}
+        primaryColor={primaryColor}
+        secondaryColor={secondaryColor}
+      />
       
       {/* Round transition overlay */}
       <AnimatePresence>

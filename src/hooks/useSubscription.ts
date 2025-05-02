@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
@@ -17,6 +18,7 @@ export const useSubscription = <T>(
     immediate?: boolean; // Whether to subscribe immediately
     reconnect?: boolean; // Whether to attempt reconnection on disconnect
     retryInterval?: number; // Retry interval in ms
+    retryMax?: number; // Maximum number of retries
   }
 ) => {
   // Default options
@@ -24,6 +26,7 @@ export const useSubscription = <T>(
     immediate: true,
     reconnect: true,
     retryInterval: 5000,
+    retryMax: 10
   };
   
   const opts = { ...defaultOptions, ...options };
@@ -32,6 +35,7 @@ export const useSubscription = <T>(
   const subscriptionRef = useRef<RealtimeChannel | null>(null);
   const callbackRef = useRef(callback); // Keep callback reference for closures
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryCountRef = useRef<number>(0);
   
   // Update callback reference when it changes
   useEffect(() => {
@@ -40,9 +44,10 @@ export const useSubscription = <T>(
   
   // Subscribe to channel function
   const subscribe = useCallback(() => {
+    // Clear any existing subscription
     if (subscriptionRef.current) {
-      // Already subscribed
-      return subscriptionRef.current;
+      subscriptionRef.current.unsubscribe();
+      subscriptionRef.current = null;
     }
 
     try {
@@ -56,13 +61,16 @@ export const useSubscription = <T>(
           if (status === 'SUBSCRIBED') {
             console.log(`Subscribed to ${channel}:${event} successfully`);
             
+            // Reset retry counter on successful connection
+            retryCountRef.current = 0;
+            
             // Clear any pending retry timeouts
             if (retryTimeoutRef.current) {
               clearTimeout(retryTimeoutRef.current);
               retryTimeoutRef.current = null;
             }
           } else if (status === 'CHANNEL_ERROR' && opts.reconnect) {
-            console.warn(`Error subscribing to ${channel}:${event}, will retry`);
+            console.warn(`Error subscribing to ${channel}:${event}, will retry (${retryCountRef.current + 1}/${opts.retryMax})`);
             
             // Cleanup current subscription
             if (subscriptionRef.current) {
@@ -70,10 +78,19 @@ export const useSubscription = <T>(
               subscriptionRef.current = null;
             }
             
-            // Set retry timeout
-            retryTimeoutRef.current = setTimeout(() => {
-              subscribe();
-            }, opts.retryInterval);
+            // Check if we should retry
+            if (retryCountRef.current < opts.retryMax) {
+              retryCountRef.current += 1;
+              
+              // Set retry timeout with exponential backoff
+              const backoffTime = opts.retryInterval * Math.pow(1.5, Math.min(retryCountRef.current, 8));
+              
+              retryTimeoutRef.current = setTimeout(() => {
+                subscribe();
+              }, backoffTime);
+            } else {
+              console.error(`Max retries (${opts.retryMax}) reached for ${channel}:${event}`);
+            }
           }
         });
         
@@ -82,7 +99,7 @@ export const useSubscription = <T>(
       console.error(`Error creating subscription for ${channel}:${event}:`, error);
       return null;
     }
-  }, [channel, event, opts.reconnect, opts.retryInterval]);
+  }, [channel, event, opts.reconnect, opts.retryInterval, opts.retryMax]);
   
   // Unsubscribe function
   const unsubscribe = useCallback(() => {
@@ -95,6 +112,9 @@ export const useSubscription = <T>(
       clearTimeout(retryTimeoutRef.current);
       retryTimeoutRef.current = null;
     }
+    
+    // Reset retry counter
+    retryCountRef.current = 0;
   }, []);
   
   // Subscribe on mount if immediate is true
@@ -127,6 +147,7 @@ export const useSubscription = <T>(
   return {
     broadcast,
     subscribe,
-    unsubscribe
+    unsubscribe,
+    isSubscribed: !!subscriptionRef.current
   };
 };

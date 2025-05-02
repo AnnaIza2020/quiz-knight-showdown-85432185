@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { PlayCircle, RefreshCw, Download, Upload } from 'lucide-react';
+import { PlayCircle, RefreshCw, Download, Upload, Volume2, VolumeX } from 'lucide-react';
 import { GameRound } from '@/types/game-types';
 
 interface GameActionButtonsProps {
@@ -11,6 +11,10 @@ interface GameActionButtonsProps {
   startNewGame: () => void;
   handleSaveLocal: () => void;
   handleLoadLocal: () => void;
+  isMuted?: boolean;
+  toggleMute?: () => void;
+  showIntroOnLoad?: boolean;
+  toggleShowIntroOnLoad?: () => void;
 }
 
 const GameActionButtons: React.FC<GameActionButtonsProps> = ({
@@ -19,10 +23,14 @@ const GameActionButtons: React.FC<GameActionButtonsProps> = ({
   startGameWithIntro,
   startNewGame,
   handleSaveLocal,
-  handleLoadLocal
+  handleLoadLocal,
+  isMuted = false,
+  toggleMute,
+  showIntroOnLoad = true,
+  toggleShowIntroOnLoad
 }) => {
   return (
-    <div className="mb-4 flex gap-2">
+    <div className="mb-4 flex flex-wrap gap-2">
       {round === GameRound.SETUP && (
         <Button
           variant="default"
@@ -61,6 +69,28 @@ const GameActionButtons: React.FC<GameActionButtonsProps> = ({
         <Upload size={18} className="mr-2" />
         Wczytaj lokalnie
       </Button>
+      
+      {toggleMute && (
+        <Button
+          variant="outline"
+          className="border-neon-pink text-neon-pink hover:bg-neon-pink/20"
+          onClick={toggleMute}
+        >
+          {isMuted ? <VolumeX size={18} className="mr-2" /> : <Volume2 size={18} className="mr-2" />}
+          {isMuted ? "Włącz dźwięk" : "Wycisz dźwięk"}
+        </Button>
+      )}
+      
+      {toggleShowIntroOnLoad && (
+        <Button
+          variant="outline"
+          className={showIntroOnLoad ? "border-neon-green text-neon-green hover:bg-neon-green/20" : "border-white/40 text-white/40 hover:bg-white/10"}
+          onClick={toggleShowIntroOnLoad}
+        >
+          <PlayCircle size={18} className="mr-2" />
+          {showIntroOnLoad ? "Intro włączone" : "Intro wyłączone"}
+        </Button>
+      )}
     </div>
   );
 };
