@@ -16,17 +16,23 @@ export const saveGameEdition = async (gameData: any, editionName: string = 'defa
       return { success: false, error: 'Supabase nie jest skonfigurowany' };
     }
     
-    const { data, error } = await supabaseClient
-      .from('game_editions')
-      .upsert({
-        name: editionName,
-        data: gameData,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'name' });
-    
-    if (error) throw error;
-    
-    return { success: true, data };
+    // Use a try-catch to handle potential type errors with the game_editions table
+    try {
+      const { data, error } = await supabaseClient
+        .from('game_editions')
+        .upsert({
+          name: editionName,
+          data: gameData,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'name' });
+      
+      if (error) throw error;
+      
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error with game_editions table:', error);
+      return { success: false, error: 'Table game_editions might not exist' };
+    }
   } catch (error) {
     console.error('Error saving game edition:', error);
     toast.error('Nie udało się zapisać edycji gry');
@@ -42,19 +48,25 @@ export const loadGameEdition = async (editionName: string = 'default') => {
       return { success: false, error: 'Supabase nie jest skonfigurowany' };
     }
     
-    const { data, error } = await supabaseClient
-      .from('game_editions')
-      .select('*')
-      .eq('name', editionName)
-      .single();
-    
-    if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows returned"
-    
-    if (!data) {
-      return { success: false, error: 'Nie znaleziono edycji gry' };
+    // Use a try-catch to handle potential type errors with the game_editions table
+    try {
+      const { data, error } = await supabaseClient
+        .from('game_editions')
+        .select('*')
+        .eq('name', editionName)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows returned"
+      
+      if (!data) {
+        return { success: false, error: 'Nie znaleziono edycji gry' };
+      }
+      
+      return { success: true, data: data.data };
+    } catch (error) {
+      console.error('Error with game_editions table:', error);
+      return { success: false, error: 'Table game_editions might not exist' };
     }
-    
-    return { success: true, data: data.data };
   } catch (error) {
     console.error('Error loading game edition:', error);
     toast.error('Nie udało się wczytać edycji gry');
@@ -69,17 +81,23 @@ export const saveUsedQuestion = async (questionId: string, gameId: string = 'def
       return { success: false };
     }
     
-    const { data, error } = await supabaseClient
-      .from('used_questions')
-      .insert({
-        question_id: questionId,
-        game_id: gameId,
-        used_at: new Date().toISOString()
-      });
-    
-    if (error) throw error;
-    
-    return { success: true, data };
+    // Use a try-catch to handle potential type errors with the used_questions table
+    try {
+      const { data, error } = await supabaseClient
+        .from('used_questions')
+        .insert({
+          question_id: questionId,
+          game_id: gameId,
+          used_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+      
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error with used_questions table:', error);
+      return { success: false, error: 'Table used_questions might not exist' };
+    }
   } catch (error) {
     console.error('Error saving used question:', error);
     return { success: false, error };
@@ -93,14 +111,23 @@ export const getUsedQuestions = async (gameId: string = 'default') => {
       return { success: false, data: [] };
     }
     
-    const { data, error } = await supabaseClient
-      .from('used_questions')
-      .select('question_id')
-      .eq('game_id', gameId);
-    
-    if (error) throw error;
-    
-    return { success: true, data: data.map(q => q.question_id) };
+    // Use a try-catch to handle potential type errors with the used_questions table
+    try {
+      const { data, error } = await supabaseClient
+        .from('used_questions')
+        .select('question_id')
+        .eq('game_id', gameId);
+      
+      if (error) throw error;
+      
+      if (data) {
+        return { success: true, data: data.map((q: any) => q.question_id) };
+      }
+      return { success: true, data: [] };
+    } catch (error) {
+      console.error('Error with used_questions table:', error);
+      return { success: false, error: 'Table used_questions might not exist', data: [] };
+    }
   } catch (error) {
     console.error('Error getting used questions:', error);
     return { success: false, error, data: [] };
@@ -114,15 +141,21 @@ export const restoreQuestion = async (questionId: string, gameId: string = 'defa
       return { success: false };
     }
     
-    const { error } = await supabaseClient
-      .from('used_questions')
-      .delete()
-      .eq('question_id', questionId)
-      .eq('game_id', gameId);
-    
-    if (error) throw error;
-    
-    return { success: true };
+    // Use a try-catch to handle potential type errors with the used_questions table
+    try {
+      const { error } = await supabaseClient
+        .from('used_questions')
+        .delete()
+        .eq('question_id', questionId)
+        .eq('game_id', gameId);
+      
+      if (error) throw error;
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error with used_questions table:', error);
+      return { success: false, error: 'Table used_questions might not exist' };
+    }
   } catch (error) {
     console.error('Error restoring question:', error);
     return { success: false, error };

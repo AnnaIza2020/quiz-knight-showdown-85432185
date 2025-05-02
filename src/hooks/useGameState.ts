@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Player, GameRound, Category, Question } from '@/types/game-types';
 import { useSubscription } from './useSubscription';
 import { toast } from 'sonner';

@@ -74,6 +74,7 @@ const PlayerManagement: React.FC<PlayerManagementProps> = ({ players, addEvent }
           avatar: playerData.avatar_url || undefined,
           // Map the color from database
           color: playerData.color || '#ff00ff',
+          uniqueLinkToken: playerData.unique_link_token
         };
         
         addPlayer(newPlayer);
@@ -107,14 +108,14 @@ const PlayerManagement: React.FC<PlayerManagementProps> = ({ players, addEvent }
   };
   
   // Copy player link to clipboard
-  const copyPlayerLink = (player: any) => {
-    if (!player.unique_link_token) {
+  const copyPlayerLink = (player: Player) => {
+    if (!player.uniqueLinkToken) {
       toast.error('Ten gracz nie ma jeszcze wygenerowanego linku');
       return;
     }
     
     const baseUrl = window.location.origin;
-    const playerLink = `${baseUrl}/player/${player.unique_link_token}`;
+    const playerLink = `${baseUrl}/player/${player.uniqueLinkToken}`;
     
     navigator.clipboard.writeText(playerLink)
       .then(() => {

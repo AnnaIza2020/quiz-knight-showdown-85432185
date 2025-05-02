@@ -10,6 +10,8 @@ export interface Player {
   isActive: boolean;
   isEliminated: boolean;
   avatar?: string;
+  color?: string;
+  uniqueLinkToken?: string;
   specialCards?: string[]; // IDs of special cards owned by player
 }
 

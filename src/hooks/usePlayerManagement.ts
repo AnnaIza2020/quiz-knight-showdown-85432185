@@ -40,7 +40,6 @@ export const usePlayerManagement = (options?: UsePlayerManagementOptions) => {
           isEliminated: item.status === 'eliminated',
           avatar: item.avatar_url,
           color: item.color,
-          token: item.token,
           uniqueLinkToken: item.unique_link_token
         }));
         
@@ -146,7 +145,8 @@ export const usePlayerManagement = (options?: UsePlayerManagementOptions) => {
           isActive: data.is_active || true,
           isEliminated: data.status === 'eliminated',
           avatar: data.avatar_url,
-          color: data.color
+          color: data.color,
+          uniqueLinkToken: data.unique_link_token
         };
         
         setPlayers(prev => 
