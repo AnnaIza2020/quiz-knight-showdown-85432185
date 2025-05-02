@@ -38,14 +38,6 @@ const EnhancedNavigation = () => {
         delay={0.4}
         primaryClass="bg-gradient-to-r from-purple-500 to-pink-500"
       />
-      
-      <NavigationButton 
-        to="/rules" 
-        icon={<Shield />}
-        label="Zasady"
-        delay={0.5}
-        primaryClass="bg-gradient-to-r from-pink-500 to-red-500"
-      />
     </div>
   );
 };
