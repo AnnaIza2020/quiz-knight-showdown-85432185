@@ -27,8 +27,12 @@ const SOUND_PATHS = {
   'card-reveal': '/sounds/card-reveal.mp3',
 };
 
-export const useSoundEffects = () => {
-  const [enabled, setEnabled] = useState(true);
+interface UseSoundEffectsOptions {
+  enabled?: boolean;
+}
+
+export const useSoundEffects = (options?: UseSoundEffectsOptions) => {
+  const [enabled, setEnabled] = useState(options?.enabled ?? true);
   const [audioElements, setAudioElements] = useState<Record<SoundEffect, HTMLAudioElement | null>>({
     'success': null,
     'fail': null,

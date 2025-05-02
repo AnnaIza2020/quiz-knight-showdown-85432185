@@ -15,13 +15,16 @@ const createAuthError = (error: any): AuthError => {
     return error as AuthError;
   }
   
-  // Create a compatible AuthError object
-  return {
+  // Create a compatible AuthError object with name property
+  const authError: AuthError = {
     code: 'unknown',
     status: 500,
     message: error?.message || 'Unknown authentication error',
-    __isAuthError: true
+    __isAuthError: true,
+    name: 'AuthError' // Add the required name property
   } as AuthError;
+  
+  return authError;
 };
 
 export class AuthService {
