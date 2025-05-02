@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useGameContext } from '@/context/GameContext';
+import { GameRound } from '@/types/game-types';
 import { Button } from '@/components/ui/button';
 import { Settings, Home, Volume2, VolumeX, Save, PlayCircle, RefreshCw, Maximize, Minimize } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -28,7 +29,6 @@ const UnifiedHostPanel = () => {
     resetGame,
     setRound,
     round,
-    GameRound
   } = useGameContext();
   
   const navigate = useNavigate();
