@@ -10,6 +10,7 @@ import HomePage from "./pages/HomePage";
 import Overlay from "./pages/Overlay";
 import Host from "./pages/Host";
 import HostPanel from "./pages/HostPanel";
+import UnifiedHostPanel from "./components/UnifiedHostPanel";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/overlay" element={<Overlay />} />
             <Route path="/host" element={<Host />} />
             <Route path="/hostpanel" element={<HostPanel />} />
+            <Route path="/unified-host" element={<UnifiedHostPanel />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -27,14 +27,14 @@ const EnhancedNavigation = () => {
       color: 'from-neon-pink to-neon-blue'
     },
     {
-      path: '/host',
-      label: 'Panel Hosta (Klasyczny)',
+      path: '/unified-host',
+      label: 'Panel Hosta',
       icon: <Gamepad2 className="mr-2 h-4 w-4" />,
       color: 'from-neon-pink to-neon-blue'
     },
     {
-      path: '/hostpanel',
-      label: 'Panel Hosta (Nowy)',
+      path: '/host',
+      label: 'Host (Klasyczny)',
       icon: <Gamepad2 className="mr-2 h-4 w-4" />,
       color: 'from-neon-green to-neon-yellow'
     },
