@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 
 // Define player type
@@ -304,6 +305,11 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       isActive: false,
       isEliminated: false
     })));
+  };
+
+  // Define the setActivePlayer function that was missing
+  const setActivePlayer = (playerId: string | null) => {
+    setActivePlayerId(playerId);
   };
 
   const value = {

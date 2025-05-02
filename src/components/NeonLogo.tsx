@@ -32,7 +32,6 @@ const NeonLogo: React.FC<NeonLogoProps> = ({ className, size = 'md' }) => {
   return (
     <div className={cn('font-bold flex items-center', className)}>
       <span 
-        style={{ textShadow: `0 0 10px ${primaryColor}, 0 0 20px ${primaryColor}` }}
         className={cn(
           'text-transparent bg-clip-text bg-gradient-to-r',
           sizeClasses[size],
