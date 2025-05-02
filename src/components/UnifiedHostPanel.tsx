@@ -23,11 +23,8 @@ const UnifiedHostPanel = () => {
   const [editionName, setEditionName] = useState('default');
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
-  const [isIntroPlaying, setIsIntroPlaying] = useState(false);
-  const [showIntroOnLoad, setShowIntroOnLoad] = useState(true);
   const [lastEvents, setLastEvents] = useState<string[]>([
-    "Panel hosta uruchomiony",
-    "Przygotowanie do gry rozpoczęte"
+    "Panel hosta uruchomiony"
   ]);
   const [availableEditions, setAvailableEditions] = useState<{name: string}[]>([]);
   const [welcomeShown, setWelcomeShown] = useState(false);
@@ -119,19 +116,12 @@ const UnifiedHostPanel = () => {
     });
   };
   
-  // Toggle intro display on overlay load
-  const toggleShowIntroOnLoad = () => {
-    setShowIntroOnLoad(!showIntroOnLoad);
-    localStorage.setItem('showIntroOnLoad', (!showIntroOnLoad).toString());
-    toast.info(!showIntroOnLoad ? 'Intro będzie pokazywane przy starcie' : 'Intro wyłączone przy starcie');
-    addEvent(!showIntroOnLoad ? 'Włączono wyświetlanie intro przy starcie' : 'Wyłączono wyświetlanie intro przy starcie');
-  };
-  
   // Load intro setting from localStorage
   useEffect(() => {
     const savedSetting = localStorage.getItem('showIntroOnLoad');
     if (savedSetting !== null) {
-      setShowIntroOnLoad(savedSetting === 'true');
+      // Remove this setting as we're not using it anymore
+      localStorage.removeItem('showIntroOnLoad');
     }
   }, []);
   
@@ -237,44 +227,21 @@ const UnifiedHostPanel = () => {
     }
   };
   
-  // Start game with intro
-  const startGameWithIntro = () => {
+  // Start game (simplified, no intro)
+  const startGame = () => {
     // Only allow starting if we have at least one player
     if (players.length === 0) {
       toast.error('Dodaj co najmniej jednego gracza przed rozpoczęciem gry');
       return;
     }
     
-    // Play intro animation
-    setIsIntroPlaying(true);
-    playSound('round-start');
-    addEvent('Rozpoczynanie gry - odtwarzanie czołówki');
-    
-    // Show intro on overlay
-    broadcast({
-      type: 'intro_control',
-      action: 'show',
-      event: 'Wyświetlanie czołówki na scenie'
-    });
-    
-    // After intro finishes, start round 1
-    setTimeout(() => {
-      setIsIntroPlaying(false);
-      setRound(GameRound.ROUND_ONE);
-      addEvent('Runda 1 rozpoczęta!');
-      playSound('success');
+    setRound(GameRound.ROUND_ONE);
+    addEvent('Runda 1 rozpoczęta!');
+    playSound('success');
       
-      // Hide intro on overlay
-      broadcast({
-        type: 'intro_control',
-        action: 'hide',
-        event: 'Czołówka zakończona, rozpoczynamy grę'
-      });
-      
-      // Switch to gamemanagement view
-      setActiveView('gamemanagement');
-      toast.success('Runda 1 rozpoczęta!');
-    }, 5000); // Adjust time according to your intro animation
+    // Switch to gamemanagement view
+    setActiveView('gamemanagement');
+    toast.success('Runda 1 rozpoczęta!');
   };
   
   // Start new game
@@ -282,15 +249,6 @@ const UnifiedHostPanel = () => {
     resetGame();
     setRound(GameRound.SETUP);
     setActiveView('preparation');
-    
-    // Show intro if enabled
-    if (showIntroOnLoad) {
-      broadcast({
-        type: 'intro_control',
-        action: 'show',
-        event: 'Nowa gra - wyświetlanie czołówki'
-      });
-    }
     
     toast.success('Nowa gra przygotowana!', {
       description: 'Wszystkie dane zostały zresetowane.'
@@ -306,15 +264,6 @@ const UnifiedHostPanel = () => {
 
   return (
     <div ref={panelRef} className="min-h-screen bg-neon-background p-4 flex flex-col">
-      {isIntroPlaying && (
-        <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
-          <div className="text-5xl text-neon-pink font-bold">
-            Quiz Knight Showdown
-            <div className="text-2xl text-center mt-4 text-white">Rozpoczynamy...</div>
-          </div>
-        </div>
-      )}
-      
       <TopBarControls
         soundMuted={soundMuted}
         toggleSound={toggleSound}
@@ -335,18 +284,44 @@ const UnifiedHostPanel = () => {
         <EventsBar lastEvents={lastEvents} className="mb-4" />
       </div>
       
-      <GameActionButtons
-        round={round}
-        isIntroPlaying={isIntroPlaying}
-        startGameWithIntro={startGameWithIntro}
-        startNewGame={startNewGame}
-        handleSaveLocal={handleSaveLocal}
-        handleLoadLocal={handleLoadLocal}
-        isMuted={soundMuted}
-        toggleMute={toggleSound}
-        showIntroOnLoad={showIntroOnLoad}
-        toggleShowIntroOnLoad={toggleShowIntroOnLoad}
-      />
+      <div className="mb-4 flex flex-wrap gap-2">
+        {round === GameRound.SETUP && (
+          <button
+            className="bg-neon-green text-black hover:bg-neon-green/80 rounded-md px-4 py-2 flex items-center"
+            onClick={startGame}
+          >
+            Start gry
+          </button>
+        )}
+        
+        <button
+          className="border-neon-blue text-neon-blue hover:bg-neon-blue/20 border rounded-md px-4 py-2 flex items-center"
+          onClick={startNewGame}
+        >
+          Nowa gra
+        </button>
+        
+        <button
+          className="border-neon-yellow text-neon-yellow hover:bg-neon-yellow/20 border rounded-md px-4 py-2 flex items-center"
+          onClick={handleSaveLocal}
+        >
+          Zapisz lokalnie
+        </button>
+        
+        <button
+          className="border-neon-purple text-neon-purple hover:bg-neon-purple/20 border rounded-md px-4 py-2 flex items-center"
+          onClick={handleLoadLocal}
+        >
+          Wczytaj lokalnie
+        </button>
+        
+        <button
+          className="border-neon-pink text-neon-pink hover:bg-neon-pink/20 border rounded-md px-4 py-2 flex items-center"
+          onClick={toggleSound}
+        >
+          {soundMuted ? "Włącz dźwięk" : "Wycisz dźwięk"}
+        </button>
+      </div>
       
       <Tabs value={activeView} onValueChange={setActiveView} className="flex-grow flex flex-col">
         <TabsList className="w-full grid grid-cols-3 mb-6">
@@ -370,12 +345,11 @@ const UnifiedHostPanel = () => {
             <PreparationView
               players={players}
               addEvent={addEvent}
-              isIntroPlaying={isIntroPlaying}
               handleTimerStart={handleTimerStart}
               timerRunning={timerRunning}
               timerSeconds={timerSeconds}
               stopTimer={stopTimer}
-              startGameWithIntro={startGameWithIntro}
+              startGame={startGame}
             />
           </TabsContent>
           

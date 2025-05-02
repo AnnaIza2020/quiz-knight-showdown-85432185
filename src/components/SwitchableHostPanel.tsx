@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { GameRound } from '@/types/game-types';
 import Host from '@/pages/Host';
@@ -37,7 +37,7 @@ const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
     }
   };
   
-  // Add initial events - reduced to a single welcome message
+  // Add initial event - single welcome message
   useEffect(() => {
     if (events.length === 0) {
       setEvents([

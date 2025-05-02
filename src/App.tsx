@@ -28,7 +28,7 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/player/:playerId" element={<PlayerView />} />
             
-            {/* Redirect old routes */}
+            {/* Redirect all deprecated routes */}
             <Route path="/host" element={<Navigate to="/unified-host" replace />} />
             <Route path="/hostpanel" element={<Navigate to="/unified-host" replace />} />
             <Route path="/intro" element={<Navigate to="/" replace />} />

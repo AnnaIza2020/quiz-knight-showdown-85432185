@@ -6,12 +6,10 @@ import RoundIndicator from '@/components/overlay/RoundIndicator';
 import WinnerDisplay from '@/components/overlay/WinnerDisplay';
 import ConfettiEffect from '@/components/overlay/ConfettiEffect';
 import InfoBar from '@/components/overlay/InfoBar';
-import IntroScreen from '@/components/overlay/IntroScreen';
-import { AnimatePresence } from 'framer-motion';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 
-// Import our new components
+// Import our components
 import OverlayContainer from '@/components/overlay/OverlayContainer';
 import GameGrid from '@/components/overlay/GameGrid';
 import RoundTransition from '@/components/overlay/RoundTransition';
@@ -32,13 +30,9 @@ const Overlay = () => {
 
   const [showConfetti, setShowConfetti] = useState(false);
   const [gameEvents, setGameEvents] = useState<string[]>([]);
-  const [showIntro, setShowIntro] = useState(true); // Start with intro visible
   const [showRoundTransition, setShowRoundTransition] = useState(false);
   const [lastActivePlayer, setLastActivePlayer] = useState<string | null>(null);
   const [latestPoints, setLatestPoints] = useState<{playerId: string, points: number} | null>(null);
-  const [introFinished, setIntroFinished] = useState(false);
-  const [manualIntroControl, setManualIntroControl] = useState(false);
-  const [isStarting, setIsStarting] = useState(false);
   
   // Sound effects
   const { playSound, stopAllSounds } = useSoundEffects({
@@ -53,25 +47,6 @@ const Overlay = () => {
     (payload) => {
       if (payload.event) {
         addGameEvent(payload.event);
-      }
-      
-      // Handle intro control
-      if (payload.type === 'intro_control') {
-        if (payload.action === 'show') {
-          setShowIntro(true);
-          setIntroFinished(false);
-          setManualIntroControl(true);
-        } else if (payload.action === 'hide') {
-          setShowIntro(false);
-          setIntroFinished(true);
-          setManualIntroControl(true);
-        } else if (payload.action === 'toggle') {
-          setShowIntro(prev => !prev);
-          setIntroFinished(prev => !prev);
-          setManualIntroControl(true);
-        } else if (payload.action === 'start') {
-          setIsStarting(true);
-        }
       }
       
       // Handle other event types
@@ -107,21 +82,15 @@ const Overlay = () => {
     }
   );
   
-  // Handle intro completion
-  const handleIntroFinished = () => {
-    if (!manualIntroControl) {
-      setIntroFinished(true);
-      setShowIntro(false);
-    }
-    
-    // Reset starting state
-    setIsStarting(false);
-  };
-  
-  // Handle start button click in intro (host only)
-  const handleStartClick = () => {
-    setIsStarting(true);
-    addGameEvent("Rozpoczynamy show!");
+  // Helper function to add an event to the gameEvents list
+  const addGameEvent = (event: string) => {
+    setGameEvents(prev => {
+      // Only add the event if it's not a duplicate of the most recent one
+      if (prev.length > 0 && prev[0] === event) {
+        return prev;
+      }
+      return [event, ...prev.slice(0, 9)];
+    });
   };
   
   // Show confetti when winners are announced
@@ -168,15 +137,6 @@ const Overlay = () => {
     }
   }, [round, playSound]);
   
-  // Auto-hide intro when game starts
-  useEffect(() => {
-    if (round !== GameRound.SETUP && showIntro && !introFinished && !manualIntroControl && !isStarting) {
-      // Auto-hide intro when game starts
-      setShowIntro(false);
-      setIntroFinished(true);
-    }
-  }, [round, showIntro, introFinished, manualIntroControl, isStarting]);
-  
   // Handle timer sounds
   useEffect(() => {
     if (timerRunning && timerSeconds <= 5 && timerSeconds > 0) {
@@ -206,17 +166,6 @@ const Overlay = () => {
       }
     }
   }, [activePlayerId, players]);
-  
-  // Helper function to add an event to the gameEvents list
-  const addGameEvent = (event: string) => {
-    setGameEvents(prev => {
-      // Only add the event if it's not a duplicate of the most recent one
-      if (prev.length > 0 && prev[0] === event) {
-        return prev;
-      }
-      return [event, ...prev.slice(0, 9)];
-    });
-  };
   
   // Get round name for transitions
   const getRoundName = () => {
@@ -250,17 +199,6 @@ const Overlay = () => {
   
   return (
     <OverlayContainer>
-      {/* Intro Screen */}
-      <IntroScreen 
-        show={showIntro || isStarting} 
-        onFinished={handleIntroFinished}
-        primaryColor={primaryColor}
-        secondaryColor={secondaryColor}
-        autoplay={true}
-        onStartClick={handleStartClick} 
-        isStarting={isStarting}
-      />
-      
       {/* Round transition overlay */}
       <RoundTransition 
         show={showRoundTransition}
@@ -269,25 +207,23 @@ const Overlay = () => {
         secondaryColor={secondaryColor}
       />
       
-      {/* Main overlay grid layout with animated entrance */}
-      <AnimatePresence>
-        {!showIntro && !isStarting && (
-          <GameGrid 
-            activePlayers={activePlayers}
-            maxPlayers={maxPlayers}
-            round={round}
-            hostCameraUrl={hostCameraUrl}
-            activePlayerId={activePlayerId}
-            lastActivePlayer={lastActivePlayer}
-            latestPoints={latestPoints}
-          />
-        )}
-      </AnimatePresence>
+      {/* Main overlay grid layout */}
+      <GameGrid 
+        activePlayers={activePlayers}
+        maxPlayers={maxPlayers}
+        round={round}
+        hostCameraUrl={hostCameraUrl}
+        activePlayerId={activePlayerId}
+        lastActivePlayer={lastActivePlayer}
+        latestPoints={latestPoints}
+      />
       
-      {/* Round indicator - visible only when not showing intro */}
-      {!showIntro && !isStarting && (
-        <RoundIndicator round={round} primaryColor={primaryColor} secondaryColor={secondaryColor} />
-      )}
+      {/* Round indicator */}
+      <RoundIndicator 
+        round={round} 
+        primaryColor={primaryColor} 
+        secondaryColor={secondaryColor} 
+      />
       
       {/* Winner display */}
       <WinnerDisplay 
@@ -303,9 +239,7 @@ const Overlay = () => {
       />
       
       {/* Info Bar */}
-      {!showIntro && !isStarting && (
-        <InfoBar events={gameEvents} />
-      )}
+      <InfoBar events={gameEvents} />
     </OverlayContainer>
   );
 };

@@ -9,11 +9,7 @@ const HomePage = () => {
   return (
     <div className="min-h-screen p-4 flex flex-col items-center justify-center"
       style={{
-        background: 'linear-gradient(to bottom, #1A1F2C 0%, #0A0A0F 100%)',
-        backgroundImage: `
-          radial-gradient(circle at top right, rgba(121, 68, 154, 0.2), transparent),
-          radial-gradient(circle at 20% 80%, rgba(41, 196, 255, 0.13), transparent)
-        `
+        background: 'linear-gradient(to bottom, #1A1F2C 0%, #0A0A0F 100%)'
       }}
     >
       <div className="max-w-4xl w-full">
@@ -34,15 +30,16 @@ const HomePage = () => {
               className="h-32 mx-auto"
             />
           </div>
-          <h1 className="text-4xl font-bold mt-4 text-transparent bg-clip-text bg-gradient-to-r from-green-500 via-blue-500 to-pink-500">
-            Discord Game Show
+          <h1 className="text-4xl font-bold mt-4">
+            <span className="text-[#39FF14]">Discord</span>{' '}
+            <span className="text-[#FF00FF]">Game Show</span>
           </h1>
           <p className="mt-2 text-white/80">
             Panel zarządzania turniejem dla prowadzącego i uczestników
           </p>
         </div>
 
-        <div className="neon-card mb-8">
+        <div className="bg-black/30 p-6 rounded-lg border border-white/10 mb-8">
           <h2 className="text-2xl font-bold mb-4 text-white">Witaj w panelu prowadzącego!</h2>
           <p className="text-white/80 mb-4">
             Wybierz jedną z poniższych opcji, aby kontynuować:
@@ -51,8 +48,8 @@ const HomePage = () => {
           <EnhancedNavigation />
         </div>
         
-        <div className="neon-card">
-          <h2 className="text-xl font-bold mb-2 text-neon-blue">Krótka instrukcja:</h2>
+        <div className="bg-black/30 p-6 rounded-lg border border-white/10">
+          <h2 className="text-xl font-bold mb-2 text-[#39FF14]">Krótka instrukcja:</h2>
           <ul className="list-disc list-inside text-white/80 space-y-1">
             <li>Panel Hosta - zarządzanie grą, graczami i pytaniami</li>
             <li>Nakładka OBS - widok dla widzów, można podłączyć jako źródło w OBS</li>
