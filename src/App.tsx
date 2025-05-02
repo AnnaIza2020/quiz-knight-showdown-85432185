@@ -13,6 +13,8 @@ import HostPanel from "./pages/HostPanel";
 import UnifiedHostPanel from "./components/UnifiedHostPanel";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import PlayerView from "./pages/PlayerView";
+import Rules from "./pages/Rules";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +33,8 @@ const App = () => (
             <Route path="/hostpanel" element={<HostPanel />} />
             <Route path="/unified-host" element={<UnifiedHostPanel />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/player/:playerId" element={<PlayerView />} />
+            <Route path="/rules" element={<Rules />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
