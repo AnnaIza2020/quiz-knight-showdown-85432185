@@ -3,7 +3,7 @@ import { useRef } from 'react';
 
 export type SoundEffect = 
   'success' | 'fail' | 'bonus' | 'round-start' | 
-  'eliminate' | 'victory' | 'timeout' | 'wheel-spin';
+  'eliminate' | 'victory' | 'timeout' | 'wheel-spin' | 'card-reveal';
 
 type SoundOptions = {
   enabled: boolean;
@@ -19,7 +19,8 @@ const soundPaths: Record<SoundEffect, string> = {
   'eliminate': '/sounds/eliminate.mp3',
   'victory': '/sounds/victory.mp3',
   'timeout': '/sounds/timeout.mp3',
-  'wheel-spin': '/sounds/wheel-spin.mp3'
+  'wheel-spin': '/sounds/wheel-spin.mp3',
+  'card-reveal': '/sounds/card-reveal.mp3'
 };
 
 export const useSoundEffects = (options: SoundOptions = { enabled: true }) => {
@@ -31,7 +32,8 @@ export const useSoundEffects = (options: SoundOptions = { enabled: true }) => {
     'eliminate': null,
     'victory': null,
     'timeout': null,
-    'wheel-spin': null
+    'wheel-spin': null,
+    'card-reveal': null
   });
 
   // Preload sounds if enabled

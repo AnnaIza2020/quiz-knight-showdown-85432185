@@ -125,6 +125,7 @@ export interface GameContextType {
   
   // Sound effects
   playSound: (sound: SoundEffect, volume?: number) => void;
+  setEnabled: (enabled: boolean) => void;
   
   // Data persistence methods
   loadGameData: () => void;

@@ -80,7 +80,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   } = useGameLogic(players, setPlayers, setRound, setWinnerIds);
 
   // Initialize sound effects
-  const { playSound } = useSoundEffects({ 
+  const { playSound, setEnabled: setSoundsEnabled } = useSoundEffects({ 
     enabled: true 
   });
   
@@ -186,6 +186,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     
     // Sound effects
     playSound,
+    setEnabled: setSoundsEnabled,
     
     // Data persistence methods
     loadGameData,
