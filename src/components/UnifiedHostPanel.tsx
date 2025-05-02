@@ -30,6 +30,7 @@ const UnifiedHostPanel = () => {
     "Przygotowanie do gry rozpoczęte"
   ]);
   const [availableEditions, setAvailableEditions] = useState<{name: string}[]>([]);
+  const [welcomeShown, setWelcomeShown] = useState(false);
   
   // Context and hooks
   const { 
@@ -65,9 +66,14 @@ const UnifiedHostPanel = () => {
   // Load game data on initial render
   useEffect(() => {
     loadGameData();
-    toast.success('Witaj w panelu prowadzącego!', {
-      description: 'Wybierz potrzebne narzędzia i rozpocznij grę',
-    });
+    
+    // Show welcome toast just once per session
+    if (!welcomeShown) {
+      toast.success('Witaj w panelu prowadzącego!', {
+        description: 'Wybierz potrzebne narzędzia i rozpocznij grę',
+      });
+      setWelcomeShown(true);
+    }
     
     // Load available editions from Supabase
     const fetchEditions = async () => {
@@ -302,7 +308,7 @@ const UnifiedHostPanel = () => {
     <div ref={panelRef} className="min-h-screen bg-neon-background p-4 flex flex-col">
       {isIntroPlaying && (
         <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
-          <div className="text-5xl text-neon-pink animate-pulse font-bold">
+          <div className="text-5xl text-neon-pink font-bold">
             Quiz Knight Showdown
             <div className="text-2xl text-center mt-4 text-white">Rozpoczynamy...</div>
           </div>

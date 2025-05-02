@@ -5,8 +5,9 @@ import { GameRound } from '@/types/game-types';
 import Host from '@/pages/Host';
 import HostPanel from '@/pages/HostPanel';
 import { Button } from '@/components/ui/button';
-import { Maximize2, Minimize2, ExternalLink, Bell } from 'lucide-react';
+import { Maximize2, Minimize2, ExternalLink, Bell, X } from 'lucide-react';
 import EventsBar from '@/components/hostpanel/EventsBar';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface SwitchableHostPanelProps {
   view: 'classic' | 'modern';
@@ -15,6 +16,7 @@ interface SwitchableHostPanelProps {
 const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [events, setEvents] = useState<string[]>([]);
+  const [showWelcome, setShowWelcome] = useState(true);
   const { round, playSound } = useGameContext();
   
   // Generate friendly name for the current round
@@ -90,6 +92,22 @@ const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
 
   return (
     <div className="h-full flex flex-col">
+      {showWelcome && (
+        <Alert className="mb-4 relative">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute top-2 right-2 h-6 w-6"
+            onClick={() => setShowWelcome(false)}
+          >
+            <X size={16} />
+          </Button>
+          <AlertDescription>
+            Witaj w panelu prowadzącego Quiz Knight Showdown! Wybierz potrzebne narzędzia i rozpocznij grę.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="mb-4 flex justify-between items-center">
         <div>
           <span className={`text-lg font-semibold ${

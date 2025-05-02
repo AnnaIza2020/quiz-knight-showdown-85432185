@@ -24,11 +24,17 @@ const App = () => (
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/overlay" element={<Overlay />} />
-            <Route path="/host" element={<Navigate to="/unified-host" replace />} />
-            <Route path="/hostpanel" element={<Navigate to="/unified-host" replace />} />
             <Route path="/unified-host" element={<UnifiedHostPanel />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/player/:playerId" element={<PlayerView />} />
+            
+            {/* Redirect old routes */}
+            <Route path="/host" element={<Navigate to="/unified-host" replace />} />
+            <Route path="/hostpanel" element={<Navigate to="/unified-host" replace />} />
+            <Route path="/intro" element={<Navigate to="/" replace />} />
+            <Route path="/rules" element={<Navigate to="/" replace />} />
+            <Route path="/classic" element={<Navigate to="/unified-host" replace />} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
