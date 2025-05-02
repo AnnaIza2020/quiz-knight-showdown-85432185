@@ -38,6 +38,18 @@ export interface SpecialCard {
   name: string;
   description: string;
   iconName: string; // Lucide icon name
+  soundEffect?: SoundEffect;
+  animationStyle?: string;
+}
+
+// Define special card award condition
+export interface SpecialCardAwardRule {
+  id: string;
+  condition: string;
+  cardId: string;
+  roundType?: GameRound;
+  description: string;
+  isEnabled: boolean;
 }
 
 // Define round types
@@ -66,6 +78,10 @@ export interface GameContextType {
   secondaryColor: string;
   hostCameraUrl: string;
   
+  // Special cards
+  specialCards: SpecialCard[];
+  specialCardRules: SpecialCardAwardRule[];
+  
   // Methods
   setRound: (round: GameRound) => void;
   addPlayer: (player: Player) => void;
@@ -89,6 +105,16 @@ export interface GameContextType {
   checkRoundThreeEnd: () => boolean;
   resetGame: () => void;
   setWinnerIds: (winnerIds: string[]) => void;
+  
+  // Special cards methods
+  addSpecialCard: (card: SpecialCard) => void;
+  updateSpecialCard: (card: SpecialCard) => void;
+  removeSpecialCard: (cardId: string) => void;
+  addSpecialCardRule: (rule: SpecialCardAwardRule) => void;
+  updateSpecialCardRule: (rule: SpecialCardAwardRule) => void;
+  removeSpecialCardRule: (ruleId: string) => void;
+  giveCardToPlayer: (cardId: string, playerId: string) => void;
+  usePlayerCard: (cardId: string, playerId: string) => void;
   
   // Settings methods
   setGameLogo: (logoUrl: string | null) => void;

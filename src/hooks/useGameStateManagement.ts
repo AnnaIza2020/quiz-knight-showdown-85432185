@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { GameRound, Player, Category, Question } from '@/types/game-types';
+import { GameRound, Player, Category, Question, SpecialCard, SpecialCardAwardRule } from '@/types/game-types';
 
 export const useGameStateManagement = () => {
   // Game state
@@ -8,10 +8,14 @@ export const useGameStateManagement = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
-  const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
+  const [activePlayerId, setActivePlayer] = useState<string | null>(null);
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(5);
   const [winnerIds, setWinnerIds] = useState<string[]>([]);
+  
+  // Special cards
+  const [specialCards, setSpecialCards] = useState<SpecialCard[]>([]);
+  const [specialCardRules, setSpecialCardRules] = useState<SpecialCardAwardRule[]>([]);
   
   // Game settings
   const [gameLogo, setGameLogo] = useState<string | null>(null);
@@ -68,8 +72,8 @@ export const useGameStateManagement = () => {
   };
 
   // Player active status
-  const setActivePlayer = (playerId: string | null) => {
-    setActivePlayerId(playerId);
+  const setActivePlayerId = (playerId: string | null) => {
+    setActivePlayer(playerId);
   };
 
   // Load game data from localStorage if available
@@ -83,6 +87,16 @@ export const useGameStateManagement = () => {
       const savedCategories = localStorage.getItem('gameShowCategories');
       if (savedCategories) {
         setCategories(JSON.parse(savedCategories));
+      }
+      
+      const savedSpecialCards = localStorage.getItem('gameShowSpecialCards');
+      if (savedSpecialCards) {
+        setSpecialCards(JSON.parse(savedSpecialCards));
+      }
+      
+      const savedSpecialCardRules = localStorage.getItem('gameShowSpecialCardRules');
+      if (savedSpecialCardRules) {
+        setSpecialCardRules(JSON.parse(savedSpecialCardRules));
       }
 
       const savedSettings = localStorage.getItem('gameShowSettings');
@@ -103,6 +117,8 @@ export const useGameStateManagement = () => {
     try {
       localStorage.setItem('gameShowPlayers', JSON.stringify(players));
       localStorage.setItem('gameShowCategories', JSON.stringify(categories));
+      localStorage.setItem('gameShowSpecialCards', JSON.stringify(specialCards));
+      localStorage.setItem('gameShowSpecialCardRules', JSON.stringify(specialCardRules));
       localStorage.setItem('gameShowSettings', JSON.stringify({
         primaryColor,
         secondaryColor,
@@ -138,6 +154,10 @@ export const useGameStateManagement = () => {
     setSecondaryColor,
     hostCameraUrl,
     setHostCameraUrl,
+    specialCards,
+    setSpecialCards,
+    specialCardRules,
+    setSpecialCardRules,
     
     // Methods
     addPlayer,
@@ -146,7 +166,7 @@ export const useGameStateManagement = () => {
     addCategory,
     removeCategory,
     selectQuestion,
-    setActivePlayer,
+    setActivePlayer: setActivePlayerId,
     startTimer,
     stopTimer,
     loadGameData,

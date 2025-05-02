@@ -1,9 +1,10 @@
 
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
-import { GameContextType, GameRound } from '@/types/game-types';
+import { GameContextType, GameRound, SpecialCard, SpecialCardAwardRule } from '@/types/game-types';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
+import { useSpecialCards } from '@/hooks/useSpecialCards';
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
@@ -47,6 +48,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     setSecondaryColor,
     hostCameraUrl,
     setHostCameraUrl,
+    specialCards,
+    setSpecialCards,
+    specialCardRules,
+    setSpecialCardRules,
     
     // Methods
     addPlayer,
@@ -78,6 +83,18 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const { playSound } = useSoundEffects({ 
     enabled: true 
   });
+  
+  // Special cards management
+  const {
+    addSpecialCard,
+    updateSpecialCard,
+    removeSpecialCard,
+    addSpecialCardRule,
+    updateSpecialCardRule,
+    removeSpecialCardRule,
+    giveCardToPlayer,
+    usePlayerCard,
+  } = useSpecialCards(players, setPlayers, specialCards, setSpecialCards, specialCardRules, setSpecialCardRules, playSound);
 
   // Timer effect
   useEffect(() => {
@@ -108,7 +125,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   // Automatically save game data when important state changes
   useEffect(() => {
     saveGameData();
-  }, [players, round, activePlayerId, winnerIds, saveGameData]);
+  }, [players, round, activePlayerId, winnerIds, specialCards, specialCardRules, saveGameData]);
 
   const value: GameContextType = {
     // State
@@ -124,6 +141,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     primaryColor,
     secondaryColor,
     hostCameraUrl,
+    specialCards,
+    specialCardRules,
     
     // Methods
     setRound,
@@ -148,6 +167,18 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     checkRoundThreeEnd,
     resetGame,
     setWinnerIds,
+    
+    // Special cards methods
+    addSpecialCard,
+    updateSpecialCard,
+    removeSpecialCard,
+    addSpecialCardRule,
+    updateSpecialCardRule,
+    removeSpecialCardRule,
+    giveCardToPlayer,
+    usePlayerCard,
+    
+    // Settings methods
     setGameLogo,
     setPrimaryColor,
     setSecondaryColor,
