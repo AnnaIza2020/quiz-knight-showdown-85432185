@@ -1,66 +1,62 @@
 
-import React, { useEffect, useState } from 'react';
-import { useGameContext } from '@/context/GameContext';
-import Confetti from 'react-confetti';
-import useWindowSize from '@/hooks/useWindowSize';
+import React, { useState, useEffect } from 'react';
+import ReactConfetti from 'react-confetti';
 
 interface ConfettiEffectProps {
   show: boolean;
-  primaryColor?: string;
-  secondaryColor?: string;
+  primaryColor: string;
+  secondaryColor: string;
+  duration?: number;
 }
 
-const ConfettiEffect: React.FC<ConfettiEffectProps> = ({ 
-  show, 
-  primaryColor: propsPrimaryColor, 
-  secondaryColor: propsSecondaryColor 
+const ConfettiEffect: React.FC<ConfettiEffectProps> = ({
+  show,
+  primaryColor,
+  secondaryColor,
+  duration = 10000
 }) => {
-  const { primaryColor: contextPrimaryColor, secondaryColor: contextSecondaryColor } = useGameContext();
-  const { width, height } = useWindowSize();
-  const [isActive, setIsActive] = useState(false);
-  const [confettiPieces, setConfettiPieces] = useState(200);
-  
-  // Use props colors if provided, otherwise use context colors
-  const primaryColor = propsPrimaryColor || contextPrimaryColor || '#ff00ff';
-  const secondaryColor = propsSecondaryColor || contextSecondaryColor || '#00ffff';
+  const [windowDimension, setWindowDimension] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  });
+  const [showConfetti, setShowConfetti] = useState(false);
   
   useEffect(() => {
     if (show) {
-      setIsActive(true);
-      // Gradually reduce the number of confetti pieces
-      const timer = setTimeout(() => {
-        setConfettiPieces(50); // reduce confetti after 5 seconds
-        
-        // Stop confetti after 10 seconds
-        const stopTimer = setTimeout(() => {
-          setConfettiPieces(0);
-          setTimeout(() => setIsActive(false), 2000); // Allow remaining pieces to fall
-        }, 5000);
-        
-        return () => clearTimeout(stopTimer);
-      }, 5000);
+      setShowConfetti(true);
       
-      return () => clearTimeout(timer);
-    } else {
-      setIsActive(false);
+      const timeout = setTimeout(() => {
+        setShowConfetti(false);
+      }, duration);
+      
+      return () => clearTimeout(timeout);
     }
-  }, [show]);
+  }, [show, duration]);
   
-  if (!isActive) return null;
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowDimension({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+  
+  if (!showConfetti) return null;
   
   return (
-    <Confetti
-      width={width}
-      height={height}
-      numberOfPieces={confettiPieces}
+    <ReactConfetti
+      width={windowDimension.width}
+      height={windowDimension.height}
+      numberOfPieces={500}
       recycle={false}
-      colors={[
-        primaryColor,
-        secondaryColor,
-        '#ffffff',
-        '#ffff00',
-        '#00ffff',
-      ]}
+      colors={[primaryColor, secondaryColor, '#ffffff', '#ffff00']}
     />
   );
 };

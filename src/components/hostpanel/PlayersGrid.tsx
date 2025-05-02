@@ -1,47 +1,66 @@
 
 import React from 'react';
 import { Player } from '@/types/game-types';
-import PlayerCardWithControls from './PlayerCardWithControls';
+import PlayerCard from '../PlayerCard';
+import { useGameContext } from '@/context/GameContext';
 
 interface PlayersGridProps {
   activePlayers: Player[];
+  gridSize?: number;
 }
 
-const PlayersGrid = ({ activePlayers }: PlayersGridProps) => {
-  // Split players into two rows
-  const topRowPlayers = activePlayers.slice(0, 5);
-  const bottomRowPlayers = activePlayers.slice(5, 10);
-
+const PlayersGrid: React.FC<PlayersGridProps> = ({
+  activePlayers,
+  gridSize = 10
+}) => {
+  const { activePlayerId, setActivePlayer } = useGameContext();
+  
+  // Handle player selection for host
+  const handlePlayerClick = (playerId: string) => {
+    if (activePlayerId === playerId) {
+      setActivePlayer(null);
+    } else {
+      setActivePlayer(playerId);
+    }
+  };
+  
+  // Calculate number of rows based on the number of players
+  const getGridColsClass = () => {
+    if (activePlayers.length <= 5) return 'grid-cols-5';
+    if (activePlayers.length <= 8) return 'grid-cols-4';
+    return 'grid-cols-5';
+  };
+  
   return (
-    <>
-      {/* Top row of players */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
-        {topRowPlayers.map(player => (
-          <PlayerCardWithControls key={player.id} player={player} />
-        ))}
-        
-        {/* Fill with empty slots if less than 5 players */}
-        {Array.from({ length: Math.max(0, 5 - topRowPlayers.length) }).map((_, i) => (
-          <div key={`empty-top-${i}`} className="h-36 rounded-lg border border-white/10 bg-black/30 flex items-center justify-center text-white/30">
-            Slot {topRowPlayers.length + i + 1}
-          </div>
-        ))}
-      </div>
+    <div className={`grid ${getGridColsClass()} gap-4`}>
+      {activePlayers.map((player) => (
+        <div
+          key={player.id}
+          className="cursor-pointer transform transition-transform hover:scale-105"
+          onClick={() => handlePlayerClick(player.id)}
+        >
+          <PlayerCard 
+            player={{
+              ...player,
+              isActive: player.id === activePlayerId
+            }}
+            size="sm"
+          />
+        </div>
+      ))}
       
-      {/* Bottom row of players */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        {bottomRowPlayers.map(player => (
-          <PlayerCardWithControls key={player.id} player={player} />
-        ))}
-        
-        {/* Fill with empty slots if less than 5 players */}
-        {Array.from({ length: Math.max(0, 5 - bottomRowPlayers.length) }).map((_, i) => (
-          <div key={`empty-bottom-${i}`} className="h-36 rounded-lg border border-white/10 bg-black/30 flex items-center justify-center text-white/30">
-            Slot {5 + bottomRowPlayers.length + i + 1}
+      {/* Empty slots for visually maintaining grid */}
+      {activePlayers.length < gridSize && (
+        Array.from({ length: gridSize - activePlayers.length }).map((_, i) => (
+          <div 
+            key={`empty-${i}`}
+            className="h-28 rounded-md border border-white/10 bg-black/20 flex items-center justify-center"
+          >
+            <span className="text-xs text-white/30">Brak gracza</span>
           </div>
-        ))}
-      </div>
-    </>
+        ))
+      )}
+    </div>
   );
 };
 

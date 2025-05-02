@@ -1,150 +1,169 @@
 
 import React, { useState } from 'react';
 import { useGameContext } from '@/context/GameContext';
-import { Button } from '@/components/ui/button';
+import { Save, Upload, Download, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Save, Download, Upload } from 'lucide-react';
 
-const GameSaveManager: React.FC = () => {
-  const { saveGameData, loadGameData, players, categories } = useGameContext();
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSave = () => {
-    setIsSaving(true);
+const GameSaveManager = () => {
+  const { saveGameData, loadGameData, resetGame } = useGameContext();
+  const [saveGameName, setSaveGameName] = useState('gameshow_save');
+  
+  // Handle saving game to file
+  const handleExportGame = () => {
     try {
-      saveGameData();
-      toast.success('Gra została zapisana');
-    } catch (error) {
-      console.error('Błąd podczas zapisywania gry:', error);
-      toast.error('Nie udało się zapisać gry');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleLoad = () => {
-    setIsLoading(true);
-    try {
-      loadGameData();
-      toast.success('Gra została wczytana');
-    } catch (error) {
-      console.error('Błąd podczas wczytywania gry:', error);
-      toast.error('Nie udało się wczytać gry');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleExport = () => {
-    try {
-      // Przygotuj dane do eksportu
-      const gameData = {
-        players,
-        categories,
+      // Get data from localStorage
+      const players = localStorage.getItem('gameShowPlayers');
+      const categories = localStorage.getItem('gameShowCategories');
+      const specialCards = localStorage.getItem('gameShowSpecialCards');
+      const specialCardRules = localStorage.getItem('gameShowSpecialCardRules');
+      const settings = localStorage.getItem('gameShowSettings');
+      
+      // Create export data
+      const exportData = {
+        players: players ? JSON.parse(players) : [],
+        categories: categories ? JSON.parse(categories) : [],
+        specialCards: specialCards ? JSON.parse(specialCards) : [],
+        specialCardRules: specialCardRules ? JSON.parse(specialCardRules) : [],
+        settings: settings ? JSON.parse(settings) : {},
         exportDate: new Date().toISOString(),
+        version: '1.0.0'
       };
-
-      // Utwórz plik JSON do pobrania
-      const dataStr = JSON.stringify(gameData, null, 2);
+      
+      // Convert to JSON and create download
+      const dataStr = JSON.stringify(exportData, null, 2);
       const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      
-      // Utwórz link do pobrania pliku
       const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `quiz-game-export-${new Date().toISOString().slice(0, 10)}.json`;
       
-      // Symuluj kliknięcie w link
-      document.body.appendChild(link);
-      link.click();
+      // Create download link
+      const downloadLink = document.createElement('a');
+      downloadLink.href = url;
+      downloadLink.download = `${saveGameName}_${new Date().toLocaleDateString('pl-PL').replace(/\./g, '-')}.json`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
       
-      // Usuń link
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      toast.success('Dane gry zostały wyeksportowane');
+      toast.success('Gra została wyeksportowana');
     } catch (error) {
-      console.error('Błąd podczas eksportu danych:', error);
-      toast.error('Nie udało się wyeksportować danych gry');
+      console.error('Błąd podczas eksportu gry:', error);
+      toast.error('Błąd podczas eksportu gry');
     }
   };
-
-  const handleImport = () => {
-    try {
-      // Utwórz input typu file
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'application/json';
+  
+  // Handle importing game from file
+  const handleImportGame = () => {
+    // Create file input
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
+    
+    fileInput.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
       
-      input.onchange = (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            const content = event.target?.result as string;
-            const gameData = JSON.parse(content);
-            
-            // TODO: Implementacja importu danych
-            console.log('Zaimportowane dane:', gameData);
-            toast.success('Dane zostały zaimportowane');
-            
-            // Odśwież komponenty
-            loadGameData();
-          } catch (error) {
-            console.error('Błąd podczas parsowania pliku JSON:', error);
-            toast.error('Nieprawidłowy format pliku');
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const importData = JSON.parse(event.target?.result as string);
+          
+          // Validate import data
+          if (!importData.players || !importData.categories) {
+            throw new Error('Nieprawidłowy format pliku');
           }
-        };
-        
-        reader.readAsText(file);
+          
+          // Save to localStorage
+          if (importData.players) localStorage.setItem('gameShowPlayers', JSON.stringify(importData.players));
+          if (importData.categories) localStorage.setItem('gameShowCategories', JSON.stringify(importData.categories));
+          if (importData.specialCards) localStorage.setItem('gameShowSpecialCards', JSON.stringify(importData.specialCards));
+          if (importData.specialCardRules) localStorage.setItem('gameShowSpecialCardRules', JSON.stringify(importData.specialCardRules));
+          if (importData.settings) localStorage.setItem('gameShowSettings', JSON.stringify(importData.settings));
+          
+          // Reload game data
+          loadGameData();
+          
+          toast.success('Gra została pomyślnie zaimportowana');
+        } catch (error) {
+          console.error('Błąd podczas importu gry:', error);
+          toast.error('Nieprawidłowy format pliku');
+        }
       };
-      
-      // Symuluj kliknięcie w input
-      document.body.appendChild(input);
-      input.click();
-      document.body.removeChild(input);
-    } catch (error) {
-      console.error('Błąd podczas importu danych:', error);
-      toast.error('Nie udało się zaimportować danych');
-    }
+      reader.readAsText(file);
+    };
+    
+    fileInput.click();
   };
-
+  
+  // Handle saving game
+  const handleSaveGame = () => {
+    saveGameData();
+    toast.success('Stan gry zapisany');
+  };
+  
+  // Handle loading saved game
+  const handleLoadGame = () => {
+    loadGameData();
+    toast.success('Stan gry wczytany');
+  };
+  
   return (
-    <div className="flex justify-end gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleSave}
-        disabled={isSaving}
-        className="bg-black/40 border-white/30 text-white/80 hover:bg-white/10 hover:text-white"
-      >
-        <Save size={14} className="mr-1" />
-        {isSaving ? 'Zapisywanie...' : 'Zapisz grę'}
-      </Button>
+    <div className="bg-black/50 p-4 rounded-lg border border-white/10">
+      <h3 className="text-lg font-semibold mb-3 text-white">Zapis/Odczyt Gry</h3>
       
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleLoad}
-        disabled={isLoading}
-        className="bg-black/40 border-white/30 text-white/80 hover:bg-white/10 hover:text-white"
-      >
-        <Download size={14} className="mr-1" />
-        {isLoading ? 'Wczytywanie...' : 'Wczytaj grę'}
-      </Button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <button
+          onClick={handleSaveGame}
+          className="flex items-center justify-center bg-black border border-neon-blue text-white py-2 px-3 rounded hover:bg-neon-blue/10"
+        >
+          <Save className="h-4 w-4 mr-2" />
+          Zapisz stan
+        </button>
+        
+        <button
+          onClick={handleLoadGame}
+          className="flex items-center justify-center bg-black border border-neon-green text-white py-2 px-3 rounded hover:bg-neon-green/10"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Wczytaj stan
+        </button>
+        
+        <button
+          onClick={handleExportGame}
+          className="flex items-center justify-center bg-black border border-neon-yellow text-white py-2 px-3 rounded hover:bg-neon-yellow/10"
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          Eksportuj
+        </button>
+        
+        <button
+          onClick={handleImportGame}
+          className="flex items-center justify-center bg-black border border-neon-purple text-white py-2 px-3 rounded hover:bg-neon-purple/10"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Importuj
+        </button>
+      </div>
       
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleExport}
-        className="bg-black/40 border-white/30 text-white/80 hover:bg-white/10 hover:text-white"
+      <div className="mt-3">
+        <input
+          type="text"
+          value={saveGameName}
+          onChange={(e) => setSaveGameName(e.target.value)}
+          placeholder="Nazwa pliku"
+          className="w-full p-2 rounded bg-black/30 border border-white/20 text-white"
+        />
+      </div>
+      
+      <button
+        onClick={() => {
+          if (window.confirm('Czy na pewno chcesz zresetować grę? Wszystkie dane zostaną utracone!')) {
+            resetGame();
+            toast.info('Gra została zresetowana');
+          }
+        }}
+        className="mt-3 w-full flex items-center justify-center bg-black border border-neon-red text-neon-red py-2 px-3 rounded hover:bg-neon-red/10"
       >
-        <Upload size={14} className="mr-1" />
-        Eksport JSON
-      </Button>
+        <Trash2 className="h-4 w-4 mr-2" />
+        Resetuj grę
+      </button>
     </div>
   );
 };

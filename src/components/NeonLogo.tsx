@@ -1,79 +1,76 @@
-
 import React from 'react';
+import { cn } from "@/lib/utils";
 import { useGameContext } from '@/context/GameContext';
-import { cn } from '@/lib/utils';
 
 interface NeonLogoProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
-  showLogo?: boolean;
 }
 
-const NeonLogo: React.FC<NeonLogoProps> = ({ size = 'md', className, showLogo = true }) => {
+const NeonLogo: React.FC<NeonLogoProps> = ({
+  size = 'md',
+  className
+}) => {
   const { gameLogo, primaryColor, secondaryColor } = useGameContext();
   
-  // Określ rozmiar logo
+  // Determine size classes
   const sizeClasses = {
-    sm: 'h-8',
-    md: 'h-12',
-    lg: 'h-20'
-  };
-  
-  // Sprawdzamy, czy pokazujemy domyślne logo z przesłanego obrazu
-  if (showLogo) {
-    return (
-      <div className={cn('relative', className)}>
-        <img 
-          src="/lovable-uploads/0272188b-bb47-43fe-aff3-66734661c616.png"
-          alt="Discord Game Show Logo" 
-          className={cn(sizeClasses[size], 'object-contain')}
-        />
-      </div>
-    );
-  }
-  
-  // Jeśli mamy logo ustawione w kontekście, pokazujemy je
-  if (gameLogo) {
-    return (
-      <div className={cn('relative', className)}>
-        <img 
-          src={gameLogo} 
-          alt="Game Logo" 
-          className={cn(sizeClasses[size], 'object-contain')}
-        />
-      </div>
-    );
-  }
-  
-  // W przeciwnym razie pokazujemy domyślne neonowe logo tekstowe
-  const defaultTitle = "Discord Game Show";
-  
-  // Styl neonowego tekstu - wykorzystuje kolory z kontekstu gry
-  const neonTextStyle = {
-    textShadow: `
-      0 0 5px ${primaryColor || '#ff00ff'},
-      0 0 10px ${primaryColor || '#ff00ff'},
-      0 0 20px ${primaryColor || '#ff00ff'},
-      0 0 40px ${secondaryColor || '#00ffff'},
-      0 0 80px ${secondaryColor || '#00ffff'}
-    `,
-    color: 'white'
-  };
-  
-  const fontSizeClasses = {
     sm: 'text-xl',
     md: 'text-3xl',
     lg: 'text-5xl'
   };
   
+  // If logo URL is provided, render image
+  if (gameLogo) {
+    return (
+      <div className={cn(
+        'flex items-center justify-center',
+        className
+      )}>
+        <img 
+          src={gameLogo} 
+          alt="Game Show Logo" 
+          className={cn(
+            'max-h-24',
+            size === 'sm' ? 'max-h-12' : size === 'lg' ? 'max-h-32' : 'max-h-24'
+          )} 
+        />
+      </div>
+    );
+  }
+  
+  // Otherwise render text-based logo
   return (
-    <div className={cn('relative flex items-center', className)}>
+    <div className={cn(
+      'flex flex-col items-center justify-center',
+      className
+    )}>
       <h1 
-        className={cn('font-bold', fontSizeClasses[size])}
-        style={neonTextStyle}
+        className={cn(
+          sizeClasses[size],
+          'font-bold mb-1',
+          'animate-pulse'
+        )}
+        style={{ 
+          color: primaryColor,
+          textShadow: `0 0 5px ${primaryColor}, 0 0 10px ${primaryColor}, 0 0 15px ${primaryColor}, 0 0 20px ${secondaryColor}`
+        }}
       >
-        {defaultTitle}
+        DISCORD
       </h1>
+      <h2 
+        className={cn(
+          size === 'sm' ? 'text-xs' : size === 'md' ? 'text-sm' : 'text-lg',
+          'tracking-widest',
+          'animate-pulse'
+        )}
+        style={{ 
+          color: secondaryColor,
+          textShadow: `0 0 5px ${secondaryColor}, 0 0 10px ${secondaryColor}` 
+        }}
+      >
+        GAME SHOW
+      </h2>
     </div>
   );
 };

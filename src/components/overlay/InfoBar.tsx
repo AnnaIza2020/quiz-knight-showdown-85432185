@@ -1,50 +1,56 @@
 
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { cn } from "@/lib/utils";
 
 interface InfoBarProps {
   events: string[];
+  maxEvents?: number;
+  className?: string;
 }
 
-const InfoBar: React.FC<InfoBarProps> = ({ events }) => {
+const InfoBar: React.FC<InfoBarProps> = ({
+  events,
+  maxEvents = 5,
+  className
+}) => {
   const [visibleEvent, setVisibleEvent] = useState<string | null>(null);
-  const [eventIndex, setEventIndex] = useState(0);
+  const [index, setIndex] = useState(0);
   
-  // Automatycznie zmieniaj wyświetlane wydarzenia
+  // Rotate through events
   useEffect(() => {
     if (events.length === 0) return;
     
-    // Pokaż pierwsze wydarzenie na starcie
+    // Show first event immediately
     setVisibleEvent(events[0]);
     
-    // Ustal interwał rotacji wydarzeń
     const interval = setInterval(() => {
-      setEventIndex(prevIndex => {
-        const newIndex = (prevIndex + 1) % events.length;
+      setIndex(prevIndex => {
+        const newIndex = (prevIndex + 1) % Math.min(events.length, maxEvents);
         setVisibleEvent(events[newIndex]);
         return newIndex;
       });
-    }, 5000); // Zmiana co 5 sekund
+    }, 5000);
     
     return () => clearInterval(interval);
-  }, [events]);
+  }, [events, maxEvents]);
   
   if (!visibleEvent) return null;
   
   return (
-    <div className="absolute bottom-0 left-0 right-0 p-4">
-      <AnimatePresence mode="wait">
-        <motion.div 
-          key={visibleEvent}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.5 }}
-          className="bg-black/50 backdrop-blur-md border border-white/10 rounded-md p-2 px-4"
-        >
-          <p className="text-white text-lg">{visibleEvent}</p>
-        </motion.div>
-      </AnimatePresence>
+    <div 
+      className={cn(
+        'absolute bottom-4 left-1/2 transform -translate-x-1/2',
+        'px-6 py-2 rounded-full',
+        'bg-black/70 border border-white/20',
+        'max-w-2xl w-full text-center',
+        'backdrop-blur-sm',
+        'animate-fade-in',
+        className
+      )}
+    >
+      <p className="text-white truncate">
+        {visibleEvent}
+      </p>
     </div>
   );
 };

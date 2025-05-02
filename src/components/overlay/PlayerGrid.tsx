@@ -1,43 +1,65 @@
 
 import React from 'react';
 import { Player } from '@/types/game-types';
+import { cn } from "@/lib/utils";
 import PlayerCard from '@/components/PlayerCard';
 
 interface PlayerGridProps {
   players: Player[];
-  maxPlayers?: number;
+  maxPlayers: number;
   position: 'top' | 'bottom';
   activePlayerId: string | null;
+  className?: string;
 }
 
-const PlayerGrid: React.FC<PlayerGridProps> = ({ 
-  players, 
-  maxPlayers = 5,
+const PlayerGrid: React.FC<PlayerGridProps> = ({
+  players,
+  maxPlayers,
   position,
-  activePlayerId
+  activePlayerId,
+  className
 }) => {
-  // Limit players to maxPlayers and determine which slice to show based on position
-  const slicedPlayers = players.slice(0, maxPlayers); // For top players
+  // Determine which players to show based on position
+  const halfMax = Math.ceil(maxPlayers / 2);
+  let displayPlayers: Player[] = [];
+  
+  if (position === 'top') {
+    // First half of players
+    displayPlayers = players.slice(0, halfMax);
+  } else {
+    // Second half of players
+    displayPlayers = players.slice(halfMax, maxPlayers);
+  }
+  
+  // Fill with empty slots if not enough players
+  const emptySlots = Math.max(0, (position === 'top' ? halfMax : maxPlayers - halfMax) - displayPlayers.length);
   
   return (
-    <div className={`grid grid-cols-5 gap-4 ${position === 'bottom' ? 'order-2' : 'order-0'}`}>
-      {slicedPlayers.map((player) => (
+    <div className={cn(
+      'grid grid-cols-5 gap-4',
+      className
+    )}>
+      {displayPlayers.map((player) => (
         <PlayerCard 
-          key={player.id}
+          key={player.id} 
           player={{
             ...player,
             isActive: player.id === activePlayerId
           }}
           size="md"
+          showHealthBar={true}
+          showLives={true}
         />
       ))}
       
-      {/* Fill empty slots with placeholders */}
-      {Array.from({ length: Math.max(0, maxPlayers - slicedPlayers.length) }).map((_, index) => (
+      {/* Empty slots */}
+      {Array.from({ length: emptySlots }).map((_, i) => (
         <div 
-          key={`empty-${index}`}
-          className="h-36 rounded-md border-2 border-white/10 bg-black/20 backdrop-blur-sm"
-        />
+          key={`empty-${i}`} 
+          className="h-36 rounded-md border border-white/10 bg-black/20 flex items-center justify-center"
+        >
+          <span className="text-xs text-white/30">Brak gracza</span>
+        </div>
       ))}
     </div>
   );

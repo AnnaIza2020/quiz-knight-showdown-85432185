@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
-import { Timer, Play, Square, RotateCcw, ChevronDown } from 'lucide-react';
+import React from 'react';
+import { Clock, FastForward, Play, Square, Timer } from 'lucide-react';
 import { GameRound } from '@/types/game-types';
-import { cn } from '@/lib/utils';
+import CountdownTimer from '../CountdownTimer';
 
 interface TopBarProps {
   round: GameRound;
@@ -11,101 +11,134 @@ interface TopBarProps {
   handleAdvanceToRound: (round: GameRound) => void;
 }
 
-const TopBar = ({ round, handleStartTimer, stopTimer, handleAdvanceToRound }: TopBarProps) => {
-  const [showRoundMenu, setShowRoundMenu] = useState(false);
-
+const TopBar: React.FC<TopBarProps> = ({
+  round,
+  handleStartTimer,
+  stopTimer,
+  handleAdvanceToRound
+}) => {
+  // Generate round name based on current round
   const getRoundName = () => {
     switch (round) {
+      case GameRound.SETUP:
+        return "Przygotowanie";
       case GameRound.ROUND_ONE:
-        return "RUNDA 1: WIEDZA Z POLSKIEGO INTERNETU";
+        return "Runda 1: Zróżnicowana Wiedza z Polskiego Internetu";
       case GameRound.ROUND_TWO:
-        return "RUNDA 2: 5 SEKUND";
+        return "Runda 2: 5 Sekund";
       case GameRound.ROUND_THREE:
-        return "RUNDA 3: KOŁO FORTUNY";
+        return "Runda 3: Koło Chaosu";
       case GameRound.FINISHED:
-        return "GRA ZAKOŃCZONA";
-      default:
-        return "PRZYGOTOWANIE GRY";
+        return "Gra Zakończona";
     }
   };
-
-  return (
-    <div className="bg-black/70 backdrop-blur-md p-4 rounded-lg border border-white/10 mb-4">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center">
-        <div className="mb-3 md:mb-0">
-          <h1 className="text-3xl font-bold text-center md:text-left">
-            <span className={cn(
-              'neon-text',
-              round === GameRound.ROUND_ONE ? 'text-neon-pink' :
-              round === GameRound.ROUND_TWO ? 'text-neon-blue' :
-              round === GameRound.ROUND_THREE ? 'text-neon-purple' : 'text-white'
-            )}>
-              {getRoundName()}
-            </span>
-          </h1>
-        </div>
-        
-        <div className="grid grid-cols-3 md:flex md:items-center gap-3">
-          {/* Timer Controls */}
-          <div className="flex items-center justify-center space-x-2 bg-black/50 p-2 rounded-md border border-neon-green/30">
-            <Timer className="text-neon-green" />
-            <span className="text-neon-green font-mono text-xl">30s</span>
-          </div>
-          
+  
+  // Determine which timer buttons to show based on the current round
+  const getTimerButtons = () => {
+    if (round === GameRound.ROUND_ONE) {
+      return (
+        <>
           <button
-            className="flex items-center justify-center p-2 bg-black border border-neon-green text-neon-green rounded-md hover:bg-neon-green/20"
             onClick={() => handleStartTimer(30)}
+            className="bg-black border border-neon-blue text-neon-blue hover:bg-neon-blue/10 py-2 px-3 rounded-md flex items-center"
           >
-            <Play size={18} className="mr-1" /> Start
+            <Timer className="h-4 w-4 mr-1" />
+            30s
           </button>
-          
           <button
-            className="flex items-center justify-center p-2 bg-black border border-neon-red text-neon-red rounded-md hover:bg-neon-red/20"
-            onClick={() => stopTimer()}
+            onClick={() => handleStartTimer(60)}
+            className="bg-black border border-neon-blue text-neon-blue hover:bg-neon-blue/10 py-2 px-3 rounded-md flex items-center"
           >
-            <Square size={18} className="mr-1" /> Stop
+            <Timer className="h-4 w-4 mr-1" />
+            60s
           </button>
-          
-          <button
-            className="flex items-center justify-center p-2 bg-black border border-white/30 text-white/70 rounded-md hover:bg-white/10"
-            onClick={() => handleStartTimer(30)} // Restart timer
-          >
-            <RotateCcw size={18} className="mr-1" /> Reset
-          </button>
-          
-          {/* Round Change Button */}
-          <div className="relative col-span-3 md:col-span-1">
-            <button 
-              className="w-full flex items-center justify-center p-2 bg-black border border-neon-blue text-neon-blue rounded-md hover:bg-neon-blue/20"
-              onClick={() => setShowRoundMenu(!showRoundMenu)}
-            >
-              Zmień rundę <ChevronDown size={18} className="ml-1" />
-            </button>
-            
-            {showRoundMenu && (
-              <div className="absolute w-full mt-1 bg-black border border-neon-blue/30 rounded-md shadow-lg z-10">
-                <button 
-                  className="w-full p-2 text-left hover:bg-neon-blue/20 text-neon-pink"
-                  onClick={() => handleAdvanceToRound(GameRound.ROUND_ONE)}
-                >
-                  Runda 1: Wiedza z Internetu
-                </button>
-                <button 
-                  className="w-full p-2 text-left hover:bg-neon-blue/20 text-neon-blue"
-                  onClick={() => handleAdvanceToRound(GameRound.ROUND_TWO)}
-                >
-                  Runda 2: 5 Sekund
-                </button>
-                <button 
-                  className="w-full p-2 text-left hover:bg-neon-blue/20 text-neon-purple"
-                  onClick={() => handleAdvanceToRound(GameRound.ROUND_THREE)}
-                >
-                  Runda 3: Koło Fortuny
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        </>
+      );
+    }
+    
+    if (round === GameRound.ROUND_TWO) {
+      return (
+        <button
+          onClick={() => handleStartTimer(5)}
+          className="bg-black border border-neon-yellow text-neon-yellow hover:bg-neon-yellow/10 py-2 px-3 rounded-md flex items-center"
+        >
+          <Play className="h-4 w-4 mr-1" />
+          5s
+        </button>
+      );
+    }
+    
+    if (round === GameRound.ROUND_THREE) {
+      return (
+        <button
+          onClick={() => handleStartTimer(30)}
+          className="bg-black border border-neon-purple text-neon-purple hover:bg-neon-purple/10 py-2 px-3 rounded-md flex items-center"
+        >
+          <Timer className="h-4 w-4 mr-1" />
+          30s
+        </button>
+      );
+    }
+    
+    return null;
+  };
+  
+  // Get the next round button if applicable
+  const getNextRoundButton = () => {
+    if (round === GameRound.ROUND_ONE) {
+      return (
+        <button
+          onClick={() => handleAdvanceToRound(GameRound.ROUND_TWO)}
+          className="bg-black border border-neon-green text-neon-green hover:bg-neon-green/10 py-2 px-3 rounded-md flex items-center"
+        >
+          <FastForward className="h-4 w-4 mr-1" />
+          Przejdź do Rundy 2
+        </button>
+      );
+    }
+    
+    if (round === GameRound.ROUND_TWO) {
+      return (
+        <button
+          onClick={() => handleAdvanceToRound(GameRound.ROUND_THREE)}
+          className="bg-black border border-neon-green text-neon-green hover:bg-neon-green/10 py-2 px-3 rounded-md flex items-center"
+        >
+          <FastForward className="h-4 w-4 mr-1" />
+          Przejdź do Rundy 3
+        </button>
+      );
+    }
+    
+    return null;
+  };
+  
+  return (
+    <div className="bg-black/70 backdrop-blur-md p-4 rounded-lg border border-white/10 mb-4 flex flex-wrap justify-between items-center gap-y-3">
+      {/* Left section - Round info */}
+      <div className="flex items-center">
+        <h1 className="text-2xl font-bold text-white mr-2">
+          {getRoundName()}
+        </h1>
+      </div>
+      
+      {/* Middle section - Timer */}
+      <div className="flex gap-2">
+        <CountdownTimer size="md" />
+      </div>
+      
+      {/* Right section - Actions */}
+      <div className="flex gap-2">
+        {getTimerButtons()}
+        
+        <button
+          onClick={stopTimer}
+          className="bg-black border border-neon-red text-neon-red hover:bg-neon-red/10 py-2 px-3 rounded-md flex items-center"
+        >
+          <Square className="h-4 w-4 mr-1" />
+          Stop
+        </button>
+        
+        {getNextRoundButton()}
       </div>
     </div>
   );
