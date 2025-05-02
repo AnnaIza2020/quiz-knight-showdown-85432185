@@ -1,18 +1,20 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { GameRound } from '@/types/game-types';
-import PlayerGrid from '@/components/overlay/PlayerGrid';
 import RoundIndicator from '@/components/overlay/RoundIndicator';
-import MiddleSection from '@/components/overlay/MiddleSection';
 import WinnerDisplay from '@/components/overlay/WinnerDisplay';
 import ConfettiEffect from '@/components/overlay/ConfettiEffect';
 import InfoBar from '@/components/overlay/InfoBar';
 import IntroScreen from '@/components/overlay/IntroScreen';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useFullscreen } from '@/hooks/useFullscreen';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
+
+// Import our new components
+import OverlayContainer from '@/components/overlay/OverlayContainer';
+import GameGrid from '@/components/overlay/GameGrid';
+import RoundTransition from '@/components/overlay/RoundTransition';
 
 const Overlay = () => {
   const { 
@@ -43,10 +45,6 @@ const Overlay = () => {
     useLocalStorage: true,
     defaultVolume: 0.7
   });
-  
-  // Refs for fullscreen and container
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { isFullscreen, enterFullscreen, exitFullscreen } = useFullscreen(containerRef);
   
   // Subscribe to game events from the host panel
   useSubscription<any>(
@@ -250,22 +248,9 @@ const Overlay = () => {
   // Get winners for display
   const winners = winnerIds.map(id => players.find(p => p.id === id)).filter(Boolean);
   
-  // Double-click handler for fullscreen
-  const handleDoubleClick = () => {
-    if (isFullscreen) {
-      exitFullscreen();
-    } else {
-      enterFullscreen();
-    }
-  };
-  
   return (
-    <div 
-      ref={containerRef}
-      className="w-full h-screen bg-neon-background overflow-hidden relative"
-      onDoubleClick={handleDoubleClick}
-    >
-      {/* Intro Screen - enhanced version with start button, narrator and transition */}
+    <OverlayContainer>
+      {/* Intro Screen */}
       <IntroScreen 
         show={showIntro || isStarting} 
         onFinished={handleIntroFinished}
@@ -276,110 +261,26 @@ const Overlay = () => {
         isStarting={isStarting}
       />
       
-      {/* Round transition overlay with improved animation */}
-      <AnimatePresence>
-        {showRoundTransition && (
-          <motion.div 
-            className="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ 
-                scale: [0.8, 1.1, 1],
-                opacity: 1
-              }}
-              exit={{ scale: 1.2, opacity: 0 }}
-              transition={{ 
-                duration: 0.7,
-                times: [0, 0.6, 1]
-              }}
-              className="text-center"
-            >
-              <motion.h1 
-                className="text-5xl font-bold mb-4" 
-                style={{ 
-                  color: primaryColor || '#ff00ff',
-                  textShadow: `0 0 10px ${primaryColor || '#ff00ff'}, 0 0 20px ${primaryColor || '#ff00ff'}`
-                }}
-                animate={{
-                  textShadow: [
-                    `0 0 10px ${primaryColor || '#ff00ff'}, 0 0 20px ${primaryColor || '#ff00ff'}`,
-                    `0 0 20px ${primaryColor || '#ff00ff'}, 0 0 35px ${primaryColor || '#ff00ff'}`,
-                    `0 0 10px ${primaryColor || '#ff00ff'}, 0 0 20px ${primaryColor || '#ff00ff'}`,
-                  ]
-                }}
-                transition={{
-                  duration: 1.5,
-                  repeat: 2,
-                  repeatType: 'reverse',
-                }}
-              >
-                {getRoundName()}
-              </motion.h1>
-              <motion.p 
-                className="text-white text-xl"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                Rozpoczynamy!
-              </motion.p>
-              
-              {/* Additional decorative elements for round transition */}
-              <motion.div
-                className="absolute inset-0 -z-10 opacity-30"
-                initial={{ scale: 0 }}
-                animate={{ scale: 2 }}
-                transition={{ duration: 2.5 }}
-              >
-                <div className="w-full h-full rounded-full"
-                  style={{ 
-                    background: `radial-gradient(circle, ${secondaryColor} 0%, transparent 70%)` 
-                  }}
-                />
-              </motion.div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Round transition overlay */}
+      <RoundTransition 
+        show={showRoundTransition}
+        round={round}
+        primaryColor={primaryColor}
+        secondaryColor={secondaryColor}
+      />
       
       {/* Main overlay grid layout with animated entrance */}
       <AnimatePresence>
         {!showIntro && !isStarting && (
-          <motion.div 
-            className="w-full h-full grid grid-rows-[1fr_auto_1fr] p-4 gap-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            {/* Top row with first 5 players */}
-            <PlayerGrid 
-              players={activePlayers} 
-              maxPlayers={maxPlayers} 
-              position="top" 
-              activePlayerId={activePlayerId}
-              lastActivePlayer={lastActivePlayer}
-              latestPoints={latestPoints}
-            />
-            
-            {/* Middle row with host camera and question board */}
-            <MiddleSection round={round} hostCameraUrl={hostCameraUrl} />
-            
-            {/* Bottom row with remaining 5 players */}
-            <PlayerGrid 
-              players={activePlayers} 
-              maxPlayers={maxPlayers} 
-              position="bottom" 
-              activePlayerId={activePlayerId}
-              lastActivePlayer={lastActivePlayer}
-              latestPoints={latestPoints}
-            />
-          </motion.div>
+          <GameGrid 
+            activePlayers={activePlayers}
+            maxPlayers={maxPlayers}
+            round={round}
+            hostCameraUrl={hostCameraUrl}
+            activePlayerId={activePlayerId}
+            lastActivePlayer={lastActivePlayer}
+            latestPoints={latestPoints}
+          />
         )}
       </AnimatePresence>
       
@@ -405,12 +306,7 @@ const Overlay = () => {
       {!showIntro && !isStarting && (
         <InfoBar events={gameEvents} />
       )}
-      
-      {/* Fullscreen instructions */}
-      <div className="absolute bottom-2 right-2 text-white/30 text-xs">
-        Double-click to toggle fullscreen
-      </div>
-    </div>
+    </OverlayContainer>
   );
 };
 
