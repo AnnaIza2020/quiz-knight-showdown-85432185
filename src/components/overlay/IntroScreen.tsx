@@ -27,8 +27,8 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
   show, 
   onFinished,
   autoplay = true,
-  primaryColor = '#ff00ff',
-  secondaryColor = '#39FF14',
+  primaryColor = '#39FF14', // Neon lime green for Discord
+  secondaryColor = '#FF00FF', // Magenta/fuschia for Game Show
   onStartClick,
   isStarting = false
 }) => {
@@ -64,7 +64,14 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
     <AnimatePresence>
       {show && (
         <motion.div 
-          className="fixed inset-0 bg-neon-background z-50 flex flex-col items-center justify-center overflow-hidden"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
+          style={{
+            background: 'linear-gradient(to bottom, #1A1F2C 0%, #0A0A0F 100%)',
+            backgroundImage: `
+              radial-gradient(circle at top right, rgba(121, 68, 154, 0.2), transparent),
+              radial-gradient(circle at 20% 80%, rgba(41, 196, 255, 0.13), transparent)
+            `
+          }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -110,27 +117,12 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
                 <>
                   <motion.button
                     onClick={() => handleNavigation('/unified-host')}
-                    className="neon-button px-6 py-3 text-lg rounded-lg"
+                    className="px-6 py-3 text-lg rounded-lg text-white border-2 transition-all duration-300"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    animate={{
-                      boxShadow: [
-                        `0 0 5px rgba(255,255,255,0.5), 0 0 10px ${secondaryColor}`,
-                        `0 0 10px rgba(255,255,255,0.7), 0 0 20px ${secondaryColor}`,
-                        `0 0 5px rgba(255,255,255,0.5), 0 0 10px ${secondaryColor}`
-                      ]
-                    }}
-                    transition={{
-                      boxShadow: {
-                        duration: 2,
-                        repeat: Infinity,
-                        repeatType: 'reverse',
-                      }
-                    }}
                     style={{ 
-                      backgroundColor: 'rgba(0,0,0,0.3)',
-                      borderColor: secondaryColor,
-                      color: secondaryColor
+                      backgroundColor: '#10B981', // Vivid green
+                      borderColor: '#059669', // Darker green
                     }}
                   >
                     Panel Hosta
@@ -138,27 +130,12 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
                   
                   <motion.button
                     onClick={() => handleNavigation('/player/demo')}
-                    className="neon-button px-6 py-3 text-lg rounded-lg"
+                    className="px-6 py-3 text-lg rounded-lg text-white border-2 transition-all duration-300"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    animate={{
-                      boxShadow: [
-                        `0 0 5px rgba(255,255,255,0.5), 0 0 10px #00FFFF`,
-                        `0 0 10px rgba(255,255,255,0.7), 0 0 20px #00FFFF`,
-                        `0 0 5px rgba(255,255,255,0.5), 0 0 10px #00FFFF`
-                      ]
-                    }}
-                    transition={{
-                      boxShadow: {
-                        duration: 2,
-                        repeat: Infinity,
-                        repeatType: 'reverse',
-                      }
-                    }}
                     style={{ 
-                      backgroundColor: 'rgba(0,0,0,0.3)',
-                      borderColor: '#00FFFF',
-                      color: '#00FFFF'
+                      backgroundColor: '#1F2937', // Dark graphite/anthracite
+                      borderColor: '#E5E7EB', // Light gray/white
                     }}
                   >
                     Widok Gracza

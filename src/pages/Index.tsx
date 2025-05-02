@@ -8,7 +8,16 @@ const HomePage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-neon-background p-4 flex flex-col items-center justify-center">
+    <div 
+      className="min-h-screen p-4 flex flex-col items-center justify-center"
+      style={{
+        background: 'linear-gradient(to bottom, #1A1F2C 0%, #0A0A0F 100%)',
+        backgroundImage: `
+          radial-gradient(circle at top right, rgba(121, 68, 154, 0.2), transparent),
+          radial-gradient(circle at 20% 80%, rgba(41, 196, 255, 0.13), transparent)
+        `
+      }}
+    >
       <div className="max-w-4xl w-full">
         <div className="text-center mb-8">
           <div className="mb-4">

@@ -12,27 +12,12 @@ const StartButton: React.FC<StartButtonProps> = ({ onClick, primaryColor, label 
   return (
     <motion.button
       onClick={onClick}
-      className="neon-button mt-4 text-xl mb-8 px-6 py-3 rounded-lg"
+      className="mt-4 text-xl mb-8 px-6 py-3 rounded-lg text-white border-2 transition-all duration-300"
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      animate={{
-        boxShadow: [
-          `0 0 5px rgba(255,255,255,0.5), 0 0 10px ${primaryColor}`,
-          `0 0 10px rgba(255,255,255,0.7), 0 0 20px ${primaryColor}`,
-          `0 0 5px rgba(255,255,255,0.5), 0 0 10px ${primaryColor}`
-        ]
-      }}
-      transition={{
-        boxShadow: {
-          duration: 2,
-          repeat: Infinity,
-          repeatType: 'reverse',
-        }
-      }}
       style={{ 
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        borderColor: primaryColor,
-        color: primaryColor
+        backgroundColor: '#10B981', // Vivid green
+        borderColor: '#059669', // Darker green
       }}
     >
       {label}

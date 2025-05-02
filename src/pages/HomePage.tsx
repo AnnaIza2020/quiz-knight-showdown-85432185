@@ -14,13 +14,21 @@ const HomePage = () => {
   };
   
   return (
-    <div className="min-h-screen bg-neon-background p-4 flex flex-col items-center justify-center">
+    <div className="min-h-screen p-4 flex flex-col items-center justify-center"
+      style={{
+        background: 'linear-gradient(to bottom, #1A1F2C 0%, #0A0A0F 100%)',
+        backgroundImage: `
+          radial-gradient(circle at top right, rgba(121, 68, 154, 0.2), transparent),
+          radial-gradient(circle at 20% 80%, rgba(41, 196, 255, 0.13), transparent)
+        `
+      }}
+    >
       {showIntro ? (
         <IntroScreen 
           show={true}
           onFinished={handleIntroFinished}
-          primaryColor={primaryColor}
-          secondaryColor={secondaryColor}
+          primaryColor="#39FF14" // Neon lime green for Discord
+          secondaryColor="#FF00FF" // Magenta/fuschia for Game Show
           autoplay={true}
         />
       ) : (
