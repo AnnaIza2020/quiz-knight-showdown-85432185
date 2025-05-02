@@ -11,16 +11,16 @@ const NeonLogo: React.FC<NeonLogoProps> = ({
   size = 'md',
   className
 }) => {
-  const { gameLogo, primaryColor, secondaryColor } = useGameContext();
+  const { gameLogo } = useGameContext();
   
   // Determine size classes
   const sizeClasses = {
-    sm: 'text-xl',
-    md: 'text-3xl',
-    lg: 'text-5xl'
+    sm: 'h-12',
+    md: 'h-24',
+    lg: 'h-32'
   };
   
-  // If logo URL is provided, render image
+  // If logo URL is provided in context, render that image
   if (gameLogo) {
     return (
       <div className={cn(
@@ -30,28 +30,22 @@ const NeonLogo: React.FC<NeonLogoProps> = ({
         <img 
           src={gameLogo} 
           alt="Game Show Logo" 
-          className={cn(
-            'max-h-24',
-            size === 'sm' ? 'max-h-12' : size === 'lg' ? 'max-h-32' : 'max-h-24'
-          )} 
+          className={cn(sizeClasses[size])} 
         />
       </div>
     );
   }
   
-  // Otherwise render the new logo
+  // Otherwise render the default logo
   return (
     <div className={cn(
       'flex items-center justify-center',
       className
     )}>
       <img 
-        src="/lovable-uploads/61b1b24f-4a7b-43f7-836c-2dae94d40d5e.png"
+        src="/lovable-uploads/5d43e62b-61b1-4821-beff-4abb5eb500f5.png"
         alt="Discord Game Show" 
-        className={cn(
-          'max-h-24',
-          size === 'sm' ? 'max-h-12' : size === 'lg' ? 'max-h-32' : 'max-h-24'
-        )}
+        className={cn(sizeClasses[size])}
       />
     </div>
   );

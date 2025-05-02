@@ -32,10 +32,11 @@ const App = () => (
             <Route path="/host" element={<Navigate to="/unified-host" replace />} />
             <Route path="/hostpanel" element={<Navigate to="/unified-host" replace />} />
             <Route path="/intro" element={<Navigate to="/" replace />} />
-            <Route path="/rules" element={<Navigate to="/settings" replace />} />
+            <Route path="/rules" element={<Navigate to="/settings?tab=rules" replace />} />
             <Route path="/classic" element={<Navigate to="/unified-host" replace />} />
-            <Route path="/zasady" element={<Navigate to="/settings" replace />} />
+            <Route path="/zasady" element={<Navigate to="/settings?tab=rules" replace />} />
             <Route path="/klasyczny" element={<Navigate to="/unified-host" replace />} />
+            <Route path="/gracze" element={<Navigate to="/settings?tab=gracze" replace />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

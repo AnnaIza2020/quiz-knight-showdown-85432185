@@ -6,9 +6,13 @@ import { Plus, Minus, Award, Trash, Heart } from 'lucide-react';
 
 interface PlayerCardWithControlsProps {
   player: Player;
+  isCompact?: boolean;
 }
 
-const PlayerCardWithControls: React.FC<PlayerCardWithControlsProps> = ({ player }) => {
+const PlayerCardWithControls: React.FC<PlayerCardWithControlsProps> = ({ 
+  player,
+  isCompact = false
+}) => {
   const { 
     activePlayerId, 
     setActivePlayer, 

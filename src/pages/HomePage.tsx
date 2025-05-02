@@ -1,84 +1,64 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, Layout, Home } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Settings, Layout, Home, Users } from 'lucide-react';
 
 const HomePage = () => {
   return (
-    <div className="min-h-screen p-4 flex flex-col items-center justify-center"
-      style={{
-        background: 'linear-gradient(to bottom, #1A1F2C 0%, #0A0A0F 100%)'
-      }}
-    >
-      <div className="max-w-4xl w-full">        
-        <div className="text-center mb-8">
-          <div className="mb-4">
-            <img 
-              src="/game-logo.png" 
-              alt="Discord Game Show Logo" 
-              className="h-32 mx-auto"
-            />
-          </div>
-          <h1 className="text-4xl font-bold mt-4">
-            <span className="text-[#39FF14]">Discord</span>{' '}
-            <span className="text-[#FF00FF]">Game Show</span>
-          </h1>
-          <p className="mt-2 text-white/80">
-            Panel zarządzania turniejem dla prowadzącego i uczestników
-          </p>
-        </div>
-
-        <div className="bg-black/30 p-6 rounded-lg border border-white/10 mb-8">
-          <h2 className="text-2xl font-bold mb-4 text-white">Witaj w panelu prowadzącego!</h2>
-          <p className="text-white/80 mb-4">
-            Wybierz jedną z poniższych opcji, aby kontynuować:
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <NavigationButton 
-              to="/unified-host" 
-              icon={<Home />}
-              label="Panel Hosta"
-              primaryClass="bg-[#10B981] hover:bg-[#10B981]/90"
-            />
-            
-            <NavigationButton 
-              to="/overlay" 
-              icon={<Layout />}
-              label="Nakładka OBS"
-              primaryClass="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
-            />
-            
-            <NavigationButton 
-              to="/settings" 
-              icon={<Settings />}
-              label="Ustawienia"
-              primaryClass="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90"
-            />
-          </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-black">
+      <div className="max-w-md w-full px-4 flex flex-col items-center">        
+        <div className="mb-8 mt-24">
+          <img 
+            src="/lovable-uploads/5d43e62b-61b1-4821-beff-4abb5eb500f5.png" 
+            alt="Discord Game Show Logo" 
+            className="h-32 mx-auto"
+          />
         </div>
         
-        <div className="bg-black/30 p-6 rounded-lg border border-white/10">
-          <h2 className="text-xl font-bold mb-2 text-[#39FF14]">Krótka instrukcja:</h2>
-          <ul className="list-disc list-inside text-white/80 space-y-1">
-            <li>Panel Hosta - zarządzanie grą, graczami i pytaniami</li>
-            <li>Nakładka OBS - widok dla widzów, można podłączyć jako źródło w OBS</li>
-            <li>Ustawienia - konfiguracja gry, graczy, pytań i wyglądu</li>
-          </ul>
+        <h1 className="text-4xl font-bold mb-2">
+          <span className="text-[#39FF14]">Discord</span>{' '}
+          <span className="text-[#00FFFF]">Game</span>{' '}
+          <span className="text-[#FF00FF]">Show</span>
+        </h1>
+        
+        <p className="text-white/80 text-center mb-10 max-w-xs">
+          Interaktywny teleturniej z trzema rundami, specjalnymi kartami i animacjami dla streamów na Twitchu i Discordzie. Pytania z polskiego internetu, Twitcha i gier w Polsce.
+        </p>
+        
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <Link 
+            to="/unified-host" 
+            className="flex items-center justify-center py-3 px-6 rounded-md bg-gradient-to-r from-[#8BC34A] to-[#FF4081] text-white font-medium"
+          >
+            Panel Hosta
+          </Link>
+          
+          <Link 
+            to="/player/new" 
+            className="flex items-center justify-center py-3 px-6 rounded-md bg-gradient-to-r from-[#3F51B5] to-[#9C27B0] text-white font-medium"
+          >
+            Widok Gracza
+          </Link>
+        </div>
+        
+        <div className="grid grid-cols-4 gap-4 w-full">
+          <NavButton to="/settings" icon={<Settings className="h-5 w-5" />} label="Ustawienia" color="text-[#39FF14]" />
+          <NavButton to="/overlay" icon={<Layout className="h-5 w-5" />} label="Overlay" color="text-[#00FFFF]" />
+          <NavButton to="/player/new" icon={<Users className="h-5 w-5" />} label="Gracze" color="text-[#FF00FF]" />
+          <NavButton to="/settings?tab=rules" icon={<Home className="h-5 w-5" />} label="Zasady" color="text-white" />
         </div>
       </div>
     </div>
   );
 };
 
-const NavigationButton = ({ to, icon, label, primaryClass }) => (
+const NavButton = ({ to, icon, label, color }) => (
   <Link 
     to={to} 
-    className={`flex flex-col items-center p-4 rounded-lg ${primaryClass} text-white transition-all`}
+    className="flex flex-col items-center justify-center p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors"
   >
-    <div className="text-3xl mb-2">{icon}</div>
-    <span className="text-lg font-medium">{label}</span>
+    <div className={`mb-1 ${color}`}>{icon}</div>
+    <span className="text-xs text-white/80">{label}</span>
   </Link>
 );
 
