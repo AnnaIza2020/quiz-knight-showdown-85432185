@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Settings, Layout, Users, Shield, Home } from 'lucide-react';
+import { Settings, Layout, Users, Home } from 'lucide-react';
 
 const EnhancedNavigation = () => {
   return (
@@ -11,53 +10,41 @@ const EnhancedNavigation = () => {
         to="/unified-host" 
         icon={<Home />}
         label="Panel Hosta"
-        delay={0.1}
-        primaryClass="bg-gradient-to-r from-green-500 to-blue-500"
+        primaryClass="bg-[#10B981] hover:bg-[#10B981]/90"
       />
       
       <NavigationButton 
         to="/overlay" 
         icon={<Layout />}
         label="Nakładka OBS"
-        delay={0.2}
-        primaryClass="bg-gradient-to-r from-blue-500 to-indigo-500"
+        primaryClass="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
       />
       
       <NavigationButton 
         to="/settings" 
         icon={<Settings />}
         label="Ustawienia"
-        delay={0.3}
-        primaryClass="bg-gradient-to-r from-indigo-500 to-purple-500"
+        primaryClass="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90"
       />
       
       <NavigationButton 
         to="/player/1" 
         icon={<Users />}
         label="Widok Gracza"
-        delay={0.4}
-        primaryClass="bg-gradient-to-r from-purple-500 to-pink-500"
+        primaryClass="bg-[#333333] hover:bg-[#444444] border border-white/20"
       />
     </div>
   );
 };
 
-const NavigationButton = ({ to, icon, label, delay, primaryClass }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.5 }}
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
+const NavigationButton = ({ to, icon, label, primaryClass }) => (
+  <Link 
+    to={to} 
+    className={`flex flex-col items-center p-4 rounded-lg ${primaryClass} text-white transition-all`}
   >
-    <Link 
-      to={to} 
-      className={`flex flex-col items-center p-4 rounded-lg ${primaryClass} text-white transition-all`}
-    >
-      <div className="text-3xl mb-2">{icon}</div>
-      <span className="text-lg font-medium">{label}</span>
-    </Link>
-  </motion.div>
+    <div className="text-3xl mb-2">{icon}</div>
+    <span className="text-lg font-medium">{label}</span>
+  </Link>
 );
 
 export default EnhancedNavigation;

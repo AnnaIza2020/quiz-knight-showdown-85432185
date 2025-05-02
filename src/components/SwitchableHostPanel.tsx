@@ -35,15 +35,11 @@ const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
     }
   };
   
-  // Add initial events
+  // Add initial events - reduced to a single welcome message
   useEffect(() => {
     if (events.length === 0) {
       setEvents([
-        "Witaj w panelu prowadzącego Quiz Knight Showdown!",
-        "Wybierz graczy i rozpocznij grę",
-        "Możesz w każdej chwili otworzyć nakładkę dla OBS",
-        "Używaj różnych paneli do zarządzania grą",
-        "Powodzenia w prowadzeniu teleturnieju!"
+        "Witaj w panelu prowadzącego Quiz Knight Showdown!"
       ]);
     }
   }, [events.length]);

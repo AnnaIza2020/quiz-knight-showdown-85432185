@@ -86,7 +86,7 @@ const UnifiedHostPanel = () => {
     
     // Check sound mute status
     setSoundMuted(!soundsEnabled);
-  }, [loadGameData, soundsEnabled]);
+  }, []); // Run only once on component mount
 
   // Save game data whenever important game state changes
   useEffect(() => {

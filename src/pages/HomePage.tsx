@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import IntroScreen from '@/components/overlay/IntroScreen';
 import EnhancedNavigation from '@/components/EnhancedNavigation';
@@ -36,7 +36,7 @@ const HomePage = () => {
           <div className="text-center mb-8">
             <div className="mb-4">
               <img 
-                src="/lovable-uploads/61b1b24f-4a7b-43f7-836c-2dae94d40d5e.png" 
+                src="/game-logo.png" 
                 alt="Discord Game Show Logo" 
                 className="h-32 mx-auto"
               />
