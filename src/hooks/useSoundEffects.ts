@@ -12,7 +12,7 @@ export type SoundEffect =
   | 'victory'
   | 'wheel-spin'
   | 'wheel-tick'
-  | 'card-reveal'; // Added this to fix the build error
+  | 'card-reveal';
 
 const SOUND_PATHS = {
   'success': '/sounds/success.mp3',
@@ -28,7 +28,7 @@ const SOUND_PATHS = {
 };
 
 // Interface for useSoundEffects options
-interface UseSoundEffectsOptions {
+export interface UseSoundEffectsOptions {
   enabled?: boolean;
 }
 

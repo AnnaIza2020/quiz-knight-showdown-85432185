@@ -1,82 +1,71 @@
 
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Home, Settings, Layout, Gamepad2 } from 'lucide-react';
-
-interface NavigationItem {
-  path: string;
-  label: string;
-  icon: React.ReactNode;
-  color: string;
-}
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Settings, Layout, Users, Shield, Home } from 'lucide-react';
 
 const EnhancedNavigation = () => {
-  const location = useLocation();
-  const [activeTab, setActiveTab] = useState(location.pathname);
-
-  useEffect(() => {
-    setActiveTab(location.pathname);
-  }, [location]);
-
-  const navigationItems: NavigationItem[] = [
-    {
-      path: '/',
-      label: 'Strona Główna',
-      icon: <Home className="mr-2 h-4 w-4" />,
-      color: 'from-neon-pink to-neon-blue'
-    },
-    {
-      path: '/unified-host',
-      label: 'Panel Hosta',
-      icon: <Gamepad2 className="mr-2 h-4 w-4" />,
-      color: 'from-neon-pink to-neon-blue'
-    },
-    {
-      path: '/host',
-      label: 'Host (Klasyczny)',
-      icon: <Gamepad2 className="mr-2 h-4 w-4" />,
-      color: 'from-neon-green to-neon-yellow'
-    },
-    {
-      path: '/overlay',
-      label: 'Nakładka OBS',
-      icon: <Layout className="mr-2 h-4 w-4" />,
-      color: 'from-neon-purple to-neon-blue'
-    },
-    {
-      path: '/settings',
-      label: 'Ustawienia',
-      icon: <Settings className="mr-2 h-4 w-4" />,
-      color: 'from-neon-blue to-neon-green'
-    },
-  ];
-
   return (
-    <div className="w-full mt-8">
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)}>
-        <TabsList className="w-full grid grid-cols-2 md:grid-cols-5 h-auto bg-black/50 p-1">
-          {navigationItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className="w-full"
-              onClick={() => setActiveTab(item.path)}
-            >
-              <TabsTrigger 
-                value={item.path}
-                className={`w-full py-3 text-sm md:text-base flex items-center justify-center
-                           transition-all duration-300`}
-              >
-                {item.icon}
-                <span className="md:ml-1">{item.label}</span>
-              </TabsTrigger>
-            </Link>
-          ))}
-        </TabsList>
-      </Tabs>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <NavigationButton 
+        to="/unified-host" 
+        icon={<Home />}
+        label="Panel Hosta"
+        delay={0.1}
+        primaryClass="bg-gradient-to-r from-green-500 to-blue-500"
+      />
+      
+      <NavigationButton 
+        to="/overlay" 
+        icon={<Layout />}
+        label="Nakładka OBS"
+        delay={0.2}
+        primaryClass="bg-gradient-to-r from-blue-500 to-indigo-500"
+      />
+      
+      <NavigationButton 
+        to="/settings" 
+        icon={<Settings />}
+        label="Ustawienia"
+        delay={0.3}
+        primaryClass="bg-gradient-to-r from-indigo-500 to-purple-500"
+      />
+      
+      <NavigationButton 
+        to="/player/1" 
+        icon={<Users />}
+        label="Widok Gracza"
+        delay={0.4}
+        primaryClass="bg-gradient-to-r from-purple-500 to-pink-500"
+      />
+      
+      <NavigationButton 
+        to="/rules" 
+        icon={<Shield />}
+        label="Zasady"
+        delay={0.5}
+        primaryClass="bg-gradient-to-r from-pink-500 to-red-500"
+      />
     </div>
   );
 };
+
+const NavigationButton = ({ to, icon, label, delay, primaryClass }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.5 }}
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+  >
+    <Link 
+      to={to} 
+      className={`flex flex-col items-center p-4 rounded-lg ${primaryClass} text-white transition-all`}
+    >
+      <div className="text-3xl mb-2">{icon}</div>
+      <span className="text-lg font-medium">{label}</span>
+    </Link>
+  </motion.div>
+);
 
 export default EnhancedNavigation;

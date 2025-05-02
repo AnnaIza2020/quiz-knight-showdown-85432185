@@ -1,15 +1,14 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import NeonLogo from '@/components/NeonLogo';
 import { motion } from 'framer-motion';
 import { Settings, Layout, Users, Shield } from 'lucide-react';
 import { useGameContext } from '@/context/GameContext';
-import { Button } from '@/components/ui/button';
 
 const HomePage = () => {
   const { loadGameData } = useGameContext();
   
+  // Fix the infinite update loop by adding loadGameData to dependency array
   React.useEffect(() => {
     // Load game data on homepage visit
     loadGameData();
