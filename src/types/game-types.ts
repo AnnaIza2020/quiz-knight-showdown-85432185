@@ -40,6 +40,7 @@ export interface SpecialCard {
   iconName: string; // Lucide icon name
   soundEffect?: SoundEffect;
   animationStyle?: string;
+  imageUrl?: string; // URL to the card's image
 }
 
 // Define special card award condition

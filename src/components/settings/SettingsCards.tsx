@@ -73,6 +73,13 @@ const SettingsCards = () => {
   const [selectedCardForAssign, setSelectedCardForAssign] = useState<string>('');
   const [selectedPlayerForAssign, setSelectedPlayerForAssign] = useState<string>('');
 
+  // Add the missing openImageUploadDialog function
+  const openImageUploadDialog = (cardId: string) => {
+    setCurrentCardForImage(cardId);
+    setImagePreview(null);
+    setIsImageUploadDialogOpen(true);
+  };
+
   // Init with predefined cards if none exist
   useEffect(() => {
     if (specialCards.length === 0) {
@@ -971,14 +978,147 @@ const SettingsCards = () => {
       {/* Dialog dla przypisywania kart */}
       <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
         <DialogContent className="bg-[#0c0e1a] border-gray-800">
-          {/* ... keep existing code (assign cards dialog content) */}
+          <DialogHeader>
+            <DialogTitle className="text-white">Przydziel kartę graczowi</DialogTitle>
+            <DialogDescription>
+              Wybierz kartę i gracza, któremu chcesz ją przydzielić
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="player-select" className="text-right">Gracz</Label>
+              <Select
+                value={selectedPlayerForAssign}
+                onValueChange={setSelectedPlayerForAssign}
+              >
+                <SelectTrigger className="col-span-3 bg-black/50 border-gray-700">
+                  <SelectValue placeholder="Wybierz gracza" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#0c0e1a] border-gray-800">
+                  {players.filter(p => !p.isEliminated).map((player) => (
+                    <SelectItem key={player.id} value={player.id}>
+                      {player.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="card-select" className="text-right">Karta</Label>
+              <Select
+                value={selectedCardForAssign}
+                onValueChange={setSelectedCardForAssign}
+              >
+                <SelectTrigger className="col-span-3 bg-black/50 border-gray-700">
+                  <SelectValue placeholder="Wybierz kartę" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#0c0e1a] border-gray-800">
+                  {specialCards.map((card) => (
+                    <SelectItem key={card.id} value={card.id}>
+                      <div className="flex items-center gap-2">
+                        {card.iconName in iconMap ? React.createElement(iconMap[card.iconName], { size: 16 }) : null}
+                        <span>{card.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter className="flex space-x-2">
+            <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>Anuluj</Button>
+            <Button className="bg-neon-blue hover:bg-neon-blue/80" onClick={handleAssignCard}>
+              Przydziel kartę
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       
       {/* Dialog dla reguł */}
       <Dialog open={isRuleDialogOpen} onOpenChange={setIsRuleDialogOpen}>
         <DialogContent className="bg-[#0c0e1a] border-gray-800">
-          {/* ... keep existing code (rules dialog content) */}
+          <DialogHeader>
+            <DialogTitle className="text-white">{editingRule ? 'Edytuj zasadę' : 'Dodaj nową zasadę'}</DialogTitle>
+            <DialogDescription>
+              {editingRule 
+                ? 'Zmodyfikuj zasadę przyznawania karty specjalnej' 
+                : 'Utwórz nową zasadę przyznawania karty specjalnej'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="rule-condition" className="text-right">Warunek</Label>
+              <Input
+                id="rule-condition"
+                className="col-span-3 bg-black/50 border-gray-700"
+                value={newRule.condition}
+                onChange={(e) => setNewRule({...newRule, condition: e.target.value})}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="rule-card" className="text-right">Karta</Label>
+              <Select
+                value={newRule.cardId}
+                onValueChange={(value) => setNewRule({...newRule, cardId: value})}
+              >
+                <SelectTrigger className="col-span-3 bg-black/50 border-gray-700">
+                  <SelectValue placeholder="Wybierz kartę" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#0c0e1a] border-gray-800">
+                  {specialCards.map((card) => (
+                    <SelectItem key={card.id} value={card.id}>
+                      {card.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="rule-round" className="text-right">Runda (opcjonalnie)</Label>
+              <Select
+                value={newRule.roundType || ''}
+                onValueChange={(value) => setNewRule({...newRule, roundType: value ? value as GameRound : undefined})}
+              >
+                <SelectTrigger className="col-span-3 bg-black/50 border-gray-700">
+                  <SelectValue placeholder="Dowolna runda" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#0c0e1a] border-gray-800">
+                  <SelectItem value="">Dowolna runda</SelectItem>
+                  <SelectItem value={GameRound.ROUND_ONE}>Runda 1</SelectItem>
+                  <SelectItem value={GameRound.ROUND_TWO}>Runda 2</SelectItem>
+                  <SelectItem value={GameRound.ROUND_THREE}>Runda 3</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="rule-description" className="text-right">Opis</Label>
+              <Input
+                id="rule-description"
+                className="col-span-3 bg-black/50 border-gray-700"
+                value={newRule.description}
+                onChange={(e) => setNewRule({...newRule, description: e.target.value})}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="rule-enabled" className="text-right">Aktywna</Label>
+              <Switch
+                id="rule-enabled"
+                checked={newRule.isEnabled}
+                onCheckedChange={(checked) => setNewRule({...newRule, isEnabled: checked})}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="flex space-x-2">
+            <Button variant="outline" onClick={() => setIsRuleDialogOpen(false)}>Anuluj</Button>
+            <Button className="bg-neon-green hover:bg-neon-green/80" onClick={handleRuleSubmit}>
+              {editingRule ? 'Zapisz zmiany' : 'Dodaj zasadę'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
