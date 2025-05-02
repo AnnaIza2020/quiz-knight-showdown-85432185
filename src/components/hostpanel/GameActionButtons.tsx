@@ -15,6 +15,7 @@ interface GameActionButtonsProps {
   toggleMute?: () => void;
   showIntroOnLoad?: boolean;
   toggleShowIntroOnLoad?: () => void;
+  toggleIntro?: () => void;
 }
 
 const GameActionButtons: React.FC<GameActionButtonsProps> = ({
@@ -27,7 +28,8 @@ const GameActionButtons: React.FC<GameActionButtonsProps> = ({
   isMuted = false,
   toggleMute,
   showIntroOnLoad = true,
-  toggleShowIntroOnLoad
+  toggleShowIntroOnLoad,
+  toggleIntro
 }) => {
   return (
     <div className="mb-4 flex flex-wrap gap-2">
@@ -51,6 +53,17 @@ const GameActionButtons: React.FC<GameActionButtonsProps> = ({
         <RefreshCw size={18} className="mr-2" />
         Nowa gra
       </Button>
+      
+      {toggleIntro && (
+        <Button
+          variant="outline"
+          className="border-neon-purple text-neon-purple hover:bg-neon-purple/20"
+          onClick={toggleIntro}
+        >
+          <PlayCircle size={18} className="mr-2" />
+          {isIntroPlaying ? "Ukryj intro" : "Pokaż intro"}
+        </Button>
+      )}
       
       <Button
         variant="outline"

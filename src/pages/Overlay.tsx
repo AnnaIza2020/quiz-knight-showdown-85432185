@@ -35,6 +35,7 @@ const Overlay = () => {
   const [lastActivePlayer, setLastActivePlayer] = useState<string | null>(null);
   const [latestPoints, setLatestPoints] = useState<{playerId: string, points: number} | null>(null);
   const [introFinished, setIntroFinished] = useState(false);
+  const [manualIntroControl, setManualIntroControl] = useState(false);
   
   // Sound effects
   const { playSound, stopAllSounds } = useSoundEffects({
@@ -60,9 +61,15 @@ const Overlay = () => {
         if (payload.action === 'show') {
           setShowIntro(true);
           setIntroFinished(false);
+          setManualIntroControl(true);
         } else if (payload.action === 'hide') {
           setShowIntro(false);
           setIntroFinished(true);
+          setManualIntroControl(true);
+        } else if (payload.action === 'toggle') {
+          setShowIntro(prev => !prev);
+          setIntroFinished(prev => !prev);
+          setManualIntroControl(true);
         }
       }
       
@@ -101,8 +108,10 @@ const Overlay = () => {
   
   // Handle intro completion
   const handleIntroFinished = () => {
-    setIntroFinished(true);
-    setShowIntro(false);
+    if (!manualIntroControl) {
+      setIntroFinished(true);
+      setShowIntro(false);
+    }
   };
   
   // Show confetti when winners are announced
@@ -151,12 +160,12 @@ const Overlay = () => {
   
   // Auto-hide intro when game starts
   useEffect(() => {
-    if (round !== GameRound.SETUP && showIntro && !introFinished) {
+    if (round !== GameRound.SETUP && showIntro && !introFinished && !manualIntroControl) {
       // Auto-hide intro when game starts
       setShowIntro(false);
       setIntroFinished(true);
     }
-  }, [round, showIntro, introFinished]);
+  }, [round, showIntro, introFinished, manualIntroControl]);
   
   // Handle timer sounds
   useEffect(() => {
@@ -244,15 +253,16 @@ const Overlay = () => {
       className="w-full h-screen bg-neon-background overflow-hidden relative"
       onDoubleClick={handleDoubleClick}
     >
-      {/* Intro Screen */}
+      {/* Intro Screen - using the enhanced version */}
       <IntroScreen 
         show={showIntro && !introFinished} 
         onFinished={handleIntroFinished}
         primaryColor={primaryColor}
         secondaryColor={secondaryColor}
+        autoplay={true}
       />
       
-      {/* Round transition overlay */}
+      {/* Round transition overlay with improved animation */}
       <AnimatePresence>
         {showRoundTransition && (
           <motion.div 
@@ -264,54 +274,105 @@ const Overlay = () => {
           >
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
+              animate={{ 
+                scale: [0.8, 1.1, 1],
+                opacity: 1
+              }}
               exit={{ scale: 1.2, opacity: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ 
+                duration: 0.7,
+                times: [0, 0.6, 1]
+              }}
               className="text-center"
             >
-              <h1 
+              <motion.h1 
                 className="text-5xl font-bold mb-4" 
                 style={{ 
                   color: primaryColor || '#ff00ff',
                   textShadow: `0 0 10px ${primaryColor || '#ff00ff'}, 0 0 20px ${primaryColor || '#ff00ff'}`
                 }}
+                animate={{
+                  textShadow: [
+                    `0 0 10px ${primaryColor || '#ff00ff'}, 0 0 20px ${primaryColor || '#ff00ff'}`,
+                    `0 0 20px ${primaryColor || '#ff00ff'}, 0 0 35px ${primaryColor || '#ff00ff'}`,
+                    `0 0 10px ${primaryColor || '#ff00ff'}, 0 0 20px ${primaryColor || '#ff00ff'}`,
+                  ]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: 2,
+                  repeatType: 'reverse',
+                }}
               >
                 {getRoundName()}
-              </h1>
-              <p className="text-white text-xl">Rozpoczynamy!</p>
+              </motion.h1>
+              <motion.p 
+                className="text-white text-xl"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                Rozpoczynamy!
+              </motion.p>
+              
+              {/* Additional decorative elements for round transition */}
+              <motion.div
+                className="absolute inset-0 -z-10 opacity-30"
+                initial={{ scale: 0 }}
+                animate={{ scale: 2 }}
+                transition={{ duration: 2.5 }}
+              >
+                <div className="w-full h-full rounded-full"
+                  style={{ 
+                    background: `radial-gradient(circle, ${secondaryColor} 0%, transparent 70%)` 
+                  }}
+                />
+              </motion.div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
       
-      {/* Main overlay grid layout */}
-      <div className="w-full h-full grid grid-rows-[1fr_auto_1fr] p-4 gap-4">
-        {/* Top row with first 5 players */}
-        <PlayerGrid 
-          players={activePlayers} 
-          maxPlayers={maxPlayers} 
-          position="top" 
-          activePlayerId={activePlayerId}
-          lastActivePlayer={lastActivePlayer}
-          latestPoints={latestPoints}
-        />
-        
-        {/* Middle row with host camera and question board */}
-        <MiddleSection round={round} hostCameraUrl={hostCameraUrl} />
-        
-        {/* Bottom row with remaining 5 players */}
-        <PlayerGrid 
-          players={activePlayers} 
-          maxPlayers={maxPlayers} 
-          position="bottom" 
-          activePlayerId={activePlayerId}
-          lastActivePlayer={lastActivePlayer}
-          latestPoints={latestPoints}
-        />
-      </div>
+      {/* Main overlay grid layout with animated entrance */}
+      <AnimatePresence>
+        {!showIntro && (
+          <motion.div 
+            className="w-full h-full grid grid-rows-[1fr_auto_1fr] p-4 gap-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            {/* Top row with first 5 players */}
+            <PlayerGrid 
+              players={activePlayers} 
+              maxPlayers={maxPlayers} 
+              position="top" 
+              activePlayerId={activePlayerId}
+              lastActivePlayer={lastActivePlayer}
+              latestPoints={latestPoints}
+            />
+            
+            {/* Middle row with host camera and question board */}
+            <MiddleSection round={round} hostCameraUrl={hostCameraUrl} />
+            
+            {/* Bottom row with remaining 5 players */}
+            <PlayerGrid 
+              players={activePlayers} 
+              maxPlayers={maxPlayers} 
+              position="bottom" 
+              activePlayerId={activePlayerId}
+              lastActivePlayer={lastActivePlayer}
+              latestPoints={latestPoints}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
       
-      {/* Round indicator */}
-      <RoundIndicator round={round} primaryColor={primaryColor} secondaryColor={secondaryColor} />
+      {/* Round indicator - visible only when not showing intro */}
+      {!showIntro && (
+        <RoundIndicator round={round} primaryColor={primaryColor} secondaryColor={secondaryColor} />
+      )}
       
       {/* Winner display */}
       <WinnerDisplay 
@@ -327,7 +388,9 @@ const Overlay = () => {
       />
       
       {/* Info Bar */}
-      <InfoBar events={gameEvents} />
+      {!showIntro && (
+        <InfoBar events={gameEvents} />
+      )}
       
       {/* Fullscreen instructions */}
       <div className="absolute bottom-2 right-2 text-white/30 text-xs">
