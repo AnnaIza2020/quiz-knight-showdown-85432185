@@ -307,7 +307,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     })));
   };
 
-  // Define the setActivePlayer function that was missing
+  // Define the setActivePlayer function
   const setActivePlayer = (playerId: string | null) => {
     setActivePlayerId(playerId);
   };
