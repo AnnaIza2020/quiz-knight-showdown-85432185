@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import NeonLogo from '@/components/NeonLogo';
 import { Volume2, VolumeX } from 'lucide-react';
@@ -11,6 +11,8 @@ interface IntroScreenProps {
   autoplay?: boolean;
   primaryColor?: string;
   secondaryColor?: string;
+  onStartClick?: () => void;
+  isStarting?: boolean;
 }
 
 const IntroScreen: React.FC<IntroScreenProps> = ({ 
@@ -18,41 +20,80 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
   onFinished,
   autoplay = true,
   primaryColor = '#ff00ff',
-  secondaryColor = '#00ffff'
+  secondaryColor = '#00ffff',
+  onStartClick,
+  isStarting = false
 }) => {
   const [progress, setProgress] = useState(0);
   const [audioPlaying, setAudioPlaying] = useState(autoplay);
   const [audioLoaded, setAudioLoaded] = useState(false);
   const [countdownActive, setCountdownActive] = useState(false);
   const [countdownNumber, setCountdownNumber] = useState(5);
-  const [audio] = useState<HTMLAudioElement | null>(
+  const [narratorPlaying, setNarratorPlaying] = useState(false);
+  const [narratorFinished, setNarratorFinished] = useState(false);
+  const [flashActive, setFlashActive] = useState(false);
+  
+  const audioRef = useRef<HTMLAudioElement | null>(
     typeof Audio !== 'undefined' ? new Audio('/sounds/intro-music.mp3') : null
+  );
+  
+  const narratorRef = useRef<HTMLAudioElement | null>(
+    typeof Audio !== 'undefined' ? new Audio('/sounds/narrator.mp3') : null
   );
 
   // Set up audio events
   useEffect(() => {
-    if (!audio) return;
+    if (!audioRef.current) return;
     
+    const audio = audioRef.current;
     const handleCanPlay = () => setAudioLoaded(true);
     const handleEnded = () => {
       setAudioPlaying(false);
-      if (onFinished) onFinished();
+      if (onFinished && !isStarting) onFinished();
     };
     
     audio.addEventListener('canplaythrough', handleCanPlay);
     audio.addEventListener('ended', handleEnded);
-    audio.loop = true; // Loop the intro music
+    audio.loop = false; // Don't loop the intro music
     
     return () => {
       audio.removeEventListener('canplaythrough', handleCanPlay);
       audio.removeEventListener('ended', handleEnded);
       audio.pause();
     };
-  }, [audio, onFinished]);
+  }, [audioRef, onFinished, isStarting]);
+  
+  // Set up narrator events
+  useEffect(() => {
+    if (!narratorRef.current) return;
+    
+    const narrator = narratorRef.current;
+    const handleNarratorEnded = () => {
+      setNarratorPlaying(false);
+      setNarratorFinished(true);
+      
+      // After narrator finishes, show flash effect
+      setFlashActive(true);
+      setTimeout(() => {
+        setFlashActive(false);
+        // After flash, trigger finish callback
+        if (onFinished) onFinished();
+      }, 1000);
+    };
+    
+    narrator.addEventListener('ended', handleNarratorEnded);
+    
+    return () => {
+      narrator.removeEventListener('ended', handleNarratorEnded);
+      narrator.pause();
+    };
+  }, [narratorRef, onFinished]);
   
   // Handle audio play/pause based on show prop
   useEffect(() => {
-    if (!audio || !audioLoaded) return;
+    if (!audioRef.current || !audioLoaded) return;
+    
+    const audio = audioRef.current;
     
     if (show && audioPlaying) {
       audio.volume = 0.7;
@@ -64,20 +105,19 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
     return () => {
       audio.pause();
     };
-  }, [show, audio, audioLoaded, audioPlaying]);
+  }, [show, audioLoaded, audioPlaying]);
   
   // Progress bar animation with dynamic pacing
   useEffect(() => {
     if (!show) return;
     
+    const introDuration = 28000; // 28 seconds for intro
     const interval = setInterval(() => {
       setProgress(prev => {
-        // Add some randomness to the progress for more dynamic feeling
-        const increment = Math.random() * 1.5 + 0.5;
-        const newProgress = prev + increment;
+        const newProgress = prev + (100 / (introDuration / 100)); // Calculate progress increment for 28 seconds
         
         // When progress gets to 95%, start countdown if not already started
-        if (prev < 95 && newProgress >= 95 && !countdownActive) {
+        if (prev < 95 && newProgress >= 95 && !countdownActive && !isStarting) {
           setCountdownActive(true);
         }
         
@@ -86,7 +126,7 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
     }, 100);
     
     return () => clearInterval(interval);
-  }, [show, countdownActive]);
+  }, [show, countdownActive, isStarting]);
   
   // Countdown animation
   useEffect(() => {
@@ -99,7 +139,7 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
           clearInterval(interval);
           // When countdown finishes, trigger onFinished after a short delay
           setTimeout(() => {
-            if (onFinished) onFinished();
+            if (onFinished && !isStarting) onFinished();
           }, 1000);
           return 0;
         }
@@ -108,11 +148,42 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
     }, 1000);
     
     return () => clearInterval(interval);
-  }, [countdownActive, onFinished]);
+  }, [countdownActive, onFinished, isStarting]);
+  
+  // Start narrator when "Start" is clicked
+  useEffect(() => {
+    if (!isStarting || !narratorRef.current || narratorPlaying) return;
+    
+    // Fade out intro music
+    if (audioRef.current) {
+      const audio = audioRef.current;
+      const fadeOutInterval = setInterval(() => {
+        if (audio.volume > 0.1) {
+          audio.volume -= 0.1;
+        } else {
+          audio.pause();
+          clearInterval(fadeOutInterval);
+          
+          // Start narrator
+          narratorRef.current.volume = 1.0;
+          narratorRef.current.play().catch(e => console.log('Error playing narrator audio:', e));
+          setNarratorPlaying(true);
+        }
+      }, 100);
+    } else {
+      // If no intro audio, just play narrator
+      narratorRef.current.volume = 1.0;
+      narratorRef.current.play().catch(e => console.log('Error playing narrator audio:', e));
+      setNarratorPlaying(true);
+    }
+    
+  }, [isStarting, narratorPlaying]);
   
   // Toggle audio
   const toggleAudio = () => {
-    if (!audio) return;
+    if (!audioRef.current) return;
+    
+    const audio = audioRef.current;
     
     if (audioPlaying) {
       audio.pause();
@@ -134,6 +205,19 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
         >
+          {/* Flash effect when transitioning */}
+          <AnimatePresence>
+            {flashActive && (
+              <motion.div 
+                className="absolute inset-0 bg-white z-60"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              />
+            )}
+          </AnimatePresence>
+
           {/* Dynamic animated background */}
           <div className="absolute inset-0 overflow-hidden">
             {/* Grid lines background */}
@@ -227,7 +311,12 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
                   repeatType: 'reverse',
                 }}
               >
-                <NeonLogo size="lg" />
+                {/* Use the uploaded logo image */}
+                <img 
+                  src="/lovable-uploads/b8ac3188-401e-435a-9869-a440ec9bbf7f.png"
+                  alt="Discord Game Show"
+                  className="w-64 md:w-80"
+                />
               </motion.div>
             </motion.div>
             
@@ -309,6 +398,67 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
                 />
               </motion.div>
             </div>
+            
+            {/* Start button - only shown for host */}
+            {onStartClick && !isStarting && !narratorPlaying && (
+              <motion.button
+                onClick={onStartClick}
+                className="neon-button mt-4 text-xl mb-8"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                animate={{
+                  boxShadow: [
+                    `0 0 5px rgba(255,255,255,0.5), 0 0 10px ${primaryColor}`,
+                    `0 0 10px rgba(255,255,255,0.7), 0 0 20px ${primaryColor}`,
+                    `0 0 5px rgba(255,255,255,0.5), 0 0 10px ${primaryColor}`
+                  ]
+                }}
+                transition={{
+                  boxShadow: {
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatType: 'reverse',
+                  }
+                }}
+              >
+                Rozpocznij Show
+              </motion.button>
+            )}
+            
+            {/* Narrator text overlay */}
+            <AnimatePresence>
+              {narratorPlaying && (
+                <motion.div
+                  className="absolute inset-0 flex items-center justify-center bg-black/70 z-20"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <motion.div 
+                    className="max-w-2xl p-6 text-center"
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -20, opacity: 0 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                  >
+                    <motion.p 
+                      className="text-2xl md:text-3xl text-white leading-relaxed"
+                      animate={{ 
+                        textShadow: [
+                          `0 0 5px rgba(255,255,255,0.5)`,
+                          `0 0 10px rgba(255,255,255,0.7)`,
+                          `0 0 5px rgba(255,255,255,0.5)`
+                        ] 
+                      }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      "Witacie, drodzy widzowie, w najbardziej zwariowanym, pikselowym i pełnym memów teleturnieju w historii internetu! Przygotujcie się na epicką podróż przez zakamarki polskiego internetu, gdzie wiedza, refleks i odrobina szczęścia to wasze jedyne bronie."
+                    </motion.p>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             
             {/* Countdown animation only appears when countdown is active */}
             <AnimatePresence>

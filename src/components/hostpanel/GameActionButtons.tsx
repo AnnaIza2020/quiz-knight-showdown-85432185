@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { PlayCircle, RefreshCw, Download, Upload, Volume2, VolumeX } from 'lucide-react';
 import { GameRound } from '@/types/game-types';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface GameActionButtonsProps {
   round: GameRound;
@@ -31,18 +32,47 @@ const GameActionButtons: React.FC<GameActionButtonsProps> = ({
   toggleShowIntroOnLoad,
   toggleIntro
 }) => {
+  const { broadcast } = useSubscription('game_events', 'new_event', () => {}, { immediate: false });
+
+  // Start with game show style intro with narrator
+  const startGameWithShowIntro = () => {
+    // First trigger the narrator intro on the overlay
+    broadcast({
+      type: 'intro_control',
+      action: 'start',
+      event: 'Rozpoczynamy show z narratorem!'
+    });
+    
+    // Then start the game after a delay
+    setTimeout(() => {
+      startGameWithIntro();
+    }, 15000); // Allow time for the narrator to complete
+  };
+  
   return (
     <div className="mb-4 flex flex-wrap gap-2">
       {round === GameRound.SETUP && (
-        <Button
-          variant="default"
-          className="bg-neon-green text-black hover:bg-neon-green/80"
-          onClick={startGameWithIntro}
-          disabled={isIntroPlaying}
-        >
-          <PlayCircle size={18} className="mr-2" />
-          Start gry
-        </Button>
+        <>
+          <Button
+            variant="default"
+            className="bg-neon-green text-black hover:bg-neon-green/80"
+            onClick={startGameWithIntro}
+            disabled={isIntroPlaying}
+          >
+            <PlayCircle size={18} className="mr-2" />
+            Start gry
+          </Button>
+          
+          <Button
+            variant="default"
+            className="bg-neon-purple text-black hover:bg-neon-purple/80"
+            onClick={startGameWithShowIntro}
+            disabled={isIntroPlaying}
+          >
+            <PlayCircle size={18} className="mr-2" />
+            Start z czołówką
+          </Button>
+        </>
       )}
       
       <Button

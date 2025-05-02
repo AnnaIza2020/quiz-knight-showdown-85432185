@@ -36,6 +36,7 @@ const Overlay = () => {
   const [latestPoints, setLatestPoints] = useState<{playerId: string, points: number} | null>(null);
   const [introFinished, setIntroFinished] = useState(false);
   const [manualIntroControl, setManualIntroControl] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
   
   // Sound effects
   const { playSound, stopAllSounds } = useSoundEffects({
@@ -70,6 +71,8 @@ const Overlay = () => {
           setShowIntro(prev => !prev);
           setIntroFinished(prev => !prev);
           setManualIntroControl(true);
+        } else if (payload.action === 'start') {
+          setIsStarting(true);
         }
       }
       
@@ -112,6 +115,15 @@ const Overlay = () => {
       setIntroFinished(true);
       setShowIntro(false);
     }
+    
+    // Reset starting state
+    setIsStarting(false);
+  };
+  
+  // Handle start button click in intro (host only)
+  const handleStartClick = () => {
+    setIsStarting(true);
+    addGameEvent("Rozpoczynamy show!");
   };
   
   // Show confetti when winners are announced
@@ -160,12 +172,12 @@ const Overlay = () => {
   
   // Auto-hide intro when game starts
   useEffect(() => {
-    if (round !== GameRound.SETUP && showIntro && !introFinished && !manualIntroControl) {
+    if (round !== GameRound.SETUP && showIntro && !introFinished && !manualIntroControl && !isStarting) {
       // Auto-hide intro when game starts
       setShowIntro(false);
       setIntroFinished(true);
     }
-  }, [round, showIntro, introFinished, manualIntroControl]);
+  }, [round, showIntro, introFinished, manualIntroControl, isStarting]);
   
   // Handle timer sounds
   useEffect(() => {
@@ -253,13 +265,15 @@ const Overlay = () => {
       className="w-full h-screen bg-neon-background overflow-hidden relative"
       onDoubleClick={handleDoubleClick}
     >
-      {/* Intro Screen - using the enhanced version */}
+      {/* Intro Screen - enhanced version with start button, narrator and transition */}
       <IntroScreen 
-        show={showIntro && !introFinished} 
+        show={showIntro || isStarting} 
         onFinished={handleIntroFinished}
         primaryColor={primaryColor}
         secondaryColor={secondaryColor}
         autoplay={true}
+        onStartClick={handleStartClick} 
+        isStarting={isStarting}
       />
       
       {/* Round transition overlay with improved animation */}
@@ -335,7 +349,7 @@ const Overlay = () => {
       
       {/* Main overlay grid layout with animated entrance */}
       <AnimatePresence>
-        {!showIntro && (
+        {!showIntro && !isStarting && (
           <motion.div 
             className="w-full h-full grid grid-rows-[1fr_auto_1fr] p-4 gap-4"
             initial={{ opacity: 0 }}
@@ -370,7 +384,7 @@ const Overlay = () => {
       </AnimatePresence>
       
       {/* Round indicator - visible only when not showing intro */}
-      {!showIntro && (
+      {!showIntro && !isStarting && (
         <RoundIndicator round={round} primaryColor={primaryColor} secondaryColor={secondaryColor} />
       )}
       
@@ -388,7 +402,7 @@ const Overlay = () => {
       />
       
       {/* Info Bar */}
-      {!showIntro && (
+      {!showIntro && !isStarting && (
         <InfoBar events={gameEvents} />
       )}
       
