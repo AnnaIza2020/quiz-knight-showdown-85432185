@@ -66,11 +66,6 @@ const Host = () => {
       const player = players.find(p => p.id === activePlayerId);
       if (player && player.lives <= 1) {
         eliminatePlayer(activePlayerId);
-        
-        // Sprawdź czy runda 3 się zakończyła (wszyscy stracili życie)
-        if (round === GameRound.ROUND_THREE) {
-          checkRoundThreeEnd();
-        }
       }
     } else if (round === GameRound.ROUND_THREE) {
       deductLife(activePlayerId);
