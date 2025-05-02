@@ -25,7 +25,7 @@ const Rules = () => {
             description="W tej rundzie gracze odpowiadają na pytania z różnych kategorii związanych z polskim internetem, streamingiem i grami."
             rules={[
               "Na koniec rundy 5 graczy z najwyższą liczbą punktów przechodzi do kolejnej rundy.",
-              "Zostaje także wyłoniony jeden „lucky loser" – gracz z najwyższymi punktami spośród tych, którzy stracili życie.",
+              "Zostaje także wyłoniony jeden \"lucky loser\" – gracz z najwyższymi punktami spośród tych, którzy stracili życie.",
               "Do Rundy 2 przechodzi łącznie 6 graczy: 5 najlepszych plus 1 lucky loser.",
               "Za poprawną odpowiedź gracz otrzymuje punkty odpowiadające poziomowi trudności pytania.",
               "Za błędną odpowiedź gracz traci życie.",
