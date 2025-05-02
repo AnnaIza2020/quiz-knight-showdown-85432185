@@ -27,7 +27,11 @@ const HomePage = () => {
         <div className="max-w-4xl w-full">
           <div className="text-center mb-8">
             <div className="mb-4">
-              <NeonLogo size="lg" />
+              <img 
+                src="/lovable-uploads/61b1b24f-4a7b-43f7-836c-2dae94d40d5e.png" 
+                alt="Discord Game Show Logo" 
+                className="h-32 mx-auto"
+              />
             </div>
             <h1 className="text-4xl font-bold mt-4 text-transparent bg-clip-text bg-gradient-to-r from-green-500 via-blue-500 to-pink-500">
               Discord Game Show

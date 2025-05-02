@@ -39,38 +39,20 @@ const NeonLogo: React.FC<NeonLogoProps> = ({
     );
   }
   
-  // Otherwise render text-based logo
+  // Otherwise render the new logo
   return (
     <div className={cn(
-      'flex flex-col items-center justify-center',
+      'flex items-center justify-center',
       className
     )}>
-      <h1 
+      <img 
+        src="/lovable-uploads/61b1b24f-4a7b-43f7-836c-2dae94d40d5e.png"
+        alt="Discord Game Show" 
         className={cn(
-          sizeClasses[size],
-          'font-bold mb-1',
-          'animate-pulse'
+          'max-h-24',
+          size === 'sm' ? 'max-h-12' : size === 'lg' ? 'max-h-32' : 'max-h-24'
         )}
-        style={{ 
-          color: primaryColor,
-          textShadow: `0 0 5px ${primaryColor}, 0 0 10px ${primaryColor}, 0 0 15px ${primaryColor}, 0 0 20px ${secondaryColor}`
-        }}
-      >
-        DISCORD
-      </h1>
-      <h2 
-        className={cn(
-          size === 'sm' ? 'text-xs' : size === 'md' ? 'text-sm' : 'text-lg',
-          'tracking-widest',
-          'animate-pulse'
-        )}
-        style={{ 
-          color: secondaryColor,
-          textShadow: `0 0 5px ${secondaryColor}, 0 0 10px ${secondaryColor}` 
-        }}
-      >
-        GAME SHOW
-      </h2>
+      />
     </div>
   );
 };
