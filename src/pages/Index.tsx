@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import NeonLogo from '@/components/NeonLogo';
@@ -10,8 +11,14 @@ const HomePage = () => {
     <div className="min-h-screen bg-neon-background p-4 flex flex-col items-center justify-center">
       <div className="max-w-4xl w-full">
         <div className="text-center mb-8">
-          <NeonLogo size="lg" />
-          <h1 className="text-4xl font-bold mt-4 text-white">
+          <div className="mb-4">
+            <img 
+              src="/lovable-uploads/0272188b-bb47-43fe-aff3-66734661c616.png" 
+              alt="Discord Game Show Logo" 
+              className="h-32 mx-auto"
+            />
+          </div>
+          <h1 className="text-4xl font-bold mt-4 text-transparent bg-clip-text bg-gradient-to-r from-green-500 via-blue-500 to-pink-500">
             Discord Game Show
           </h1>
           <p className="mt-2 text-white/80">

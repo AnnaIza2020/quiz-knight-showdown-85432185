@@ -6,9 +6,10 @@ import { cn } from '@/lib/utils';
 interface NeonLogoProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  showLogo?: boolean;
 }
 
-const NeonLogo: React.FC<NeonLogoProps> = ({ size = 'md', className }) => {
+const NeonLogo: React.FC<NeonLogoProps> = ({ size = 'md', className, showLogo = true }) => {
   const { gameLogo, primaryColor, secondaryColor } = useGameContext();
   
   // Określ rozmiar logo
@@ -18,7 +19,20 @@ const NeonLogo: React.FC<NeonLogoProps> = ({ size = 'md', className }) => {
     lg: 'h-20'
   };
   
-  // Jeśli mamy logo ustawione, pokazujemy je
+  // Sprawdzamy, czy pokazujemy domyślne logo z przesłanego obrazu
+  if (showLogo) {
+    return (
+      <div className={cn('relative', className)}>
+        <img 
+          src="/lovable-uploads/0272188b-bb47-43fe-aff3-66734661c616.png"
+          alt="Discord Game Show Logo" 
+          className={cn(sizeClasses[size], 'object-contain')}
+        />
+      </div>
+    );
+  }
+  
+  // Jeśli mamy logo ustawione w kontekście, pokazujemy je
   if (gameLogo) {
     return (
       <div className={cn('relative', className)}>
@@ -31,8 +45,8 @@ const NeonLogo: React.FC<NeonLogoProps> = ({ size = 'md', className }) => {
     );
   }
   
-  // W przeciwnym razie pokazujemy domyślne neonowe logo
-  const defaultTitle = "Quiz Knight Showdown";
+  // W przeciwnym razie pokazujemy domyślne neonowe logo tekstowe
+  const defaultTitle = "Discord Game Show";
   
   // Styl neonowego tekstu - wykorzystuje kolory z kontekstu gry
   const neonTextStyle = {
