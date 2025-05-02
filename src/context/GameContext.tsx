@@ -58,6 +58,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     setActivePlayer,
     startTimer,
     stopTimer,
+    loadGameData,
+    saveGameData,
   } = useGameStateManagement();
 
   const {
@@ -138,7 +140,11 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     setHostCameraUrl,
     
     // Sound effects
-    playSound
+    playSound,
+    
+    // Data persistence methods
+    loadGameData,
+    saveGameData
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
