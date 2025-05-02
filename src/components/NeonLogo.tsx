@@ -1,62 +1,64 @@
-
 import React from 'react';
-import { cn } from "@/lib/utils";
 import { useGameContext } from '@/context/GameContext';
+import { cn } from "@/lib/utils";
 
 interface NeonLogoProps {
-  className?: string;
   size?: 'sm' | 'md' | 'lg';
+  className?: string;
 }
 
-const NeonLogo: React.FC<NeonLogoProps> = ({ className, size = 'md' }) => {
+const NeonLogo: React.FC<NeonLogoProps> = ({ size = 'md', className }) => {
   const { gameLogo, primaryColor, secondaryColor } = useGameContext();
 
-  const sizeClasses = {
-    sm: 'h-8',
-    md: 'h-12',
-    lg: 'h-20',
+  // Size variations
+  const sizes = {
+    sm: 'h-10',
+    md: 'h-16',
+    lg: 'h-24',
   };
-
-  // If custom logo is provided, use that
+  
+  // Colors with fallback
+  const primaryColorHex = primaryColor || '#ff00ff'; // Neon pink fallback
+  const secondaryColorHex = secondaryColor || '#00ffff'; // Neon cyan fallback
+  
+  // If there's a custom logo, display it
   if (gameLogo) {
     return (
       <img 
         src={gameLogo} 
         alt="Game Logo" 
-        className={cn(sizeClasses[size], 'object-contain', className)} 
+        className={cn(sizes[size], 'object-contain', className)} 
       />
     );
   }
-
-  // Default logo
+  
+  // Otherwise show the default neon logo
   return (
-    <div className={cn('font-bold flex items-center', className)}>
-      <span 
-        className={cn(
-          'text-transparent bg-clip-text bg-gradient-to-r',
-          sizeClasses[size],
-          size === 'sm' ? 'text-xl' : size === 'md' ? 'text-3xl' : 'text-5xl'
-        )}
-        style={{ 
-          backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`,
-          textShadow: `0 0 10px ${primaryColor}, 0 0 20px ${primaryColor}`
+    <div 
+      className={cn(
+        'flex flex-col items-center justify-center font-bold',
+        sizes[size],
+        className
+      )}
+    >
+      <div 
+        className="text-3xl sm:text-4xl md:text-5xl tracking-wider"
+        style={{
+          color: primaryColorHex,
+          textShadow: `0 0 5px ${primaryColorHex}, 0 0 20px ${primaryColorHex}`
         }}
       >
-        DISCORD
-      </span>
-      <span 
-        className={cn(
-          'text-transparent bg-clip-text bg-gradient-to-r ml-2',
-          sizeClasses[size],
-          size === 'sm' ? 'text-xl' : size === 'md' ? 'text-3xl' : 'text-5xl'
-        )}
-        style={{ 
-          backgroundImage: `linear-gradient(to right, ${secondaryColor}, ${primaryColor})`,
-          textShadow: `0 0 10px ${secondaryColor}, 0 0 20px ${secondaryColor}`
+        QUIZ KNIGHT
+      </div>
+      <div 
+        className="text-xl sm:text-2xl md:text-3xl tracking-wide"
+        style={{
+          color: secondaryColorHex,
+          textShadow: `0 0 5px ${secondaryColorHex}, 0 0 15px ${secondaryColorHex}`
         }}
       >
-        GAME SHOW
-      </span>
+        SHOWDOWN
+      </div>
     </div>
   );
 };

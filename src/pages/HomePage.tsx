@@ -1,67 +1,96 @@
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, Eye, Users, Shield } from 'lucide-react';
+import NeonLogo from '@/components/NeonLogo';
+import { useGameContext } from '@/context/GameContext';
+import { motion } from 'framer-motion';
 
 const HomePage = () => {
+  const { loadGameData } = useGameContext();
+  
+  useEffect(() => {
+    // Load game data on homepage visit
+    loadGameData();
+  }, [loadGameData]);
+  
   return (
-    <div className="min-h-screen bg-[#0F0B1E] flex flex-col items-center justify-center p-6 text-white">
-      {/* Title with gradient text */}
-      <h1 className="text-6xl font-bold mb-6 text-center">
-        <span className="text-[#4DF73B]">Discord </span>
-        <span className="text-[#4BDFED]">Game </span>
-        <span className="text-[#F25D94]">Show</span>
-      </h1>
+    <div className="min-h-screen bg-neon-background flex flex-col items-center p-6">
+      <motion.div 
+        className="mt-12 mb-8"
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8, type: 'spring' }}
+      >
+        <NeonLogo size="lg" />
+      </motion.div>
       
-      {/* Description */}
-      <p className="text-center text-gray-300 max-w-2xl mb-12">
-        Interaktywny teleturniej z trzema rundami, specjalnymi kartami i 
-        animacjami dla streamów na Twitchu i Discordzie. Pytania z polskiego 
-        internetu, Twitcha i gier w Polsce.
-      </p>
+      <motion.div
+        className="max-w-2xl text-center mb-12"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+      >
+        <h2 className="text-white text-xl mb-4">
+          Interaktywny teleturniej z pytaniami i wyzwaniami
+        </h2>
+        <p className="text-white/70">
+          Trzy rundy ekscytującej zabawy, specjalne karty, koło fortuny i wiele więcej!
+          Idealna rozrywka na Twój stream lub wydarzenie.
+        </p>
+      </motion.div>
       
-      {/* Main buttons */}
-      <div className="flex gap-6 mb-16">
-        <Link 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full">
+        <MainCard 
+          title="Panel Prowadzącego" 
+          description="Zarządzaj pytaniami, uczestnikami i kontroluj przebieg gry"
           to="/unified-host" 
-          className="text-white hover:text-neon-blue"
-        >
-          Panel Prowadzącego
-        </Link>
-        <Link 
+          delay={0.4}
+        />
+        
+        <MainCard 
+          title="Nakładka OBS" 
+          description="Wyświetla interfejs teleturnieju dla widzów - kamery, pytania, animacje"
           to="/overlay" 
-          className="px-10 py-3 text-lg font-medium rounded border-2 border-[#4BDFED]/60 hover:bg-[#4BDFED]/10 transition-colors"
-        >
-          Widok Gracza
-        </Link>
-      </div>
-      
-      {/* Navigation cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-5xl">
-        <NavCard to="/settings" icon={<Settings className="w-6 h-6 text-[#4DF73B]" />} label="Ustawienia" />
-        <NavCard to="/overlay" icon={<Eye className="w-6 h-6 text-[#4BDFED]" />} label="Overlay" />
-        <NavCard to="/hostpanel" icon={<Users className="w-6 h-6 text-[#F25D94]" />} label="Gracze" />
-        <NavCard to="/rules" icon={<Shield className="w-6 h-6 text-[#4BDFED]" />} label="Zasady" />
+          delay={0.6}
+        />
+        
+        <MainCard 
+          title="Ustawienia" 
+          description="Dostosuj wygląd, dodaj pytania, zarządzaj kategoriami i grafikami"
+          to="/settings" 
+          delay={0.8}
+        />
+        
+        <MainCard 
+          title="Instrukcja" 
+          description="Jak prowadzić teleturniej i korzystać z wszystkich funkcji"
+          to="/rules" 
+          delay={1.0}
+        />
       </div>
     </div>
   );
 };
 
-interface NavCardProps {
-  to: string;
-  icon: React.ReactNode;
-  label: string;
-}
-
-const NavCard = ({ to, icon, label }: NavCardProps) => {
-  return (
+const MainCard = ({ title, description, to, delay = 0 }: { 
+  title: string, 
+  description: string, 
+  to: string,
+  delay?: number 
+}) => (
+  <motion.div
+    initial={{ y: 50, opacity: 0 }}
+    animate={{ y: 0, opacity: 1 }}
+    transition={{ delay, duration: 0.5 }}
+  >
     <Link 
       to={to} 
-      className="border border-white/10 rounded-md p-6 flex flex-col items-center justify-center gap-4 hover:bg-white/5 transition-colors"
+      className="block h-full bg-black/30 backdrop-blur-sm border border-white/10 rounded-lg p-6 transition-all hover:border-neon-blue hover:shadow-[0_0_20px_rgba(0,255,255,0.2)]"
     >
-      {icon}
-      <span className="text-lg">{label}</span>
+      <h3 className="text-2xl font-bold text-neon-blue mb-3">{title}</h3>
+      <p className="text-white/70">{description}</p>
     </Link>
-  );
-};
+  </motion.div>
+);
 
 export default HomePage;

@@ -5,42 +5,57 @@ import { useGameContext } from '@/context/GameContext';
 
 interface FortuneWheelProps {
   className?: string;
-  onSelectCategory?: (categoryId: string) => void;
+  onSelectCategory?: (categoryId: string, categoryName: string) => void;
+  disabled?: boolean;
 }
 
-const FortuneWheel: React.FC<FortuneWheelProps> = ({ className, onSelectCategory }) => {
-  const { categories } = useGameContext();
+const FortuneWheel: React.FC<FortuneWheelProps> = ({ 
+  className, 
+  onSelectCategory,
+  disabled = false
+}) => {
+  const { categories, playSound } = useGameContext();
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
 
-  const segments = categories.map(category => ({
+  const gameCategories = categories.slice(0, 6); // Limit to 6 categories for wheel
+  
+  // Create segments for wheel with random colors
+  const segments = gameCategories.map(category => ({
     id: category.id,
     name: category.name,
     color: getRandomNeonColor(),
   }));
 
+  // Fill with dummy segments if less than 6
+  while (segments.length < 6) {
+    segments.push({
+      id: `dummy-${segments.length}`,
+      name: `Kategoria ${segments.length + 1}`,
+      color: getRandomNeonColor(),
+    });
+  }
+
   function getRandomNeonColor() {
     const neonColors = [
-      '#ff00ff', // pink
-      '#00ffff', // cyan
-      '#ff00cc', // magenta
-      '#33ff00', // lime
-      '#ff3300', // orange
-      '#ff0066', // rose
-      '#9900ff', // purple
-      '#ffff00', // yellow
+      '#ff00ff', // neon pink
+      '#00ffff', // neon cyan
+      '#ff00cc', // neon magenta
+      '#33ff00', // neon lime
+      '#ff3300', // neon orange
+      '#ff0066', // neon rose
+      '#9900ff', // neon purple
+      '#ffff00', // neon yellow
     ];
     return neonColors[Math.floor(Math.random() * neonColors.length)];
   }
 
   const spinWheel = () => {
-    if (isSpinning || segments.length === 0) return;
+    if (isSpinning || segments.length === 0 || disabled) return;
     
     // Play spin sound
-    const spinSound = new Audio('/sounds/spin.mp3');
-    spinSound.volume = 0.5;
-    spinSound.play().catch(e => console.log('Error playing sound:', e));
+    playSound('wheel-spin', 0.5);
     
     setIsSpinning(true);
     
@@ -62,12 +77,10 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ className, onSelectCategory
       setSelectedSegment(selected.id);
       
       // Play success sound
-      const successSound = new Audio('/sounds/success.mp3');
-      successSound.volume = 0.5;
-      successSound.play().catch(e => console.log('Error playing sound:', e));
+      playSound('success', 0.5);
       
-      if (onSelectCategory) {
-        onSelectCategory(selected.id);
+      if (onSelectCategory && !selected.id.startsWith('dummy-')) {
+        onSelectCategory(selected.id, selected.name);
       }
       
       setTimeout(() => {
@@ -110,7 +123,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ className, onSelectCategory
               }}
             >
               <div 
-                className="absolute text-black font-bold text-xs"
+                className="absolute text-black font-bold text-xs md:text-sm"
                 style={{
                   transform: `rotate(${angle/2}deg) translateY(-80%) translateX(20%)`,
                   maxWidth: '60%',
@@ -129,13 +142,14 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({ className, onSelectCategory
       {/* Center button */}
       <button
         onClick={spinWheel}
-        disabled={isSpinning}
+        disabled={isSpinning || disabled}
         className={cn(
           'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2',
           'w-16 h-16 rounded-full bg-black border-4',
           'flex items-center justify-center font-bold text-sm',
           'transition-all',
-          isSpinning ? 'border-red-500 text-red-500' : 'border-white text-white hover:border-neon-yellow hover:text-neon-yellow'
+          isSpinning ? 'border-red-500 text-red-500' : 'border-white text-white hover:border-neon-yellow hover:text-neon-yellow',
+          disabled && 'opacity-50 cursor-not-allowed'
         )}
       >
         {isSpinning ? 'KRĘCI...' : 'KRĘĆ'}

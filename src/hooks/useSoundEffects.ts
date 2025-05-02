@@ -1,120 +1,93 @@
 
-import { useCallback, useEffect, useState } from 'react';
+import { useRef } from 'react';
 
-// Define the available sound effects in the game
 export type SoundEffect = 
-  | 'success' 
-  | 'fail' 
-  | 'bonus' 
-  | 'eliminate' 
-  | 'victory' 
-  | 'timeout'
-  | 'wheel-tick'
-  | 'round-start'
-  | 'card-reveal';
+  'success' | 'fail' | 'bonus' | 'round-start' | 
+  'eliminate' | 'victory' | 'timeout' | 'wheel-spin';
 
-// Sound file paths
+type SoundOptions = {
+  enabled: boolean;
+  volume?: number;
+  preload?: boolean;
+};
+
 const soundPaths: Record<SoundEffect, string> = {
-  success: '/sounds/success.mp3',
-  fail: '/sounds/fail.mp3',
-  bonus: '/sounds/bonus.mp3',
-  eliminate: '/sounds/eliminate.mp3',
-  victory: '/sounds/victory.mp3',
-  timeout: '/sounds/timeout.mp3',
-  'wheel-tick': '/sounds/wheel-tick.mp3',
+  'success': '/sounds/success.mp3',
+  'fail': '/sounds/fail.mp3',
+  'bonus': '/sounds/bonus.mp3',
   'round-start': '/sounds/round-start.mp3',
-  'card-reveal': '/sounds/card-reveal.mp3'
+  'eliminate': '/sounds/eliminate.mp3',
+  'victory': '/sounds/victory.mp3',
+  'timeout': '/sounds/timeout.mp3',
+  'wheel-spin': '/sounds/wheel-spin.mp3'
 };
 
-// Default volume levels for each sound type
-const defaultVolumes: Record<SoundEffect, number> = {
-  success: 0.5,
-  fail: 0.5,
-  bonus: 0.5,
-  eliminate: 0.7,
-  victory: 0.7,
-  timeout: 0.6,
-  'wheel-tick': 0.3,
-  'round-start': 0.7,
-  'card-reveal': 0.6
-};
+export const useSoundEffects = (options: SoundOptions = { enabled: true }) => {
+  const soundCacheRef = useRef<Record<SoundEffect, HTMLAudioElement | null>>({
+    'success': null,
+    'fail': null,
+    'bonus': null,
+    'round-start': null,
+    'eliminate': null,
+    'victory': null,
+    'timeout': null,
+    'wheel-spin': null
+  });
 
-interface UseSoundEffectsProps {
-  enabled?: boolean; // Whether sound is enabled overall
-}
-
-export const useSoundEffects = ({ enabled = true }: UseSoundEffectsProps = {}) => {
-  const [soundsLoaded, setSoundsLoaded] = useState<Record<SoundEffect, boolean>>({} as any);
-  const [audioElements, setAudioElements] = useState<Record<SoundEffect, HTMLAudioElement>>({} as any);
-  
-  // Initialize audio elements on mount
-  useEffect(() => {
-    if (!enabled) return;
+  // Preload sounds if enabled
+  const preloadSounds = () => {
+    if (!options.enabled || !options.preload) return;
     
-    const elements: Partial<Record<SoundEffect, HTMLAudioElement>> = {};
-    const loaded: Partial<Record<SoundEffect, boolean>> = {};
-    
-    // Create audio elements for each sound
     Object.entries(soundPaths).forEach(([key, path]) => {
-      const soundKey = key as SoundEffect;
       const audio = new Audio(path);
-      audio.volume = defaultVolumes[soundKey];
-      
-      // Track when each sound is loaded
-      audio.addEventListener('canplaythrough', () => {
-        loaded[soundKey] = true;
-        setSoundsLoaded(prev => ({ ...prev, [soundKey]: true }));
-      });
-      
-      audio.addEventListener('error', () => {
-        console.error(`Failed to load sound: ${path}`);
-        loaded[soundKey] = false;
-        setSoundsLoaded(prev => ({ ...prev, [soundKey]: false }));
-      });
-      
-      // Preload audio
-      audio.load();
-      elements[soundKey] = audio;
+      audio.preload = 'auto';
+      soundCacheRef.current[key as SoundEffect] = audio;
     });
-    
-    setAudioElements(elements as Record<SoundEffect, HTMLAudioElement>);
-    
-    // Cleanup function
-    return () => {
-      Object.values(elements).forEach(audio => {
-        audio.pause();
-        audio.src = '';
-      });
-    };
-  }, [enabled]);
-  
-  // Play a sound effect with optional volume override
-  const playSound = useCallback((sound: SoundEffect, volume?: number) => {
-    if (!enabled || !audioElements[sound]) return;
+  };
+
+  // Play sound effect with optional volume override
+  const playSound = (effect: SoundEffect, volumeOverride?: number) => {
+    if (!options.enabled) return;
     
     try {
-      // Stop and reset the audio element before playing again
-      const audio = audioElements[sound];
-      audio.pause();
-      audio.currentTime = 0;
+      let audio = soundCacheRef.current[effect];
       
-      // Set volume if provided, otherwise use default
-      if (volume !== undefined) {
-        audio.volume = Math.max(0, Math.min(1, volume)); // Clamp between 0 and 1
+      // Create audio if not cached
+      if (!audio) {
+        audio = new Audio(soundPaths[effect]);
+        soundCacheRef.current[effect] = audio;
       }
       
-      // Play the sound
-      audio.play().catch(error => {
-        console.error(`Failed to play sound: ${sound}`, error);
+      // Reset to beginning if already playing
+      audio.currentTime = 0;
+      
+      // Set volume
+      const volume = volumeOverride !== undefined ? volumeOverride : (options.volume || 0.5);
+      audio.volume = Math.min(1, Math.max(0, volume));
+      
+      // Play sound
+      audio.play().catch((error) => {
+        console.error(`Error playing sound ${effect}:`, error);
       });
     } catch (error) {
-      console.error(`Error playing sound: ${sound}`, error);
+      console.error(`Error with sound ${effect}:`, error);
     }
-  }, [audioElements, enabled]);
-  
+  };
+
+  // Mute/unmute all sounds
+  const setEnabled = (enabled: boolean) => {
+    options.enabled = enabled;
+  };
+
+  // Set global volume for all sounds
+  const setVolume = (volume: number) => {
+    options.volume = Math.min(1, Math.max(0, volume));
+  };
+
   return {
     playSound,
-    soundsLoaded,
-    isReady: Object.values(soundsLoaded).every(Boolean)
+    setEnabled,
+    setVolume,
+    preloadSounds
   };
 };

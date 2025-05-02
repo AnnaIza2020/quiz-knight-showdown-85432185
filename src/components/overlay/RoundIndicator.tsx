@@ -1,39 +1,81 @@
 
 import React from 'react';
 import { GameRound } from '@/types/game-types';
+import { motion } from 'framer-motion';
 
 interface RoundIndicatorProps {
   round: GameRound;
-  primaryColor: string;
-  secondaryColor: string;
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
-const RoundIndicator = ({ round, primaryColor, secondaryColor }: RoundIndicatorProps) => {
-  // Determine border color based on round
-  const borderColor = 
-    round === GameRound.ROUND_ONE ? primaryColor :
-    round === GameRound.ROUND_TWO ? secondaryColor :
-    round === GameRound.ROUND_THREE ? '#9b00ff' : 'white';
+const RoundIndicator: React.FC<RoundIndicatorProps> = ({ 
+  round,
+  primaryColor = '#ff00ff',
+  secondaryColor = '#00ffff' 
+}) => {
+  let roundName = "";
+  let roundColor = "";
+  let roundGlow = "";
   
+  switch (round) {
+    case GameRound.ROUND_ONE:
+      roundName = "RUNDA 1: WIEDZA Z POLSKIEGO INTERNETU";
+      roundColor = primaryColor;
+      roundGlow = primaryColor;
+      break;
+    case GameRound.ROUND_TWO:
+      roundName = "RUNDA 2: 5 SEKUND";
+      roundColor = secondaryColor;
+      roundGlow = secondaryColor;
+      break;
+    case GameRound.ROUND_THREE:
+      roundName = "RUNDA 3: KOŁO FORTUNY";
+      roundColor = "#9900ff"; // Neon purple
+      roundGlow = "#9900ff";
+      break;
+    case GameRound.FINISHED:
+      roundName = "KONIEC GRY";
+      roundColor = "#ffff00"; // Neon yellow
+      roundGlow = "#ffff00";
+      break;
+    default:
+      roundName = "PRZYGOTOWANIE DO GRY";
+      roundColor = "white";
+      roundGlow = "rgba(255,255,255,0.5)";
+  }
+  
+  // Don't show during setup
+  if (round === GameRound.SETUP) return null;
+
   return (
-    <div 
-      className="absolute top-0 left-1/2 transform -translate-x-1/2 px-6 py-2 rounded-b-lg"
-      style={{
-        backgroundColor: 'black',
-        borderWidth: '0 2px 2px 2px',
-        borderStyle: 'solid',
-        borderColor,
-        boxShadow: `0 0 10px ${borderColor}`
-      }}
+    <motion.div 
+      className="absolute top-4 left-0 right-0 flex justify-center z-10"
+      initial={{ y: -50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: -50, opacity: 0 }}
+      transition={{ duration: 0.5 }}
     >
-      <div className="font-bold text-lg">
-        {round === GameRound.SETUP && <span>Przygotowanie</span>}
-        {round === GameRound.ROUND_ONE && <span className="text-neon-pink">Runda 1: Zróżnicowana wiedza z Internetu</span>}
-        {round === GameRound.ROUND_TWO && <span className="text-neon-blue">Runda 2: 5 sekund</span>}
-        {round === GameRound.ROUND_THREE && <span className="text-neon-purple">Runda 3: Koło Fortuny</span>}
-        {round === GameRound.FINISHED && <span className="text-neon-yellow">Koniec gry!</span>}
-      </div>
-    </div>
+      <motion.div
+        className="bg-black/80 backdrop-blur px-6 py-3 rounded-full"
+        style={{
+          border: `2px solid ${roundColor}`,
+          boxShadow: `0 0 15px ${roundGlow}`,
+        }}
+        initial={{ scale: 0.8 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+      >
+        <motion.h2 
+          className="font-bold tracking-wider text-xl md:text-2xl"
+          style={{ color: roundColor }}
+          animate={{ opacity: [1, 0.8, 1] }}
+          transition={{ repeat: Infinity, duration: 2 }}
+        >
+          {roundName}
+        </motion.h2>
+      </motion.div>
+    </motion.div>
   );
 };
 

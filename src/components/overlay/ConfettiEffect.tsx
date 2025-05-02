@@ -1,44 +1,67 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useGameContext } from '@/context/GameContext';
+import Confetti from 'react-confetti';
+import useWindowSize from '@/hooks/useWindowSize';
 
 interface ConfettiEffectProps {
-  primaryColor: string;
-  secondaryColor: string;
   show: boolean;
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
-const ConfettiEffect = ({ primaryColor, secondaryColor, show }: ConfettiEffectProps) => {
-  if (!show) return null;
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {Array(100).fill(0).map((_, i) => {
-        const size = Math.random() * 12 + 5;
-        const colors = [primaryColor, secondaryColor, '#9b00ff', '#ffff00', '#00ff66'];
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        const left = `${Math.random() * 100}%`;
-        const animationDuration = `${Math.random() * 3 + 2}s`;
-        const animationDelay = `${Math.random() * 3}s`;
+const ConfettiEffect: React.FC<ConfettiEffectProps> = ({ 
+  show, 
+  primaryColor: propsPrimaryColor, 
+  secondaryColor: propsSecondaryColor 
+}) => {
+  const { primaryColor: contextPrimaryColor, secondaryColor: contextSecondaryColor } = useGameContext();
+  const { width, height } = useWindowSize();
+  const [isActive, setIsActive] = useState(false);
+  const [confettiPieces, setConfettiPieces] = useState(200);
+  
+  // Use props colors if provided, otherwise use context colors
+  const primaryColor = propsPrimaryColor || contextPrimaryColor || '#ff00ff';
+  const secondaryColor = propsSecondaryColor || contextSecondaryColor || '#00ffff';
+  
+  useEffect(() => {
+    if (show) {
+      setIsActive(true);
+      // Gradually reduce the number of confetti pieces
+      const timer = setTimeout(() => {
+        setConfettiPieces(50); // reduce confetti after 5 seconds
         
-        return (
-          <div 
-            key={i}
-            className="absolute top-0"
-            style={{
-              left,
-              width: `${size}px`,
-              height: `${size}px`,
-              backgroundColor: color,
-              borderRadius: '2px',
-              animation: 'confetti-drop',
-              animationDuration,
-              animationDelay,
-              animationFillMode: 'both'
-            }}
-          />
-        );
-      })}
-    </div>
+        // Stop confetti after 10 seconds
+        const stopTimer = setTimeout(() => {
+          setConfettiPieces(0);
+          setTimeout(() => setIsActive(false), 2000); // Allow remaining pieces to fall
+        }, 5000);
+        
+        return () => clearTimeout(stopTimer);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setIsActive(false);
+    }
+  }, [show]);
+  
+  if (!isActive) return null;
+  
+  return (
+    <Confetti
+      width={width}
+      height={height}
+      numberOfPieces={confettiPieces}
+      recycle={false}
+      colors={[
+        primaryColor,
+        secondaryColor,
+        '#ffffff',
+        '#ffff00',
+        '#00ffff',
+      ]}
+    />
   );
 };
 

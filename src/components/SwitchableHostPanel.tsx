@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { useGameContext, GameRound } from '@/context/GameContext';
+import { useGameContext } from '@/context/GameContext';
+import { GameRound } from '@/types/game-types';
 import Host from '@/pages/Host';
 import HostPanel from '@/pages/HostPanel';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Maximize2, Minimize2, ExternalLink, Bell } from 'lucide-react';
 import EventsBar from '@/components/hostpanel/EventsBar';
@@ -15,26 +15,47 @@ interface SwitchableHostPanelProps {
 const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [events, setEvents] = useState<string[]>([]);
-  const { round } = useGameContext();
-  const navigate = useNavigate();
+  const { round, playSound } = useGameContext();
   
-  // Symulacja dodawania wydarzeń dla demonstracji
+  // Generate friendly name for the current round
+  const getRoundName = () => {
+    switch (round) {
+      case GameRound.SETUP:
+        return "Przygotowanie do gry";
+      case GameRound.ROUND_ONE:
+        return "Runda 1: Zróżnicowana Wiedza z Polskiego Internetu";
+      case GameRound.ROUND_TWO:
+        return "Runda 2: 5 Sekund";
+      case GameRound.ROUND_THREE:
+        return "Runda 3: Koło Fortuny";
+      case GameRound.FINISHED:
+        return "Gra zakończona";
+      default:
+        return "Przygotowanie do gry";
+    }
+  };
+  
+  // Add initial events
   useEffect(() => {
-    // Przy pierwszym renderowaniu dodajmy kilka przykładowych wydarzeń
     if (events.length === 0) {
       setEvents([
-        "Gra została zainicjowana",
-        "Gracz3 otrzymał kartę specjalną: Podwójne punkty",
-        "Gracz5 został wyeliminowany z gry",
-        "Rozpoczęto rundę drugą",
-        "Gracz1 zdobył 15 punktów za poprawną odpowiedź"
+        "Witaj w panelu prowadzącego Quiz Knight Showdown!",
+        "Wybierz graczy i rozpocznij grę",
+        "Możesz w każdej chwili otworzyć nakładkę dla OBS",
+        "Używaj różnych paneli do zarządzania grą",
+        "Powodzenia w prowadzeniu teleturnieju!"
       ]);
     }
   }, [events.length]);
   
-  // Funkcja do dodawania nowych wydarzeń
+  // Function to add new events
   const addEvent = (event: string) => {
     setEvents(prev => [event, ...prev]);
+    
+    // Limit stored events to prevent memory issues
+    if (events.length > 50) {
+      setEvents(prev => prev.slice(0, 50));
+    }
   };
   
   const toggleFullscreen = () => {
@@ -43,15 +64,19 @@ const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
     if (!document.fullscreenElement) {
       element.requestFullscreen().then(() => {
         setIsFullscreen(true);
+        addEvent("Włączono tryb pełnoekranowy");
       }).catch(err => {
         console.error(`Error attempting to enable fullscreen: ${err.message}`);
+        addEvent(`Błąd włączania trybu pełnoekranowego: ${err.message}`);
       });
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen().then(() => {
           setIsFullscreen(false);
+          addEvent("Wyłączono tryb pełnoekranowy");
         }).catch(err => {
           console.error(`Error attempting to exit fullscreen: ${err.message}`);
+          addEvent(`Błąd wyłączania trybu pełnoekranowego: ${err.message}`);
         });
       }
     }
@@ -59,6 +84,12 @@ const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
   
   const openOverlay = () => {
     window.open('/overlay', '_blank', 'noopener,noreferrer');
+    addEvent("Otwarto nakładkę OBS w nowym oknie");
+  }
+  
+  const testSound = (sound: string) => {
+    playSound(sound as any);
+    addEvent(`Odtworzono dźwięk testowy: ${sound}`);
   }
 
   return (
@@ -71,11 +102,7 @@ const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
             round === GameRound.ROUND_TWO ? 'text-neon-blue' :
             round === GameRound.ROUND_THREE ? 'text-neon-purple' : 'text-neon-yellow'
           }`}>
-            {round === GameRound.SETUP && 'Przygotowanie do gry'}
-            {round === GameRound.ROUND_ONE && 'Runda 1: Wiedza z Internetu'}
-            {round === GameRound.ROUND_TWO && 'Runda 2: 5 Sekund'}
-            {round === GameRound.ROUND_THREE && 'Runda 3: Koło Fortuny'}
-            {round === GameRound.FINISHED && 'Gra zakończona'}
+            {getRoundName()}
           </span>
         </div>
         
@@ -83,11 +110,11 @@ const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => addEvent("Nowe testowe wydarzenie: " + new Date().toLocaleTimeString())}
-            className="border-white/20 text-white hover:bg-white/10 flex items-center"
+            onClick={() => testSound('success')}
+            className="border-neon-green text-neon-green hover:bg-neon-green/10 flex items-center"
           >
             <Bell size={16} className="mr-1" />
-            Test wydarzenia
+            Test dźwięku
           </Button>
           <Button 
             variant="outline" 
@@ -96,7 +123,7 @@ const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
             className="border-white/20 text-white hover:bg-white/10 flex items-center"
           >
             <ExternalLink size={16} className="mr-1" />
-            Otwórz nakładkę OBS
+            Nakładka OBS
           </Button>
           <Button 
             variant="outline" 
