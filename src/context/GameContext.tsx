@@ -38,7 +38,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     timerSeconds,
     setTimerSeconds,
     winnerIds,
-    setWinnerIds, // Make sure this is included
+    setWinnerIds,
     gameLogo,
     setGameLogo,
     primaryColor,
@@ -71,8 +71,11 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     resetGame
   } = useGameLogic(players, setPlayers, setRound, setWinnerIds);
 
-  // Initialize sound effects
-  const { playSound } = useSoundEffects({ enabled: true });
+  // Initialize sound effects with fallbacks
+  const { playSound } = useSoundEffects({ 
+    enabled: true,
+    fallbackPath: '/assets/sounds/' // Provide fallback path if main path fails
+  });
 
   // Timer effect
   useEffect(() => {
@@ -129,7 +132,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     advanceToRoundThree,
     finishGame,
     resetGame,
-    setWinnerIds, // Make sure this is included
+    setWinnerIds,
     setGameLogo,
     setPrimaryColor,
     setSecondaryColor,

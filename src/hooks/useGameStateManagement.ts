@@ -36,7 +36,16 @@ export const useGameStateManagement = () => {
 
   // Category methods
   const addCategory = (category: Category) => {
-    setCategories((prev) => [...prev, category]);
+    setCategories((prev) => {
+      // Check if category with this id already exists
+      const exists = prev.find(c => c.id === category.id);
+      if (exists) {
+        // Update existing category
+        return prev.map(c => c.id === category.id ? category : c);
+      }
+      // Add new category
+      return [...prev, category];
+    });
   };
 
   const removeCategory = (categoryId: string) => {
@@ -78,7 +87,7 @@ export const useGameStateManagement = () => {
     timerSeconds,
     setTimerSeconds,
     winnerIds,
-    setWinnerIds, // Make sure this is included
+    setWinnerIds,
     gameLogo,
     setGameLogo,
     primaryColor,
