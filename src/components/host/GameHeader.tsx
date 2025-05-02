@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { GameRound } from '@/types/game-types';
 import NeonLogo from '@/components/NeonLogo';
+import GameSaveManager from './GameSaveManager';
 
 interface GameHeaderProps {
   round: GameRound;
@@ -90,6 +91,11 @@ const GameHeader: React.FC<GameHeaderProps> = ({
               </button>
             )}
           </div>
+        </div>
+        
+        {/* Add GameSaveManager component */}
+        <div className="mt-2">
+          <GameSaveManager />
         </div>
       </div>
     </>

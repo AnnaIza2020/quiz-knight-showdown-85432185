@@ -1,4 +1,6 @@
 
+import { SoundEffect } from '@/hooks/useSoundEffects';
+
 // Define player type
 export interface Player {
   id: string;
@@ -82,4 +84,7 @@ export interface GameContextType {
   setPrimaryColor: (color: string) => void;
   setSecondaryColor: (color: string) => void;
   setHostCameraUrl: (url: string) => void;
+  
+  // Sound effects
+  playSound: (sound: SoundEffect, volume?: number) => void;
 }

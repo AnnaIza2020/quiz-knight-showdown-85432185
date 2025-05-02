@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { GameRound, Player } from '@/types/game-types';
@@ -24,7 +23,8 @@ const Host = () => {
     stopTimer,
     timerRunning,
     currentQuestion,
-    resetGame
+    resetGame,
+    playSound
   } = useGameContext();
   
   const activePlayers = players.filter(p => !p.isEliminated);
@@ -46,10 +46,8 @@ const Host = () => {
     
     awardPoints(activePlayerId, currentQuestion.difficulty);
     
-    // Play success sound
-    const successSound = new Audio('/sounds/success.mp3');
-    successSound.volume = 0.5;
-    successSound.play().catch(e => console.log('Error playing sound:', e));
+    // Play success sound using the new hook
+    playSound('success');
   };
   
   const handleDeductHealth = () => {
@@ -71,10 +69,8 @@ const Host = () => {
       }
     }
     
-    // Play fail sound
-    const failSound = new Audio('/sounds/fail.mp3');
-    failSound.volume = 0.5;
-    failSound.play().catch(e => console.log('Error playing sound:', e));
+    // Play fail sound using the new hook
+    playSound('fail');
   };
   
   const handleBonusPoints = () => {
@@ -83,10 +79,8 @@ const Host = () => {
     // Add 5 bonus points
     awardPoints(activePlayerId, 5);
     
-    // Play sound
-    const bonusSound = new Audio('/sounds/bonus.mp3');
-    bonusSound.volume = 0.5;
-    bonusSound.play().catch(e => console.log('Error playing sound:', e));
+    // Play bonus sound using the new hook
+    playSound('bonus');
   };
   
   const handleEliminatePlayer = () => {
@@ -94,10 +88,8 @@ const Host = () => {
     
     eliminatePlayer(activePlayerId);
     
-    // Play sound
-    const eliminateSound = new Audio('/sounds/eliminate.mp3');
-    eliminateSound.volume = 0.7;
-    eliminateSound.play().catch(e => console.log('Error playing sound:', e));
+    // Play eliminate sound using the new hook
+    playSound('eliminate');
   };
   
   const handleFinishGame = () => {
@@ -106,6 +98,9 @@ const Host = () => {
     if (sortedPlayers.length > 0) {
       const winnerIds = [sortedPlayers[0].id];
       finishGame(winnerIds);
+      
+      // Play victory sound
+      playSound('victory');
     }
   };
   

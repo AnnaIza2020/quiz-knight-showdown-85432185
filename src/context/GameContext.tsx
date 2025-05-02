@@ -3,6 +3,7 @@ import React, { createContext, useContext, ReactNode, useEffect } from 'react';
 import { GameContextType } from '@/types/game-types';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
 import { useGameLogic } from '@/hooks/useGameLogic';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
@@ -70,6 +71,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     resetGame
   } = useGameLogic(players, setPlayers, setRound, setWinnerIds);
 
+  // Initialize sound effects
+  const { playSound } = useSoundEffects({ enabled: true });
+
   // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -80,13 +84,14 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       }, 1000);
     } else if (timerSeconds === 0) {
       setTimerRunning(false);
-      // Play timeout sound effect here
+      // Play timeout sound effect
+      playSound('timeout');
     }
     
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [timerRunning, timerSeconds, setTimerSeconds, setTimerRunning]);
+  }, [timerRunning, timerSeconds, setTimerSeconds, setTimerRunning, playSound]);
 
   const value: GameContextType = {
     // State
@@ -128,6 +133,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     setPrimaryColor,
     setSecondaryColor,
     setHostCameraUrl,
+    
+    // Sound effects
+    playSound
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
