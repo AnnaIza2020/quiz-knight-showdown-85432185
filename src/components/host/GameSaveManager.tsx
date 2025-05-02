@@ -1,289 +1,149 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { toast } from '@/components/ui/use-toast';
-import { GameRound } from '@/types/game-types';
+import { toast } from 'sonner';
+import { Save, Download, Upload } from 'lucide-react';
 
-// Expanded game save type with metadata
-type GameSave = {
-  id: string;
-  name: string;
-  timestamp: number;
-  round: GameRound;
-  playerCount: number;
-  data: {
-    round: GameRound;
-    players: any[];
-    categories: any[];
-    currentQuestion: any | null;
-    activePlayerId: string | null;
-    winnerIds: string[];
-    primaryColor: string;
-    secondaryColor: string;
-    hostCameraUrl: string;
-    gameLogo: string | null;
-  };
-};
+const GameSaveManager: React.FC = () => {
+  const { saveGameData, loadGameData, players, categories } = useGameContext();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-const GameSaveManager = () => {
-  const {
-    round,
-    players,
-    categories,
-    currentQuestion,
-    activePlayerId,
-    winnerIds,
-    primaryColor,
-    secondaryColor,
-    hostCameraUrl,
-    gameLogo,
-    setRound,
-    setPlayers,
-    setCategories,
-    selectQuestion,
-    setActivePlayer,
-    setPrimaryColor,
-    setSecondaryColor,
-    setHostCameraUrl,
-    setGameLogo,
-    setWinnerIds,
-    playSound
-  } = useGameContext();
-
-  const [saves, setSaves] = useState<GameSave[]>([]);
-  const [saveName, setSaveName] = useState<string>('');
-  const [expanded, setExpanded] = useState<boolean>(false);
-
-  // Load saved games from localStorage on component mount
-  useEffect(() => {
-    const savedGames = localStorage.getItem('discordGameShowSaves');
-    if (savedGames) {
-      try {
-        setSaves(JSON.parse(savedGames));
-      } catch (error) {
-        console.error('Failed to parse saved games:', error);
-        toast({
-          title: "Błąd",
-          description: "Nie udało się wczytać zapisanych gier",
-          variant: "destructive"
-        });
-      }
-    }
-  }, []);
-
-  // Function to save current game state
   const handleSave = () => {
-    if (!saveName.trim()) {
-      toast({
-        title: "Błąd",
-        description: "Nazwa zapisu nie może być pusta",
-        variant: "destructive"
-      });
-      return;
-    }
-
+    setIsSaving(true);
     try {
-      // Create save object with timestamp and metadata
-      const newSave: GameSave = {
-        id: Date.now().toString(),
-        name: saveName,
-        timestamp: Date.now(),
-        round,
-        playerCount: players.length,
-        data: {
-          round,
-          players,
-          categories,
-          currentQuestion,
-          activePlayerId,
-          winnerIds,
-          primaryColor,
-          secondaryColor,
-          hostCameraUrl,
-          gameLogo
-        }
+      saveGameData();
+      toast.success('Gra została zapisana');
+    } catch (error) {
+      console.error('Błąd podczas zapisywania gry:', error);
+      toast.error('Nie udało się zapisać gry');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLoad = () => {
+    setIsLoading(true);
+    try {
+      loadGameData();
+      toast.success('Gra została wczytana');
+    } catch (error) {
+      console.error('Błąd podczas wczytywania gry:', error);
+      toast.error('Nie udało się wczytać gry');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleExport = () => {
+    try {
+      // Przygotuj dane do eksportu
+      const gameData = {
+        players,
+        categories,
+        exportDate: new Date().toISOString(),
       };
 
-      // Update saves state
-      const updatedSaves = [...saves, newSave];
-      setSaves(updatedSaves);
-
-      // Save to localStorage
-      localStorage.setItem('discordGameShowSaves', JSON.stringify(updatedSaves));
-
-      // Reset save name
-      setSaveName('');
-
-      // Play success sound and show toast
-      playSound('success');
-      toast({
-        title: "Sukces",
-        description: "Gra została zapisana pomyślnie",
-      });
+      // Utwórz plik JSON do pobrania
+      const dataStr = JSON.stringify(gameData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      
+      // Utwórz link do pobrania pliku
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `quiz-game-export-${new Date().toISOString().slice(0, 10)}.json`;
+      
+      // Symuluj kliknięcie w link
+      document.body.appendChild(link);
+      link.click();
+      
+      // Usuń link
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Dane gry zostały wyeksportowane');
     } catch (error) {
-      console.error('Error saving game:', error);
-      toast({
-        title: "Błąd",
-        description: "Nie udało się zapisać gry",
-        variant: "destructive"
-      });
+      console.error('Błąd podczas eksportu danych:', error);
+      toast.error('Nie udało się wyeksportować danych gry');
     }
   };
 
-  // Function to load a saved game
-  const handleLoad = (save: GameSave) => {
+  const handleImport = () => {
     try {
-      // Restore game state from save data
-      setRound(save.data.round);
-      setPlayers(save.data.players);
-      setCategories(save.data.categories);
-      selectQuestion(save.data.currentQuestion);
-      setActivePlayer(save.data.activePlayerId);
-      setWinnerIds(save.data.winnerIds || []);
-      setPrimaryColor(save.data.primaryColor);
-      setSecondaryColor(save.data.secondaryColor);
-      setHostCameraUrl(save.data.hostCameraUrl);
-      setGameLogo(save.data.gameLogo);
-
-      // Play success sound and show toast
-      playSound('success');
-      toast({
-        title: "Sukces",
-        description: `Gra "${save.name}" została wczytana pomyślnie`,
-      });
+      // Utwórz input typu file
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json';
+      
+      input.onchange = (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const content = event.target?.result as string;
+            const gameData = JSON.parse(content);
+            
+            // TODO: Implementacja importu danych
+            console.log('Zaimportowane dane:', gameData);
+            toast.success('Dane zostały zaimportowane');
+            
+            // Odśwież komponenty
+            loadGameData();
+          } catch (error) {
+            console.error('Błąd podczas parsowania pliku JSON:', error);
+            toast.error('Nieprawidłowy format pliku');
+          }
+        };
+        
+        reader.readAsText(file);
+      };
+      
+      // Symuluj kliknięcie w input
+      document.body.appendChild(input);
+      input.click();
+      document.body.removeChild(input);
     } catch (error) {
-      console.error('Error loading game:', error);
-      toast({
-        title: "Błąd",
-        description: "Nie udało się wczytać gry",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Function to delete a saved game
-  const handleDelete = (id: string) => {
-    const updatedSaves = saves.filter(save => save.id !== id);
-    setSaves(updatedSaves);
-    localStorage.setItem('discordGameShowSaves', JSON.stringify(updatedSaves));
-    
-    playSound('eliminate');
-    toast({
-      title: "Usunięto",
-      description: "Zapis gry został usunięty",
-    });
-  };
-
-  // Function to format date from timestamp
-  const formatDate = (timestamp: number): string => {
-    return new Date(timestamp).toLocaleString('pl-PL');
-  };
-
-  // Get round name in Polish
-  const getRoundName = (round: GameRound): string => {
-    switch (round) {
-      case GameRound.SETUP:
-        return "Przygotowanie";
-      case GameRound.ROUND_ONE:
-        return "Runda 1";
-      case GameRound.ROUND_TWO:
-        return "Runda 2";
-      case GameRound.ROUND_THREE:
-        return "Runda 3";
-      case GameRound.FINISHED:
-        return "Zakończona";
-      default:
-        return "Nieznana";
+      console.error('Błąd podczas importu danych:', error);
+      toast.error('Nie udało się zaimportować danych');
     }
   };
 
   return (
-    <div className="neon-card">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold text-neon-blue">Zapisywanie Gry</h3>
-        <Button
-          variant="ghost" 
-          size="sm"
-          onClick={() => setExpanded(!expanded)}
-          className="text-neon-blue"
-        >
-          {expanded ? 'Zwiń' : 'Rozwiń'}
-        </Button>
-      </div>
-
-      {expanded && (
-        <>
-          <div className="flex items-end gap-2 mb-4">
-            <div className="flex-grow">
-              <Label htmlFor="saveName" className="text-white mb-1 block">Nazwa zapisu</Label>
-              <Input
-                id="saveName"
-                type="text"
-                value={saveName}
-                onChange={(e) => setSaveName(e.target.value)}
-                placeholder="Wprowadź nazwę zapisu"
-                className="bg-black/50 border-neon-blue/50 text-white"
-              />
-            </div>
-            <Button 
-              onClick={handleSave}
-              className="bg-neon-blue hover:bg-blue-600 text-white"
-            >
-              Zapisz
-            </Button>
-          </div>
-
-          {saves.length > 0 ? (
-            <div className="max-h-60 overflow-y-auto pr-2">
-              <div className="space-y-2">
-                {saves.map((save) => (
-                  <div 
-                    key={save.id}
-                    className="bg-black/40 border border-neon-blue/30 rounded-md p-2"
-                  >
-                    <div className="flex justify-between mb-1">
-                      <h4 className="text-neon-blue font-medium">{save.name}</h4>
-                      <span className="text-xs text-white/60">{formatDate(save.timestamp)}</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-xs text-white/70 mb-2">
-                      <div>
-                        {getRoundName(save.round)} • {save.playerCount} graczy
-                      </div>
-                    </div>
-                    
-                    <div className="flex space-x-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleLoad(save)}
-                        className="text-neon-green border-neon-green/50 hover:bg-neon-green/10 text-xs"
-                      >
-                        Wczytaj
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleDelete(save.id)}
-                        className="text-neon-red border-neon-red/50 hover:bg-neon-red/10 text-xs"
-                      >
-                        Usuń
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="text-white/60 text-center py-4">
-              Brak zapisanych gier. Wprowadź nazwę i kliknij Zapisz, aby utworzyć nowy zapis.
-            </p>
-          )}
-        </>
-      )}
+    <div className="flex justify-end gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleSave}
+        disabled={isSaving}
+        className="bg-black/40 border-white/30 text-white/80 hover:bg-white/10 hover:text-white"
+      >
+        <Save size={14} className="mr-1" />
+        {isSaving ? 'Zapisywanie...' : 'Zapisz grę'}
+      </Button>
+      
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleLoad}
+        disabled={isLoading}
+        className="bg-black/40 border-white/30 text-white/80 hover:bg-white/10 hover:text-white"
+      >
+        <Download size={14} className="mr-1" />
+        {isLoading ? 'Wczytywanie...' : 'Wczytaj grę'}
+      </Button>
+      
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleExport}
+        className="bg-black/40 border-white/30 text-white/80 hover:bg-white/10 hover:text-white"
+      >
+        <Upload size={14} className="mr-1" />
+        Eksport JSON
+      </Button>
     </div>
   );
 };

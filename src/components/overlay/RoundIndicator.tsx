@@ -10,71 +10,59 @@ interface RoundIndicatorProps {
 }
 
 const RoundIndicator: React.FC<RoundIndicatorProps> = ({ 
-  round,
+  round, 
   primaryColor = '#ff00ff',
-  secondaryColor = '#00ffff' 
+  secondaryColor = '#00ffff'
 }) => {
-  let roundName = "";
-  let roundColor = "";
-  let roundGlow = "";
+  if (round === GameRound.FINISHED) {
+    return null; // Nie pokazujemy wskaźnika w zakończonej grze
+  }
+  
+  let roundText = '';
+  let roundColor = '';
+  let roundGlow = '';
   
   switch (round) {
+    case GameRound.SETUP:
+      roundText = 'Przygotowanie';
+      roundColor = 'text-white';
+      roundGlow = 'white';
+      break;
     case GameRound.ROUND_ONE:
-      roundName = "RUNDA 1: WIEDZA Z POLSKIEGO INTERNETU";
-      roundColor = primaryColor;
+      roundText = 'RUNDA 1 - ZRÓŻNICOWANA WIEDZA Z INTERNETU';
+      roundColor = 'text-neon-pink';
       roundGlow = primaryColor;
       break;
     case GameRound.ROUND_TWO:
-      roundName = "RUNDA 2: 5 SEKUND";
-      roundColor = secondaryColor;
+      roundText = 'RUNDA 2 - 5 SEKUND';
+      roundColor = 'text-neon-blue';
       roundGlow = secondaryColor;
       break;
     case GameRound.ROUND_THREE:
-      roundName = "RUNDA 3: KOŁO FORTUNY";
-      roundColor = "#9900ff"; // Neon purple
-      roundGlow = "#9900ff";
+      roundText = 'RUNDA 3 - KOŁO FORTUNY';
+      roundColor = 'text-neon-purple';
+      roundGlow = primaryColor;
       break;
-    case GameRound.FINISHED:
-      roundName = "KONIEC GRY";
-      roundColor = "#ffff00"; // Neon yellow
-      roundGlow = "#ffff00";
-      break;
-    default:
-      roundName = "PRZYGOTOWANIE DO GRY";
-      roundColor = "white";
-      roundGlow = "rgba(255,255,255,0.5)";
   }
   
-  // Don't show during setup
-  if (round === GameRound.SETUP) return null;
-
   return (
     <motion.div 
-      className="absolute top-4 left-0 right-0 flex justify-center z-10"
-      initial={{ y: -50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: -50, opacity: 0 }}
-      transition={{ duration: 0.5 }}
+      className="absolute top-4 left-1/2 transform -translate-x-1/2 z-30"
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3, duration: 0.5 }}
     >
-      <motion.div
-        className="bg-black/80 backdrop-blur px-6 py-3 rounded-full"
-        style={{
-          border: `2px solid ${roundColor}`,
-          boxShadow: `0 0 15px ${roundGlow}`,
+      <div 
+        className={`px-6 py-2 rounded-full font-bold text-xl ${roundColor}`}
+        style={{ 
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(4px)',
+          border: `2px solid ${roundGlow}`,
+          boxShadow: `0 0 10px ${roundGlow}, 0 0 20px ${roundGlow}`
         }}
-        initial={{ scale: 0.8 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
       >
-        <motion.h2 
-          className="font-bold tracking-wider text-xl md:text-2xl"
-          style={{ color: roundColor }}
-          animate={{ opacity: [1, 0.8, 1] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-        >
-          {roundName}
-        </motion.h2>
-      </motion.div>
+        {roundText}
+      </div>
     </motion.div>
   );
 };

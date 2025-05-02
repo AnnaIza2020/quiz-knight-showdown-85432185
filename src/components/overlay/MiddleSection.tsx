@@ -1,51 +1,97 @@
 
 import React from 'react';
 import { GameRound } from '@/types/game-types';
-import NeonLogo from '@/components/NeonLogo';
-import QuestionBoard from '@/components/QuestionBoard';
+import { useGameContext } from '@/context/GameContext';
 import CountdownTimer from '@/components/CountdownTimer';
 import FortuneWheel from '@/components/FortuneWheel';
+import NeonLogo from '@/components/NeonLogo';
 
 interface MiddleSectionProps {
   round: GameRound;
   hostCameraUrl: string;
 }
 
-const MiddleSection = ({ round, hostCameraUrl }: MiddleSectionProps) => {
+const MiddleSection: React.FC<MiddleSectionProps> = ({ round, hostCameraUrl }) => {
+  const { timerRunning, currentQuestion } = useGameContext();
+  
   return (
-    <div className="grid grid-cols-[1fr_2fr_1fr] gap-4 h-64">
-      {/* Host camera */}
-      <div className="relative overflow-hidden rounded-lg border-2 border-neon-purple/50 
-                      shadow-[0_0_15px_rgba(155,0,255,0.5)]">
-        {hostCameraUrl ? (
-          <iframe 
-            src={hostCameraUrl}
-            title="Host"
-            className="w-full h-full"
-            allowFullScreen
-          ></iframe>
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-neon-background">
-            <NeonLogo size="sm" />
-            <span className="text-white/50 mt-2">Kamera Hosta</span>
-          </div>
-        )}
-      </div>
-      
-      {/* Question board or round display */}
+    <div className="grid grid-cols-[1fr_2fr] gap-4 min-h-[300px]">
+      {/* Host Camera */}
       <div className="relative">
-        <QuestionBoard />
+        <div className="absolute inset-0 rounded-lg border-2 border-white/20 bg-black/60 overflow-hidden">
+          {hostCameraUrl ? (
+            <iframe 
+              src={hostCameraUrl}
+              title="Host Camera"
+              className="w-full h-full"
+              allowFullScreen
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full">
+              <NeonLogo />
+              <div className="text-white/50 mt-4">Host Camera</div>
+            </div>
+          )}
+        </div>
       </div>
       
-      {/* Timer or Fortune Wheel based on round */}
-      <div className="relative overflow-hidden rounded-lg border-2 border-neon-blue/50 
-                      shadow-[0_0_15px_rgba(0,255,255,0.5)] bg-black/40 backdrop-blur-sm
-                      flex items-center justify-center">
-        {round === GameRound.ROUND_THREE ? (
-          <FortuneWheel />
-        ) : (
-          <CountdownTimer size="lg" />
-        )}
+      {/* Middle Content - Questions or Wheel */}
+      <div className="relative">
+        <div className="absolute inset-0 rounded-lg border-2 border-white/20 bg-black/60 backdrop-blur-sm p-4 overflow-hidden flex flex-col">
+          {/* Timer (shown on all rounds when active) */}
+          {timerRunning && (
+            <div className="absolute top-4 right-4 z-10">
+              <CountdownTimer size="md" />
+            </div>
+          )}
+          
+          {/* Current active question */}
+          {currentQuestion ? (
+            <div className="flex-grow flex flex-col items-center justify-center p-4">
+              <div className="text-neon-blue text-center mb-2">
+                {currentQuestion.category} - {currentQuestion.difficulty} pkt
+              </div>
+              
+              {currentQuestion.imageUrl && (
+                <div className="mb-4 max-w-xs mx-auto">
+                  <img 
+                    src={currentQuestion.imageUrl} 
+                    alt="Question" 
+                    className="max-h-48 object-contain" 
+                  />
+                </div>
+              )}
+              
+              <div className="text-white text-xl md:text-2xl text-center font-bold">
+                {currentQuestion.question}
+              </div>
+              
+              {/* Only show options in round 1 */}
+              {round === GameRound.ROUND_ONE && currentQuestion.options && (
+                <div className="grid grid-cols-2 gap-2 w-full mt-4 max-w-lg mx-auto">
+                  {currentQuestion.options.map((option, index) => (
+                    <div 
+                      key={index}
+                      className="bg-black/50 border border-white/20 rounded-md p-2 text-center text-white"
+                    >
+                      {option}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : round === GameRound.ROUND_THREE && !currentQuestion ? (
+            // Show wheel in round 3 when no question is selected
+            <div className="flex-grow flex flex-col items-center justify-center">
+              <FortuneWheel className="max-w-xs" disabled />
+            </div>
+          ) : (
+            // Default content when no question is shown
+            <div className="flex-grow flex flex-col items-center justify-center">
+              <NeonLogo size="lg" />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

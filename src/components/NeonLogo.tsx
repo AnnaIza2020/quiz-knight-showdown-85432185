@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { useGameContext } from '@/context/GameContext';
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 interface NeonLogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -9,56 +10,56 @@ interface NeonLogoProps {
 
 const NeonLogo: React.FC<NeonLogoProps> = ({ size = 'md', className }) => {
   const { gameLogo, primaryColor, secondaryColor } = useGameContext();
-
-  // Size variations
-  const sizes = {
-    sm: 'h-10',
-    md: 'h-16',
-    lg: 'h-24',
+  
+  // Określ rozmiar logo
+  const sizeClasses = {
+    sm: 'h-8',
+    md: 'h-12',
+    lg: 'h-20'
   };
   
-  // Colors with fallback
-  const primaryColorHex = primaryColor || '#ff00ff'; // Neon pink fallback
-  const secondaryColorHex = secondaryColor || '#00ffff'; // Neon cyan fallback
-  
-  // If there's a custom logo, display it
+  // Jeśli mamy logo ustawione, pokazujemy je
   if (gameLogo) {
     return (
-      <img 
-        src={gameLogo} 
-        alt="Game Logo" 
-        className={cn(sizes[size], 'object-contain', className)} 
-      />
+      <div className={cn('relative', className)}>
+        <img 
+          src={gameLogo} 
+          alt="Game Logo" 
+          className={cn(sizeClasses[size], 'object-contain')}
+        />
+      </div>
     );
   }
   
-  // Otherwise show the default neon logo
+  // W przeciwnym razie pokazujemy domyślne neonowe logo
+  const defaultTitle = "Quiz Knight Showdown";
+  
+  // Styl neonowego tekstu - wykorzystuje kolory z kontekstu gry
+  const neonTextStyle = {
+    textShadow: `
+      0 0 5px ${primaryColor || '#ff00ff'},
+      0 0 10px ${primaryColor || '#ff00ff'},
+      0 0 20px ${primaryColor || '#ff00ff'},
+      0 0 40px ${secondaryColor || '#00ffff'},
+      0 0 80px ${secondaryColor || '#00ffff'}
+    `,
+    color: 'white'
+  };
+  
+  const fontSizeClasses = {
+    sm: 'text-xl',
+    md: 'text-3xl',
+    lg: 'text-5xl'
+  };
+  
   return (
-    <div 
-      className={cn(
-        'flex flex-col items-center justify-center font-bold',
-        sizes[size],
-        className
-      )}
-    >
-      <div 
-        className="text-3xl sm:text-4xl md:text-5xl tracking-wider"
-        style={{
-          color: primaryColorHex,
-          textShadow: `0 0 5px ${primaryColorHex}, 0 0 20px ${primaryColorHex}`
-        }}
+    <div className={cn('relative flex items-center', className)}>
+      <h1 
+        className={cn('font-bold', fontSizeClasses[size])}
+        style={neonTextStyle}
       >
-        QUIZ KNIGHT
-      </div>
-      <div 
-        className="text-xl sm:text-2xl md:text-3xl tracking-wide"
-        style={{
-          color: secondaryColorHex,
-          textShadow: `0 0 5px ${secondaryColorHex}, 0 0 15px ${secondaryColorHex}`
-        }}
-      >
-        SHOWDOWN
-      </div>
+        {defaultTitle}
+      </h1>
     </div>
   );
 };

@@ -1,45 +1,39 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface QuestionDifficultyBadgeProps {
   difficulty: number;
+  className?: string;
 }
 
-const QuestionDifficultyBadge = ({ difficulty }: QuestionDifficultyBadgeProps) => {
-  const getColorClass = () => {
-    switch (difficulty) {
-      case 5:
-        return "bg-green-600 hover:bg-green-700";
-      case 10:
-        return "bg-yellow-600 hover:bg-yellow-700";
-      case 15:
-        return "bg-orange-600 hover:bg-orange-700";
-      case 20:
-        return "bg-red-600 hover:bg-red-700";
-      default:
-        return "bg-gray-600 hover:bg-gray-700";
-    }
-  };
-
-  const getLabel = () => {
-    switch (difficulty) {
-      case 5:
-        return "Łatwe (5 pkt)";
-      case 10:
-        return "Średnie (10 pkt)";
-      case 15:
-        return "Trudne (15 pkt)";
-      case 20:
-        return "Ekstremalne (20 pkt)";
-      default:
-        return "Nieznana";
-    }
-  };
+const QuestionDifficultyBadge: React.FC<QuestionDifficultyBadgeProps> = ({ 
+  difficulty,
+  className
+}) => {
+  let color = '';
+  
+  switch (difficulty) {
+    case 5:
+      color = 'bg-green-700 hover:bg-green-600';
+      break;
+    case 10:
+      color = 'bg-blue-700 hover:bg-blue-600';
+      break;
+    case 15:
+      color = 'bg-yellow-700 hover:bg-yellow-600';
+      break;
+    case 20:
+      color = 'bg-red-700 hover:bg-red-600';
+      break;
+    default:
+      color = 'bg-gray-700 hover:bg-gray-600';
+  }
   
   return (
-    <Badge className={`${getColorClass()} text-white text-xs transition-colors`}>
-      {getLabel()}
+    <Badge className={cn(color, 'text-white font-medium', className)}>
+      {difficulty} pkt
     </Badge>
   );
 };
