@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface EventsBarProps {
   lastEvents: string[];
@@ -21,9 +22,17 @@ const EventsBar = ({ lastEvents, className }: EventsBarProps) => {
         <span className="text-neon-green font-bold">Ostatnie wydarzenia:</span>
         <button 
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-xs text-white/70 hover:text-white transition-colors"
+          className="text-xs text-white/70 hover:text-white transition-colors flex items-center gap-1"
         >
-          {isExpanded ? 'Zwiń' : 'Rozwiń wszystkie'}
+          {isExpanded ? (
+            <>
+              <ChevronUp size={14} /> Zwiń
+            </>
+          ) : (
+            <>
+              <ChevronDown size={14} /> Rozwiń wszystkie
+            </>
+          )}
         </button>
       </div>
       

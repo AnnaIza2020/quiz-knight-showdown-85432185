@@ -13,9 +13,9 @@ interface InfoBarProps {
 
 const InfoBar = ({
   events,
-  height = 80,
+  height = 50, // Changed from 80 to 50px
   opacity = 80,
-  fontSize = 18,
+  fontSize = 16, // Slightly reduced font size to fit better in smaller bar
   displayTime = 10
 }: InfoBarProps) => {
   const [visibleEvents, setVisibleEvents] = useState<string[]>([]);
