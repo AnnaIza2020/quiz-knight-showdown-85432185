@@ -52,7 +52,10 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
     'timeout': '/sounds/timeout.mp3',
     'round-start': '/sounds/round-start.mp3',
     'damage': '/sounds/damage.mp3',
-    'powerup': '/sounds/powerup.mp3'
+    'powerup': '/sounds/powerup.mp3',
+    'bonus': '/sounds/bonus.mp3',
+    'fail': '/sounds/fail.mp3',
+    'eliminate': '/sounds/eliminate.mp3'
   };
   
   // Preload sound effects

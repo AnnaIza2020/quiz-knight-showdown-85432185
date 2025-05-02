@@ -258,7 +258,7 @@ const SettingsCards = () => {
       imageUrl: ''
     });
     setEditingCard(null);
-    playSound('bonus');
+    playSound('bonus'); // This line is updated to use a valid SoundEffect type
   };
 
   // Handle adding/editing a rule

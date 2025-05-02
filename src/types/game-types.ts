@@ -1,3 +1,4 @@
+
 // Define player type
 export interface Player {
   id: string;
@@ -41,7 +42,10 @@ export type SoundEffect =
   'timeout' | 
   'round-start' | 
   'damage' | 
-  'powerup';
+  'powerup' |
+  'bonus' |    // Added new sound effect
+  'fail' |     // Added new sound effect
+  'eliminate'; // Added new sound effect
 
 // Define special cards
 export interface SpecialCard {
