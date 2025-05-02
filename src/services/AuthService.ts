@@ -15,16 +15,16 @@ const createAuthError = (error: any): AuthError => {
     return error as AuthError;
   }
   
-  // Create a compatible AuthError object with name property
-  const authError: AuthError = {
+  // Convert to unknown first, then cast to AuthError to avoid TypeScript protected property error
+  const authErrorObj = {
     code: 'unknown',
     status: 500,
     message: error?.message || 'Unknown authentication error',
-    __isAuthError: true,
-    name: 'AuthError' // Add the required name property
-  } as AuthError;
+    name: 'AuthError'
+  };
   
-  return authError;
+  // Two-step casting to avoid TypeScript protected property error
+  return (authErrorObj as unknown) as AuthError;
 };
 
 export class AuthService {

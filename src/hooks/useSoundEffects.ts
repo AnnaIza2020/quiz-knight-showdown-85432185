@@ -27,6 +27,7 @@ const SOUND_PATHS = {
   'card-reveal': '/sounds/card-reveal.mp3',
 };
 
+// Interface for useSoundEffects options
 interface UseSoundEffectsOptions {
   enabled?: boolean;
 }
