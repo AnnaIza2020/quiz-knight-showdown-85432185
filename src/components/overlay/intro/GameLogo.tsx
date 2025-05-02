@@ -35,7 +35,7 @@ const GameLogo: React.FC<GameLogoProps> = ({ primaryColor, secondaryColor }) => 
         }}
       >
         <img 
-          src="/lovable-uploads/b8ac3188-401e-435a-9869-a440ec9bbf7f.png"
+          src="/game-logo.png"
           alt="Discord Game Show"
           className="w-64 md:w-80"
         />

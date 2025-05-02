@@ -11,6 +11,7 @@ import IntroTitle from './intro/IntroTitle';
 import IntroSubtitle from './intro/IntroSubtitle';
 import AudioControl from './intro/AudioControl';
 import FlashEffect from './intro/FlashEffect';
+import StartButton from './intro/StartButton';
 
 interface IntroScreenProps {
   show: boolean;
@@ -18,6 +19,8 @@ interface IntroScreenProps {
   autoplay?: boolean;
   primaryColor?: string;
   secondaryColor?: string;
+  onStartClick?: () => void;
+  isStarting?: boolean;
 }
 
 const IntroScreen: React.FC<IntroScreenProps> = ({ 
@@ -26,6 +29,8 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
   autoplay = true,
   primaryColor = '#ff00ff',
   secondaryColor = '#39FF14',
+  onStartClick,
+  isStarting = false
 }) => {
   const navigate = useNavigate();
   const [flashActive, setFlashActive] = useState(false);
@@ -95,61 +100,71 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
             
             {/* Action Buttons */}
             <div className="flex flex-col md:flex-row gap-4 mt-4 mb-8">
-              <motion.button
-                onClick={() => handleNavigation('/unified-host')}
-                className="neon-button px-6 py-3 text-lg rounded-lg"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                animate={{
-                  boxShadow: [
-                    `0 0 5px rgba(255,255,255,0.5), 0 0 10px ${secondaryColor}`,
-                    `0 0 10px rgba(255,255,255,0.7), 0 0 20px ${secondaryColor}`,
-                    `0 0 5px rgba(255,255,255,0.5), 0 0 10px ${secondaryColor}`
-                  ]
-                }}
-                transition={{
-                  boxShadow: {
-                    duration: 2,
-                    repeat: Infinity,
-                    repeatType: 'reverse',
-                  }
-                }}
-                style={{ 
-                  backgroundColor: 'rgba(0,0,0,0.3)',
-                  borderColor: secondaryColor,
-                  color: secondaryColor
-                }}
-              >
-                Panel Hosta
-              </motion.button>
-              
-              <motion.button
-                onClick={() => handleNavigation('/player/demo')}
-                className="neon-button px-6 py-3 text-lg rounded-lg"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                animate={{
-                  boxShadow: [
-                    `0 0 5px rgba(255,255,255,0.5), 0 0 10px #00FFFF`,
-                    `0 0 10px rgba(255,255,255,0.7), 0 0 20px #00FFFF`,
-                    `0 0 5px rgba(255,255,255,0.5), 0 0 10px #00FFFF`
-                  ]
-                }}
-                transition={{
-                  boxShadow: {
-                    duration: 2,
-                    repeat: Infinity,
-                    repeatType: 'reverse',
-                  }
-                }}
-                style={{ 
-                  backgroundColor: 'rgba(0,0,0,0.3)',
-                  borderColor: '#00FFFF',
-                  color: '#00FFFF'
-                }}
-              >
-                Widok Gracza
-              </motion.button>
+              {onStartClick ? (
+                <StartButton 
+                  onClick={onStartClick} 
+                  primaryColor={primaryColor} 
+                  label="Rozpocznij Show"
+                />
+              ) : (
+                <>
+                  <motion.button
+                    onClick={() => handleNavigation('/unified-host')}
+                    className="neon-button px-6 py-3 text-lg rounded-lg"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    animate={{
+                      boxShadow: [
+                        `0 0 5px rgba(255,255,255,0.5), 0 0 10px ${secondaryColor}`,
+                        `0 0 10px rgba(255,255,255,0.7), 0 0 20px ${secondaryColor}`,
+                        `0 0 5px rgba(255,255,255,0.5), 0 0 10px ${secondaryColor}`
+                      ]
+                    }}
+                    transition={{
+                      boxShadow: {
+                        duration: 2,
+                        repeat: Infinity,
+                        repeatType: 'reverse',
+                      }
+                    }}
+                    style={{ 
+                      backgroundColor: 'rgba(0,0,0,0.3)',
+                      borderColor: secondaryColor,
+                      color: secondaryColor
+                    }}
+                  >
+                    Panel Hosta
+                  </motion.button>
+                  
+                  <motion.button
+                    onClick={() => handleNavigation('/player/demo')}
+                    className="neon-button px-6 py-3 text-lg rounded-lg"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    animate={{
+                      boxShadow: [
+                        `0 0 5px rgba(255,255,255,0.5), 0 0 10px #00FFFF`,
+                        `0 0 10px rgba(255,255,255,0.7), 0 0 20px #00FFFF`,
+                        `0 0 5px rgba(255,255,255,0.5), 0 0 10px #00FFFF`
+                      ]
+                    }}
+                    transition={{
+                      boxShadow: {
+                        duration: 2,
+                        repeat: Infinity,
+                        repeatType: 'reverse',
+                      }
+                    }}
+                    style={{ 
+                      backgroundColor: 'rgba(0,0,0,0.3)',
+                      borderColor: '#00FFFF',
+                      color: '#00FFFF'
+                    }}
+                  >
+                    Widok Gracza
+                  </motion.button>
+                </>
+              )}
             </div>
             
             {/* Audio control */}
