@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -12,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Lightbulb, SkipForward, Zap, Clock, ArrowDown, Repeat, Target, Copy, Shield, RotateCcw, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { Lightbulb, SkipForward, Zap, Clock, ArrowDown, Repeat, Target, Copy, Shield, RotateCcw, Plus, Pencil, Trash2, Check, X, Upload, ImageIcon } from 'lucide-react';
 import { SpecialCard, SpecialCardAwardRule, GameRound } from '@/types/game-types';
 import { toast } from 'sonner';
 
@@ -48,6 +47,9 @@ const SettingsCards = () => {
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false);
   const [isRuleDialogOpen, setIsRuleDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [isImageUploadDialogOpen, setIsImageUploadDialogOpen] = useState(false);
+  const [currentCardForImage, setCurrentCardForImage] = useState<string>('');
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   const [editingCard, setEditingCard] = useState<SpecialCard | null>(null);
   const [editingRule, setEditingRule] = useState<SpecialCardAwardRule | null>(null);
@@ -56,7 +58,8 @@ const SettingsCards = () => {
     id: '',
     name: '',
     description: '',
-    iconName: 'SkipForward'
+    iconName: 'SkipForward',
+    imageUrl: '' // Dodane pole na adres URL obrazu karty
   });
   
   const [newRule, setNewRule] = useState<SpecialCardAwardRule>({
@@ -179,6 +182,46 @@ const SettingsCards = () => {
     }
   }, [specialCards.length, specialCardRules.length, addSpecialCard, addSpecialCardRule]);
 
+  // Obsługa przesyłania obrazu karty
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Sprawdź typ pliku (tylko PNG)
+    if (file.type !== 'image/png') {
+      toast.error('Dozwolone są tylko pliki PNG');
+      return;
+    }
+
+    // Stwórz podgląd obrazu
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Zapisz obraz do karty
+  const handleSaveCardImage = () => {
+    if (!imagePreview || !currentCardForImage) return;
+
+    // Znajdź kartę do aktualizacji
+    const cardToUpdate = specialCards.find(card => card.id === currentCardForImage);
+    if (!cardToUpdate) return;
+
+    // Aktualizuj kartę z nowym obrazem
+    updateSpecialCard({
+      ...cardToUpdate,
+      imageUrl: imagePreview
+    });
+
+    toast.success(`Obraz dla karty "${cardToUpdate.name}" został dodany`);
+    setIsImageUploadDialogOpen(false);
+    setImagePreview(null);
+    setCurrentCardForImage('');
+    playSound('card-reveal');
+  };
+
   // Handle adding/editing a card
   const handleCardSubmit = () => {
     if (!newCard.name || !newCard.description) {
@@ -204,7 +247,8 @@ const SettingsCards = () => {
       id: '',
       name: '',
       description: '',
-      iconName: 'SkipForward'
+      iconName: 'SkipForward',
+      imageUrl: ''
     });
     setEditingCard(null);
     playSound('bonus');
@@ -308,6 +352,9 @@ const SettingsCards = () => {
           <TabsTrigger value="test" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-neon-green data-[state=active]:shadow-none">
             Test animacji
           </TabsTrigger>
+          <TabsTrigger value="obrazy" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-neon-green data-[state=active]:shadow-none">
+            Obrazy kart
+          </TabsTrigger>
         </TabsList>
         
         {/* Karty specjalne */}
@@ -322,7 +369,8 @@ const SettingsCards = () => {
                     id: '',
                     name: '',
                     description: '',
-                    iconName: 'SkipForward'
+                    iconName: 'SkipForward',
+                    imageUrl: ''
                   });
                 }}>
                   <Plus size={16} /> Nowa karta
@@ -414,6 +462,15 @@ const SettingsCards = () => {
                         <Button 
                           variant="ghost" 
                           size="icon" 
+                          className="h-8 w-8 text-gray-400 hover:text-white hover:bg-black/50"
+                          onClick={() => openImageUploadDialog(card.id)}
+                          title="Dodaj obraz karty"
+                        >
+                          <ImageIcon size={16} />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
                           className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-black/50"
                           onClick={() => {
                             if (window.confirm(`Czy na pewno chcesz usunąć kartę "${card.name}"?`)) {
@@ -430,6 +487,17 @@ const SettingsCards = () => {
                       {card.description}
                     </CardDescription>
                   </CardHeader>
+                  {card.imageUrl && (
+                    <CardContent className="pt-0">
+                      <div className="relative w-full aspect-[3/4] rounded-md overflow-hidden border border-gray-700">
+                        <img 
+                          src={card.imageUrl} 
+                          alt={`Karta ${card.name}`}
+                          className="object-contain w-full h-full"
+                        />
+                      </div>
+                    </CardContent>
+                  )}
                 </Card>
               );
             })}
@@ -780,7 +848,139 @@ const SettingsCards = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Nowa zakładka: Obrazy kart */}
+        <TabsContent value="obrazy" className="mt-6">
+          <Card className="bg-black/30 border-gray-800">
+            <CardHeader>
+              <CardTitle>Zarządzanie obrazami kart</CardTitle>
+              <CardDescription>
+                Dodaj lub edytuj obrazy dla kart specjalnych (format PNG)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+                {specialCards.map((card) => (
+                  <div
+                    key={card.id}
+                    className="border border-gray-700 rounded-lg p-4 flex flex-col items-center"
+                  >
+                    <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                      {iconMap[card.iconName] && React.createElement(iconMap[card.iconName], { size: 18 })}
+                      {card.name}
+                    </h3>
+                    
+                    <div className="bg-black/50 w-full aspect-[3/4] rounded-lg flex items-center justify-center mb-3 overflow-hidden border border-gray-700">
+                      {card.imageUrl ? (
+                        <img 
+                          src={card.imageUrl} 
+                          alt={card.name} 
+                          className="object-contain w-full h-full"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center text-gray-500">
+                          <ImageIcon size={48} />
+                          <span className="text-xs mt-2">Brak obrazu</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="border-gray-700 text-white gap-2 w-full"
+                      onClick={() => openImageUploadDialog(card.id)}
+                    >
+                      <Upload size={14} />
+                      {card.imageUrl ? "Zmień obraz" : "Dodaj obraz"}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              
+              {specialCards.length === 0 && (
+                <div className="flex justify-center items-center p-12 border border-dashed border-gray-700 rounded-lg">
+                  <p className="text-white/60">Brak zdefiniowanych kart specjalnych. Najpierw dodaj karty.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+      
+      {/* Dialog dla przesyłania obrazów */}
+      <Dialog open={isImageUploadDialogOpen} onOpenChange={setIsImageUploadDialogOpen}>
+        <DialogContent className="bg-[#0c0e1a] border-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-white">
+              {specialCards.find(c => c.id === currentCardForImage)?.name} - Dodaj obraz karty
+            </DialogTitle>
+            <DialogDescription>
+              Prześlij obraz w formacie PNG dla tej karty specjalnej
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="flex justify-center mb-4">
+              <div className="border border-gray-700 rounded-lg w-40 h-56 flex items-center justify-center bg-black/50 overflow-hidden">
+                {imagePreview ? (
+                  <img 
+                    src={imagePreview} 
+                    alt="Podgląd karty" 
+                    className="object-contain w-full h-full"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center text-gray-500">
+                    <ImageIcon size={36} />
+                    <span className="text-xs mt-2">Podgląd</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="card-image" className="text-right">Obraz PNG</Label>
+              <div className="col-span-3">
+                <Input
+                  id="card-image"
+                  type="file"
+                  accept="image/png"
+                  onChange={handleImageUpload}
+                  className="bg-black/50 border-gray-700"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Zalecany rozmiar: 300x420 pikseli (stosunek 3:4)
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="flex space-x-2">
+            <Button variant="outline" onClick={() => setIsImageUploadDialogOpen(false)}>Anuluj</Button>
+            <Button 
+              className="bg-neon-green hover:bg-neon-green/80" 
+              onClick={handleSaveCardImage}
+              disabled={!imagePreview}
+            >
+              Zapisz obraz
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog dla przypisywania kart */}
+      <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+        <DialogContent className="bg-[#0c0e1a] border-gray-800">
+          {/* ... keep existing code (assign cards dialog content) */}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog dla reguł */}
+      <Dialog open={isRuleDialogOpen} onOpenChange={setIsRuleDialogOpen}>
+        <DialogContent className="bg-[#0c0e1a] border-gray-800">
+          {/* ... keep existing code (rules dialog content) */}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
