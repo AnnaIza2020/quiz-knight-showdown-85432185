@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const EnhancedNavigation = () => {
+const HomeNavigation = () => {
   return (
     <nav className="flex flex-col md:flex-row gap-4 mt-8">
       <Link
@@ -35,4 +36,4 @@ const EnhancedNavigation = () => {
   );
 };
 
-export default EnhancedNavigation;
+export default HomeNavigation;
