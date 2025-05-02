@@ -3,6 +3,7 @@ import React from 'react';
 import { Player } from '@/types/game-types';
 import { Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface PlayerCardProps {
   player: Player;
@@ -56,11 +57,11 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
   if (player.isActive) {
     borderStyle = 'border-neon-green shadow-[0_0_10px_rgba(0,255,0,0.5)]';
   } else if (player.isEliminated) {
-    borderStyle = 'border-neon-red/50 opacity-60';
+    borderStyle = 'border-neon-red/50';
   }
   
   return (
-    <div 
+    <motion.div 
       className={cn(
         cardSizes[size], 
         'rounded-md overflow-hidden border-2',
@@ -70,6 +71,9 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
         player.isEliminated && 'grayscale',
         className
       )}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
     >
       {/* Player camera */}
       <div className="relative flex-grow bg-black/30">
@@ -94,7 +98,11 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
         
         {/* Player status indicator */}
         {player.isActive && (
-          <div className="absolute top-2 right-2 w-3 h-3 rounded-full bg-neon-green animate-pulse" />
+          <motion.div 
+            className="absolute top-2 right-2 w-3 h-3 rounded-full bg-neon-green"
+            animate={{ scale: [1, 1.3, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          />
         )}
         
         {/* Lives display - show in all rounds except round 1 */}
@@ -127,9 +135,11 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
         {/* Health bar for round 1 */}
         {showHealthBar && (
           <div className="mt-1 bg-gray-800 rounded-full overflow-hidden">
-            <div 
-              className={cn('transition-all', healthBarSizes[size], healthColor)} 
-              style={{ width: `${healthPercentage}%` }}
+            <motion.div 
+              className={cn('transition-all', healthBarSizes[size], healthColor)}
+              initial={{ width: 0 }}
+              animate={{ width: `${healthPercentage}%` }}
+              transition={{ duration: 0.5 }}
             />
           </div>
         )}
@@ -137,11 +147,11 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
       
       {/* Eliminated overlay */}
       {player.isEliminated && (
-        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-          <span className={cn('font-bold text-neon-red', fontSizes[size])}>ELIMINATED</span>
+        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+          <span className={cn('font-bold text-neon-red', fontSizes[size])}>WYELIMINOWANY</span>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 

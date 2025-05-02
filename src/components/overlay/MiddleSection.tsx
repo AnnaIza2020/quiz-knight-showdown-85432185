@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { GameRound } from '@/types/game-types';
 import { useGameContext } from '@/context/GameContext';
 import CountdownTimer from '@/components/CountdownTimer';
@@ -14,9 +14,39 @@ interface MiddleSectionProps {
 
 const MiddleSection: React.FC<MiddleSectionProps> = ({ round, hostCameraUrl }) => {
   const { timerRunning, currentQuestion, primaryColor } = useGameContext();
+  const [showSkipAnimation, setShowSkipAnimation] = useState(false);
+  const [lastQuestionId, setLastQuestionId] = useState<string | null>(null);
+  
+  // Detect question skipping
+  useEffect(() => {
+    if (currentQuestion && lastQuestionId && currentQuestion.id !== lastQuestionId) {
+      setShowSkipAnimation(true);
+      setTimeout(() => setShowSkipAnimation(false), 1500);
+    }
+    
+    if (currentQuestion) {
+      setLastQuestionId(currentQuestion.id);
+    }
+  }, [currentQuestion, lastQuestionId]);
   
   // Render the appropriate content based on the current game state
   const renderContent = () => {
+    if (showSkipAnimation) {
+      return (
+        <motion.div
+          key="skip-animation"
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1.2 }}
+          exit={{ opacity: 0, scale: 0.5 }}
+          transition={{ duration: 0.5 }}
+          className="flex-grow flex flex-col items-center justify-center bg-black/40 rounded-lg p-6"
+        >
+          <div className="text-3xl text-neon-yellow font-bold">Pytanie pominięte!</div>
+          <div className="text-white/80 mt-2">Przygotowanie nowego pytania...</div>
+        </motion.div>
+      );
+    }
+    
     if (currentQuestion) {
       return (
         <motion.div 

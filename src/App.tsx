@@ -38,6 +38,7 @@ const App = () => (
             <Route path="/klasyczny" element={<Navigate to="/unified-host" replace />} />
             <Route path="/gracze" element={<Navigate to="/settings?tab=gracze" replace />} />
             
+            {/* Redirect any other unknown paths to 404 page */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

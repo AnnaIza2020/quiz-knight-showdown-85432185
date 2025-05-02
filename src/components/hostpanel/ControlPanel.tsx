@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { saveGameEdition } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { GameRound } from '@/types/game-types';
+import { motion } from 'framer-motion';
 
 interface ControlPanelProps {
   isPaused: boolean;
@@ -30,6 +31,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   const [soundMuted, setSoundMuted] = React.useState(false);
   const [editionName, setEditionName] = React.useState('default');
   const [saveDialogOpen, setSaveDialogOpen] = React.useState(false);
+  const [isSkipping, setIsSkipping] = React.useState(false);
   
   const { playSound, setEnabled: setSoundsEnabled, round, setRound } = useGameContext();
 
@@ -60,27 +62,39 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
       savedAt: new Date().toISOString()
     };
     
-    // Save to Supabase
-    const result = await saveGameEdition(gameData, editionName);
-    
-    if (result.success) {
-      toast.success(`Edycja "${editionName}" zapisana pomyślnie!`);
-      setSaveDialogOpen(false);
+    try {
+      // Save to Supabase
+      const result = await saveGameEdition(gameData, editionName);
+      
+      if (result.success) {
+        toast.success(`Edycja "${editionName}" zapisana pomyślnie!`);
+        setSaveDialogOpen(false);
+      } else {
+        throw new Error('Failed to save game edition');
+      }
+    } catch (error) {
+      toast.error('Wystąpił błąd podczas zapisywania edycji');
+      console.error(error);
     }
   };
   
-  // Start game with intro
-  const startGameWithIntro = () => {
-    // Play intro sound/animation
-    playSound('round-start');
-    toast.success('Czołówka teleturnieju!');
+  // Enhanced skip question functionality with animation
+  const handleSkipQuestionWithFeedback = () => {
+    setIsSkipping(true);
+    playSound('wheel-tick');
     
-    // After intro finishes, start round 1
     setTimeout(() => {
-      setRound(GameRound.ROUND_ONE);
-      toast.success('Runda 1 rozpoczęta!');
-      playSound('success');
-    }, 5000); // Adjust time according to your intro animation
+      handleSkipQuestion();
+      toast.info('Pytanie pominięte!');
+      setIsSkipping(false);
+    }, 500);
+  };
+  
+  // Start game with intro
+  const startGame = () => {
+    setRound(GameRound.ROUND_ONE);
+    toast.success('Runda 1 rozpoczęta!');
+    playSound('success');
   };
 
   return (
@@ -90,28 +104,34 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         
         <div className="space-y-3">
           {round === GameRound.SETUP && (
-            <button 
+            <motion.button 
               className="w-full py-3 px-4 bg-black border-2 border-neon-green text-neon-green rounded-md hover:bg-neon-green/20 flex items-center justify-center transition-colors font-bold"
-              onClick={startGameWithIntro}
+              onClick={startGame}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               <PlayCircle size={18} className="mr-2" /> Start Gry
-            </button>
+            </motion.button>
           )}
           
-          <button 
+          <motion.button 
             className="w-full py-3 px-4 bg-black border border-neon-purple text-neon-purple rounded-md hover:bg-neon-purple/20 flex items-center justify-center transition-colors"
             onClick={resetGame}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             <RotateCcw size={18} className="mr-2" /> Nowa Gra
-          </button>
+          </motion.button>
           
           <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
             <DialogTrigger asChild>
-              <button
+              <motion.button
                 className="w-full py-3 px-4 bg-black border border-neon-blue text-neon-blue rounded-md hover:bg-neon-blue/20 flex items-center justify-center transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <Save size={18} className="mr-2" /> Zapisz Edycję
-              </button>
+              </motion.button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -142,65 +162,77 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             </DialogContent>
           </Dialog>
           
-          <button 
+          <motion.button 
             className="w-full py-3 px-4 bg-black border border-neon-yellow text-neon-yellow rounded-md hover:bg-neon-yellow/20 flex items-center justify-center transition-colors"
             onClick={handleTogglePause}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             {isPaused ? (
               <><Play size={18} className="mr-2" /> Wznów Grę</>
             ) : (
               <><Pause size={18} className="mr-2" /> Przerwa</>
             )}
-          </button>
+          </motion.button>
           
-          <button 
-            className="w-full py-3 px-4 bg-black border border-neon-blue text-neon-blue rounded-md hover:bg-neon-blue/20 flex items-center justify-center transition-colors"
-            onClick={handleSkipQuestion}
+          <motion.button 
+            className={`w-full py-3 px-4 bg-black border border-neon-blue text-neon-blue rounded-md hover:bg-neon-blue/20 flex items-center justify-center transition-colors ${isSkipping ? 'animate-pulse' : ''}`}
+            onClick={handleSkipQuestionWithFeedback}
+            disabled={isSkipping}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             <SkipForward size={18} className="mr-2" /> Pomiń Pytanie
-          </button>
+          </motion.button>
 
-          <button 
+          <motion.button 
             className="w-full py-3 px-4 bg-black border border-neon-green text-neon-green rounded-md hover:bg-neon-green/20 flex items-center justify-center transition-colors"
             onClick={handleSoundToggle}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             {soundMuted ? (
               <><VolumeX size={18} className="mr-2" /> Włącz Dźwięk</>
             ) : (
               <><Volume2 size={18} className="mr-2" /> Wycisz Dźwięk</>
             )}
-          </button>
+          </motion.button>
           
-          <button 
+          <motion.button 
             className="w-full py-4 px-4 bg-black border-2 border-neon-red text-neon-red rounded-md hover:bg-neon-red/20 flex items-center justify-center font-bold mt-6 transition-colors"
             onClick={handleFinishGame}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             <X size={18} className="mr-2" /> Zakończ Grę
-          </button>
+          </motion.button>
         </div>
       </div>
       
       <div className="bg-black/70 backdrop-blur-md p-4 rounded-lg border border-white/10">
         <h3 className="text-xl font-bold mb-2 text-white">Nawigacja</h3>
         <div className="space-y-2">
-          <button 
+          <motion.button 
             className="w-full p-2 bg-black/50 text-white rounded hover:bg-white/10 text-left transition-colors"
             onClick={() => navigate('/')}
+            whileHover={{ x: 5 }}
           >
             Strona Główna
-          </button>
-          <button 
+          </motion.button>
+          <motion.button 
             className="w-full p-2 bg-black/50 text-white rounded hover:bg-white/10 text-left transition-colors"
             onClick={() => navigate('/overlay')}
+            whileHover={{ x: 5 }}
           >
             Przejdź do Overlay
-          </button>
-          <button 
+          </motion.button>
+          <motion.button 
             className="w-full p-2 bg-black/50 text-white rounded hover:bg-white/10 text-left transition-colors"
             onClick={() => navigate('/settings')}
+            whileHover={{ x: 5 }}
           >
             Ustawienia
-          </button>
+          </motion.button>
         </div>
       </div>
     </div>

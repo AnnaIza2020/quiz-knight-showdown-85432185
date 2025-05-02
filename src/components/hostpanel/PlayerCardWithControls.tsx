@@ -7,11 +7,13 @@ import { Plus, Minus, Award, Trash, Heart } from 'lucide-react';
 interface PlayerCardWithControlsProps {
   player: Player;
   isCompact?: boolean;
+  showControls?: boolean; // Added this prop to fix TypeScript error
 }
 
 const PlayerCardWithControls: React.FC<PlayerCardWithControlsProps> = ({ 
   player,
-  isCompact = false
+  isCompact = false,
+  showControls = true // Default to true for backward compatibility
 }) => {
   const { 
     activePlayerId, 
@@ -114,31 +116,33 @@ const PlayerCardWithControls: React.FC<PlayerCardWithControlsProps> = ({
       <div className="h-[40%] bg-black/40 p-1 flex flex-col">
         <div className="font-bold text-white truncate">{player.name}</div>
         
-        <div className="flex justify-between mt-auto">
-          <button 
-            onClick={handleDeductHealth}
-            className="p-1 bg-black/40 rounded hover:bg-red-900/40 text-red-400"
-            title={round === 'round_one' ? "Odejmij HP" : "Odejmij życie"}
-          >
-            <Minus size={16} />
-          </button>
-          
-          <button
-            onClick={handleAwardPoints}
-            className="p-1 bg-black/40 rounded hover:bg-yellow-900/40 text-yellow-400"
-            title="Dodaj punkty"
-          >
-            <Plus size={16} />
-          </button>
-          
-          <button
-            onClick={handleEliminate}
-            className="p-1 bg-black/40 rounded hover:bg-red-900/40 text-red-500"
-            title="Wyeliminuj gracza"
-          >
-            <Trash size={16} />
-          </button>
-        </div>
+        {showControls && (
+          <div className="flex justify-between mt-auto">
+            <button 
+              onClick={handleDeductHealth}
+              className="p-1 bg-black/40 rounded hover:bg-red-900/40 text-red-400"
+              title={round === 'round_one' ? "Odejmij HP" : "Odejmij życie"}
+            >
+              <Minus size={16} />
+            </button>
+            
+            <button
+              onClick={handleAwardPoints}
+              className="p-1 bg-black/40 rounded hover:bg-yellow-900/40 text-yellow-400"
+              title="Dodaj punkty"
+            >
+              <Plus size={16} />
+            </button>
+            
+            <button
+              onClick={handleEliminate}
+              className="p-1 bg-black/40 rounded hover:bg-red-900/40 text-red-500"
+              title="Wyeliminuj gracza"
+            >
+              <Trash size={16} />
+            </button>
+          </div>
+        )}
       </div>
       
       {/* Active indicator */}
