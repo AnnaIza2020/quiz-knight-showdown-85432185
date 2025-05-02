@@ -38,7 +38,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     timerSeconds,
     setTimerSeconds,
     winnerIds,
-    setWinnerIds,
+    setWinnerIds, // Make sure this is included
     gameLogo,
     setGameLogo,
     primaryColor,
@@ -129,6 +129,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     advanceToRoundThree,
     finishGame,
     resetGame,
+    setWinnerIds, // Make sure this is included
     setGameLogo,
     setPrimaryColor,
     setSecondaryColor,

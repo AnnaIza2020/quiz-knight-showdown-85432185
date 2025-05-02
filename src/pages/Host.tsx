@@ -5,6 +5,7 @@ import GameHeader from '@/components/host/GameHeader';
 import PlayerSelection from '@/components/host/PlayerSelection';
 import GameControls from '@/components/host/GameControls';
 import PlayerActions from '@/components/host/PlayerActions';
+import GameSaveManager from '@/components/host/GameSaveManager';
 
 const Host = () => {
   const { 
@@ -124,12 +125,17 @@ const Host = () => {
       
       <div className="grid grid-cols-[1fr_2fr] gap-6">
         {/* Left column - Players */}
-        <PlayerSelection 
-          activePlayers={activePlayers}
-          eliminatedPlayers={eliminatedPlayers}
-          activePlayerId={activePlayerId}
-          onSelectPlayer={handleSelectPlayer}
-        />
+        <div className="space-y-6">
+          <PlayerSelection 
+            activePlayers={activePlayers}
+            eliminatedPlayers={eliminatedPlayers}
+            activePlayerId={activePlayerId}
+            onSelectPlayer={handleSelectPlayer}
+          />
+          
+          {/* Add GameSaveManager component */}
+          <GameSaveManager />
+        </div>
         
         {/* Right column - Game controls */}
         <div>

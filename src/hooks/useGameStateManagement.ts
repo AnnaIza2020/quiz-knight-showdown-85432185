@@ -78,7 +78,7 @@ export const useGameStateManagement = () => {
     timerSeconds,
     setTimerSeconds,
     winnerIds,
-    setWinnerIds,
+    setWinnerIds, // Make sure this is included
     gameLogo,
     setGameLogo,
     primaryColor,

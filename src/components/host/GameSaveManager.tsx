@@ -1,262 +1,179 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useGameContext } from '@/context/GameContext';
-import { useGamePersistence } from '@/hooks/useGamePersistence';
-import { GameRound } from '@/types/game-types';
+import { toast } from 'sonner';
 
-interface GameSaveManagerProps {
-  className?: string;
-}
-
-const GameSaveManager: React.FC<GameSaveManagerProps> = ({ className }) => {
+const GameSaveManager = () => {
   const { 
-    round, 
     players, 
-    categories, 
-    activePlayerId, 
+    categories,
+    round,
+    currentQuestion,
+    activePlayerId,
     winnerIds,
+    gameLogo,
     primaryColor,
     secondaryColor,
     hostCameraUrl,
-    gameLogo,
-    setRound,
+    
+    // Methods for loading the game state
     setPlayers,
     setCategories,
+    setRound,
+    selectQuestion,
     setActivePlayer,
     setWinnerIds,
+    setGameLogo,
     setPrimaryColor,
     setSecondaryColor,
-    setHostCameraUrl,
-    setGameLogo,
-    playSound
+    setHostCameraUrl
   } = useGameContext();
   
-  const { saveGame, loadGame, getSavedGames, deleteSavedGame } = useGamePersistence();
-  
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [loadDialogOpen, setLoadDialogOpen] = useState(false);
-  const [saveName, setSaveName] = useState('');
-  const [savedGames, setSavedGames] = useState<Array<{id: string; name: string; timestamp: number; round: GameRound}>>([]);
-  const [saveMessage, setSaveMessage] = useState('');
-  
-  useEffect(() => {
-    // Load saved games list when component mounts or dialogs open
-    if (loadDialogOpen) {
-      const result = getSavedGames();
-      if (result.success) {
-        setSavedGames(result.saves);
+  const [saveSlots, setSaveSlots] = useState<string[]>(() => {
+    // Get save slots from localStorage
+    const slots = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('discord-game-save-')) {
+        slots.push(key.replace('discord-game-save-', ''));
       }
     }
-  }, [getSavedGames, loadDialogOpen]);
+    return slots;
+  });
   
   const handleSaveGame = () => {
-    if (!saveName.trim()) {
-      setSaveMessage('Podaj nazwę zapisu');
-      return;
-    }
-    
-    const gameState = {
-      round,
-      players,
-      categories,
-      activePlayerId,
-      winnerIds,
-      primaryColor,
-      secondaryColor,
-      hostCameraUrl,
-      gameLogo
-    };
-    
-    const result = saveGame(gameState, saveName);
-    
-    if (result.success) {
-      playSound('success');
-      setSaveMessage('Gra została zapisana!');
-      setSaveName('');
-      setTimeout(() => {
-        setSaveDialogOpen(false);
-        setSaveMessage('');
-      }, 1500);
-    } else {
-      playSound('fail');
-      setSaveMessage(result.error || 'Wystąpił błąd podczas zapisywania gry');
-    }
-  };
-  
-  const handleLoadGame = (saveId: string) => {
-    const result = loadGame(saveId);
-    
-    if (result.success && result.data) {
-      // Update game state with loaded data
-      setRound(result.data.round);
-      setPlayers(result.data.players);
-      setCategories(result.data.categories);
-      setActivePlayer(result.data.activePlayerId);
-      setWinnerIds(result.data.winnerIds);
-      setPrimaryColor(result.data.primaryColor);
-      setSecondaryColor(result.data.secondaryColor);
-      setHostCameraUrl(result.data.hostCameraUrl);
-      setGameLogo(result.data.gameLogo);
+    try {
+      // Create a timestamp for the save name
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const saveName = `discord-game-save-${timestamp}`;
       
-      playSound('success');
-      setLoadDialogOpen(false);
-    } else {
-      playSound('fail');
-      setSaveMessage(result.error || 'Wystąpił błąd podczas wczytywania gry');
+      // Create the save data
+      const saveData = {
+        players,
+        categories,
+        round,
+        currentQuestion,
+        activePlayerId,
+        winnerIds,
+        gameLogo,
+        primaryColor,
+        secondaryColor,
+        hostCameraUrl,
+        savedAt: new Date().toISOString()
+      };
+      
+      // Save to localStorage
+      localStorage.setItem(saveName, JSON.stringify(saveData));
+      
+      // Update save slots
+      setSaveSlots([...saveSlots, timestamp]);
+      
+      toast.success('Gra została zapisana pomyślnie!');
+    } catch (error) {
+      console.error('Error saving game:', error);
+      toast.error('Nie udało się zapisać gry. Spróbuj ponownie.');
     }
   };
   
-  const handleDeleteSave = (saveId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    
-    const result = deleteSavedGame(saveId);
-    if (result.success) {
-      playSound('eliminate');
-      // Update the list
-      setSavedGames(prev => prev.filter(save => save.id !== saveId));
-    } else {
-      playSound('fail');
-      setSaveMessage(result.error || 'Wystąpił błąd podczas usuwania zapisu');
+  const handleLoadGame = (timestamp: string) => {
+    try {
+      // Get the save data from localStorage
+      const saveData = JSON.parse(localStorage.getItem(`discord-game-save-${timestamp}`) || '{}');
+      
+      if (!saveData.players || !saveData.categories) {
+        throw new Error('Nieprawidłowe dane zapisu');
+      }
+      
+      // Load the game state
+      setPlayers(saveData.players);
+      setCategories(saveData.categories);
+      setRound(saveData.round);
+      selectQuestion(saveData.currentQuestion);
+      setActivePlayer(saveData.activePlayerId);
+      setWinnerIds(saveData.winnerIds || []);
+      
+      // Load settings
+      if (saveData.gameLogo) setGameLogo(saveData.gameLogo);
+      if (saveData.primaryColor) setPrimaryColor(saveData.primaryColor);
+      if (saveData.secondaryColor) setSecondaryColor(saveData.secondaryColor);
+      if (saveData.hostCameraUrl) setHostCameraUrl(saveData.hostCameraUrl);
+      
+      toast.success('Gra została załadowana pomyślnie!');
+    } catch (error) {
+      console.error('Error loading game:', error);
+      toast.error('Nie udało się załadować gry. Spróbuj ponownie.');
     }
   };
   
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+  const handleDeleteSave = (timestamp: string) => {
+    try {
+      // Remove from localStorage
+      localStorage.removeItem(`discord-game-save-${timestamp}`);
+      
+      // Update save slots
+      setSaveSlots(saveSlots.filter(slot => slot !== timestamp));
+      
+      toast.success('Zapis gry został usunięty.');
+    } catch (error) {
+      console.error('Error deleting save:', error);
+      toast.error('Nie udało się usunąć zapisu gry.');
+    }
   };
   
-  const getRoundName = (round: GameRound) => {
-    switch (round) {
-      case GameRound.SETUP: return "Przygotowanie";
-      case GameRound.ROUND_ONE: return "Runda 1";
-      case GameRound.ROUND_TWO: return "Runda 2";
-      case GameRound.ROUND_THREE: return "Runda 3";
-      case GameRound.FINISHED: return "Koniec gry";
-      default: return "Nieznana runda";
+  // Format the timestamp for display
+  const formatTimestamp = (timestamp: string) => {
+    try {
+      return new Date(timestamp.replace(/-/g, ':')).toLocaleString('pl-PL');
+    } catch (e) {
+      return timestamp;
     }
   };
   
   return (
-    <div className={`${className || ''}`}>
-      <div className="flex gap-2">
+    <div className="neon-card">
+      <h2 className="text-xl font-bold mb-4 text-white">Zapisane Gry</h2>
+      
+      <div className="flex flex-col gap-4">
         <button
-          onClick={() => setSaveDialogOpen(true)}
-          className="py-2 px-4 bg-black border-2 border-neon-green text-neon-green rounded-md font-bold
-                    hover:bg-neon-green/20"
+          onClick={handleSaveGame}
+          className="neon-button bg-gradient-to-r from-neon-green to-neon-blue"
         >
-          Zapisz grę
+          Zapisz aktualny stan gry
         </button>
         
-        <button
-          onClick={() => setLoadDialogOpen(true)}
-          className="py-2 px-4 bg-black border-2 border-neon-blue text-neon-blue rounded-md font-bold
-                    hover:bg-neon-blue/20"
-        >
-          Wczytaj grę
-        </button>
-      </div>
-      
-      {/* Save game dialog */}
-      {saveDialogOpen && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="neon-card w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4 text-neon-green">Zapisz obecną grę</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-white mb-1">Nazwa zapisu</label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 bg-black/50 border border-neon-green/50 rounded text-white"
-                  value={saveName}
-                  onChange={(e) => setSaveName(e.target.value)}
-                  placeholder="Nazwa zapisu gry"
-                />
-              </div>
-              
-              {saveMessage && (
-                <div className="text-center text-neon-pink">{saveMessage}</div>
-              )}
-              
-              <div className="flex justify-end gap-2 mt-4">
-                <button
-                  onClick={() => {
-                    setSaveDialogOpen(false);
-                    setSaveName('');
-                    setSaveMessage('');
-                  }}
-                  className="py-2 px-4 bg-black border border-white/30 text-white/70 rounded"
-                >
-                  Anuluj
-                </button>
-                
-                <button
-                  onClick={handleSaveGame}
-                  className="py-2 px-4 bg-black border-2 border-neon-green text-neon-green rounded font-bold
-                           hover:bg-neon-green/20"
-                >
-                  Zapisz
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Load game dialog */}
-      {loadDialogOpen && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="neon-card w-full max-w-xl">
-            <h2 className="text-xl font-bold mb-4 text-neon-blue">Wczytaj zapisaną grę</h2>
-            
-            {savedGames.length === 0 ? (
-              <div className="text-center text-white/60 my-8">
-                Brak zapisanych gier
-              </div>
-            ) : (
-              <div className="max-h-80 overflow-y-auto space-y-2">
-                {savedGames.map((save) => (
-                  <div 
-                    key={save.id}
-                    onClick={() => handleLoadGame(save.id)}
-                    className="p-3 bg-black/50 border border-neon-blue/30 rounded cursor-pointer hover:border-neon-blue"
-                  >
-                    <div className="flex justify-between">
-                      <div className="font-bold text-white">{save.name}</div>
-                      <button
-                        onClick={(e) => handleDeleteSave(save.id, e)}
-                        className="text-neon-red hover:text-neon-pink"
-                      >
-                        Usuń
-                      </button>
-                    </div>
-                    <div className="text-sm text-white/70 flex justify-between">
-                      <div>{getRoundName(save.round)}</div>
-                      <div>{formatDate(save.timestamp)}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {saveMessage && (
-              <div className="text-center text-neon-pink mt-4">{saveMessage}</div>
-            )}
-            
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={() => {
-                  setLoadDialogOpen(false);
-                  setSaveMessage('');
-                }}
-                className="py-2 px-4 bg-black border border-white/30 text-white/70 rounded"
+        {saveSlots.length > 0 ? (
+          <div className="max-h-48 overflow-y-auto pr-2 space-y-2">
+            {saveSlots.map((timestamp) => (
+              <div 
+                key={timestamp} 
+                className="flex justify-between items-center p-2 bg-black/30 rounded border border-neon-blue/30"
               >
-                Zamknij
-              </button>
-            </div>
+                <div className="text-white truncate max-w-xs">
+                  {formatTimestamp(timestamp)}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleLoadGame(timestamp)}
+                    className="px-2 py-1 bg-black/50 text-neon-green border border-neon-green/50 rounded text-sm hover:bg-neon-green/20"
+                  >
+                    Wczytaj
+                  </button>
+                  <button
+                    onClick={() => handleDeleteSave(timestamp)}
+                    className="px-2 py-1 bg-black/50 text-neon-red border border-neon-red/50 rounded text-sm hover:bg-neon-red/20"
+                  >
+                    Usuń
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center text-white/60 p-4">
+            Brak zapisanych gier
+          </div>
+        )}
+      </div>
     </div>
   );
 };

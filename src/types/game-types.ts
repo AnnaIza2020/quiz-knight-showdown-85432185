@@ -78,6 +78,7 @@ export interface GameContextType {
   advanceToRoundThree: () => void;
   finishGame: (winnerIds: string[]) => void;
   resetGame: () => void;
+  setWinnerIds: (winnerIds: string[]) => void; // Added missing property
   
   // Settings methods
   setGameLogo: (logoUrl: string | null) => void;
