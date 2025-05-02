@@ -8,6 +8,22 @@ export interface AuthResponse {
   error: AuthError | null;
 }
 
+// Create a helper function to convert generic Error to AuthError
+const createAuthError = (error: any): AuthError => {
+  // Check if it's already an AuthError
+  if (error && typeof error === 'object' && 'code' in error && 'status' in error) {
+    return error as AuthError;
+  }
+  
+  // Create a compatible AuthError object
+  return {
+    code: 'unknown',
+    status: 500,
+    message: error?.message || 'Unknown authentication error',
+    __isAuthError: true
+  } as AuthError;
+};
+
 export class AuthService {
   // Zaloguj się używając emaila i hasła
   static async signIn(email: string, password: string): Promise<AuthResponse> {
@@ -27,7 +43,7 @@ export class AuthService {
       return {
         user: null,
         session: null,
-        error: error as AuthError || new Error('Nieznany błąd podczas logowania')
+        error: createAuthError(error)
       };
     }
   }
@@ -50,7 +66,7 @@ export class AuthService {
       return {
         user: null,
         session: null,
-        error: error as AuthError || new Error('Nieznany błąd podczas rejestracji')
+        error: createAuthError(error)
       };
     }
   }
@@ -63,7 +79,7 @@ export class AuthService {
     } catch (error) {
       console.error('Błąd wylogowania:', error);
       return {
-        error: error as AuthError || new Error('Nieznany błąd podczas wylogowania')
+        error: createAuthError(error)
       };
     }
   }
@@ -100,7 +116,7 @@ export class AuthService {
     } catch (error) {
       console.error('Błąd resetowania hasła:', error);
       return {
-        error: error as AuthError || new Error('Nieznany błąd podczas resetowania hasła')
+        error: createAuthError(error)
       };
     }
   }
@@ -115,7 +131,7 @@ export class AuthService {
     } catch (error) {
       console.error('Błąd aktualizacji hasła:', error);
       return {
-        error: error as AuthError || new Error('Nieznany błąd podczas aktualizacji hasła')
+        error: createAuthError(error)
       };
     }
   }

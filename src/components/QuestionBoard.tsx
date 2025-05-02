@@ -2,7 +2,7 @@
 import React from 'react';
 import { cn } from "@/lib/utils";
 import { useGameContext } from '@/context/GameContext';
-import { Question, Category, GameRound } from '@/context/GameContext';
+import { Question, Category, GameRound } from '@/types/game-types';
 
 interface QuestionBoardProps {
   className?: string;

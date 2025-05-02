@@ -32,6 +32,9 @@ export interface Category {
   questions: Question[];
 }
 
+// Re-export SoundEffect for compatibility
+export type { SoundEffect };
+
 // Define special cards
 export interface SpecialCard {
   id: string;
