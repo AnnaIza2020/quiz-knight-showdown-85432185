@@ -71,10 +71,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     resetGame
   } = useGameLogic(players, setPlayers, setRound, setWinnerIds);
 
-  // Initialize sound effects with fallbacks
+  // Initialize sound effects
   const { playSound } = useSoundEffects({ 
-    enabled: true,
-    fallbackPath: '/assets/sounds/' // Provide fallback path if main path fails
+    enabled: true 
   });
 
   // Timer effect
