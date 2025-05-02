@@ -4,32 +4,34 @@ import { motion } from 'framer-motion';
 
 interface IntroTitleProps {
   primaryColor: string;
+  secondaryColor: string;
 }
 
-const IntroTitle: React.FC<IntroTitleProps> = ({ primaryColor }) => {
+const IntroTitle: React.FC<IntroTitleProps> = ({ primaryColor, secondaryColor }) => {
   return (
     <motion.h1
       className="text-5xl md:text-7xl font-bold mb-6 text-center"
-      style={{ 
-        color: primaryColor,
-        textShadow: `0 0 10px ${primaryColor}, 0 0 20px ${primaryColor}`
-      }}
-      animate={{
-        textShadow: [
-          `0 0 10px ${primaryColor}, 0 0 20px ${primaryColor}`,
-          `0 0 15px ${primaryColor}, 0 0 30px ${primaryColor}, 0 0 40px ${primaryColor}`,
-          `0 0 5px ${primaryColor}, 0 0 15px ${primaryColor}`,
-          `0 0 15px ${primaryColor}, 0 0 30px ${primaryColor}, 0 0 40px ${primaryColor}`,
-          `0 0 10px ${primaryColor}, 0 0 20px ${primaryColor}`,
-        ],
-      }}
-      transition={{
-        duration: 5,
-        repeat: Infinity,
-        repeatType: 'reverse',
-      }}
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
     >
-      DISCORD GAME SHOW
+      <span
+        style={{ 
+          color: primaryColor,
+          textShadow: `0 0 10px ${primaryColor}, 0 0 20px ${primaryColor}`
+        }}
+        className="mr-2"
+      >
+        DISCORD
+      </span>
+      <span
+        style={{ 
+          color: secondaryColor,
+          textShadow: `0 0 10px ${secondaryColor}, 0 0 20px ${secondaryColor}`
+        }}
+      >
+        GAME SHOW
+      </span>
     </motion.h1>
   );
 };

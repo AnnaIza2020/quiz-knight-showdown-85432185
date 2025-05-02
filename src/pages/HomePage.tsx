@@ -1,157 +1,63 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import NeonLogo from '@/components/NeonLogo';
-import { motion } from 'framer-motion';
-import { Settings, Layout, Users, Shield } from 'lucide-react';
+
+import React, { useState } from 'react';
 import { useGameContext } from '@/context/GameContext';
+import IntroScreen from '@/components/overlay/IntroScreen';
+import EnhancedNavigation from '@/components/EnhancedNavigation';
+import NeonLogo from '@/components/NeonLogo';
 
 const HomePage = () => {
-  const { loadGameData } = useGameContext();
+  const { primaryColor, secondaryColor } = useGameContext();
+  const [showIntro, setShowIntro] = useState(true);
   
-  // Fix the infinite update loop by adding loadGameData to dependency array
-  React.useEffect(() => {
-    // Load game data on homepage visit
-    loadGameData();
-  }, [loadGameData]);
+  const handleIntroFinished = () => {
+    setShowIntro(false);
+  };
   
   return (
-    <div className="min-h-screen bg-[#0A0A15] flex flex-col items-center justify-center p-6">
-      <motion.div 
-        className="mb-6"
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, type: 'spring' }}
-      >
-        <img 
-          src="/lovable-uploads/0272188b-bb47-43fe-aff3-66734661c616.png" 
-          alt="Discord Game Show Logo" 
-          className="w-64 h-auto mb-4"
+    <div className="min-h-screen bg-neon-background p-4 flex flex-col items-center justify-center">
+      {showIntro ? (
+        <IntroScreen 
+          show={true}
+          onFinished={handleIntroFinished}
+          primaryColor={primaryColor}
+          secondaryColor={secondaryColor}
+          autoplay={true}
         />
-      </motion.div>
-      
-      <motion.h1
-        className="text-6xl font-bold mb-4 text-transparent bg-clip-text"
-        style={{
-          backgroundImage: 'linear-gradient(90deg, #3BF73B 0%, #00C2FF 50%, #FF42B7 100%)'
-        }}
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-      >
-        Discord Game Show
-      </motion.h1>
-      
-      <motion.div
-        className="max-w-2xl text-center mb-12"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4, duration: 0.5 }}
-      >
-        <p className="text-white text-lg">
-          Interaktywny teleturniej z trzema rundami, specjalnymi kartami i
-          animacjami dla streamów na Twitchu i Discordzie. Pytania z polskiego
-          internetu, Twitcha i gier w Polsce.
-        </p>
-      </motion.div>
-      
-      <div className="flex flex-wrap justify-center gap-4 mb-12 w-full max-w-xl">
-        <MainButton 
-          to="/unified-host" 
-          label="Panel Hosta"
-          gradient="from-lime-500 to-pink-500"
-          delay={0.5}
-        />
-        
-        <MainButton 
-          to="/overlay" 
-          label="Widok Gracza"
-          gradient="from-blue-900 to-blue-800"
-          delay={0.6}
-        />
-      </div>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl">
-        <NavButton 
-          to="/settings" 
-          label="Ustawienia"
-          icon={<Settings className="w-6 h-6 opacity-80" />}
-          delay={0.7}
-        />
-        
-        <NavButton 
-          to="/overlay" 
-          label="Overlay"
-          icon={<Layout className="w-6 h-6 opacity-80" />}
-          delay={0.8}
-        />
-        
-        <NavButton 
-          to="/player/1" 
-          label="Gracze"
-          icon={<Users className="w-6 h-6 opacity-80" />}
-          delay={0.9}
-        />
-        
-        <NavButton 
-          to="/rules" 
-          label="Zasady"
-          icon={<Shield className="w-6 h-6 opacity-80" />}
-          delay={1.0}
-        />
-      </div>
+      ) : (
+        <div className="max-w-4xl w-full">
+          <div className="text-center mb-8">
+            <div className="mb-4">
+              <NeonLogo size="lg" />
+            </div>
+            <h1 className="text-4xl font-bold mt-4 text-transparent bg-clip-text bg-gradient-to-r from-green-500 via-blue-500 to-pink-500">
+              Discord Game Show
+            </h1>
+            <p className="mt-2 text-white/80">
+              Panel zarządzania turniejem dla prowadzącego i uczestników
+            </p>
+          </div>
+
+          <div className="neon-card mb-8">
+            <h2 className="text-2xl font-bold mb-4 text-white">Witaj w panelu prowadzącego!</h2>
+            <p className="text-white/80 mb-4">
+              Wybierz jedną z poniższych opcji, aby kontynuować:
+            </p>
+            
+            <EnhancedNavigation />
+          </div>
+          
+          <div className="neon-card">
+            <h2 className="text-xl font-bold mb-2 text-neon-blue">Krótka instrukcja:</h2>
+            <ul className="list-disc list-inside text-white/80 space-y-1">
+              <li>Panel Hosta - zarządzanie grą, graczami i pytaniami</li>
+              <li>Nakładka OBS - widok dla widzów, można podłączyć jako źródło w OBS</li>
+              <li>Ustawienia - konfiguracja gry, graczy, pytań i wyglądu</li>
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
-type MainButtonProps = {
-  to: string;
-  label: string;
-  gradient: string;
-  delay: number;
-}
-
-const MainButton = ({ to, label, gradient, delay }: MainButtonProps) => (
-  <motion.div
-    initial={{ y: 20, opacity: 0 }}
-    animate={{ y: 0, opacity: 1 }}
-    transition={{ delay, duration: 0.4 }}
-    className="w-[220px]"
-  >
-    <Link to={to} className="block w-full">
-      <div 
-        className={`py-3 px-6 rounded text-white font-bold text-center text-lg bg-gradient-to-r ${gradient} 
-                   hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] transition-all duration-300`}
-      >
-        {label}
-      </div>
-    </Link>
-  </motion.div>
-);
-
-type NavButtonProps = {
-  to: string;
-  label: string;
-  icon: React.ReactNode;
-  delay: number;
-}
-
-const NavButton = ({ to, label, icon, delay }: NavButtonProps) => (
-  <motion.div
-    initial={{ y: 20, opacity: 0 }}
-    animate={{ y: 0, opacity: 1 }}
-    transition={{ delay, duration: 0.4 }}
-  >
-    <Link 
-      to={to} 
-      className="flex flex-col items-center justify-center p-4 bg-[#0C0C1D] border border-[#1A1A2F] rounded-lg
-                hover:bg-[#14142A] hover:border-[#2A2A40] transition-all duration-200 h-28"
-    >
-      <div className="text-green-500 mb-2">
-        {icon}
-      </div>
-      <span className="text-white text-lg">{label}</span>
-    </Link>
-  </motion.div>
-);
 
 export default HomePage;

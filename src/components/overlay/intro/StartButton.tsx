@@ -5,13 +5,14 @@ import { motion } from 'framer-motion';
 interface StartButtonProps {
   onClick: () => void;
   primaryColor: string;
+  label?: string;
 }
 
-const StartButton: React.FC<StartButtonProps> = ({ onClick, primaryColor }) => {
+const StartButton: React.FC<StartButtonProps> = ({ onClick, primaryColor, label = "Rozpocznij Show" }) => {
   return (
     <motion.button
       onClick={onClick}
-      className="neon-button mt-4 text-xl mb-8"
+      className="neon-button mt-4 text-xl mb-8 px-6 py-3 rounded-lg"
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       animate={{
@@ -28,8 +29,13 @@ const StartButton: React.FC<StartButtonProps> = ({ onClick, primaryColor }) => {
           repeatType: 'reverse',
         }
       }}
+      style={{ 
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        borderColor: primaryColor,
+        color: primaryColor
+      }}
     >
-      Rozpocznij Show
+      {label}
     </motion.button>
   );
 };

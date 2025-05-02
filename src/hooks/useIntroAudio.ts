@@ -5,12 +5,14 @@ interface UseIntroAudioOptions {
   autoplay?: boolean;
   onIntroComplete?: () => void;
   onNarratorComplete?: () => void;
+  loop?: boolean;
 }
 
 export const useIntroAudio = ({ 
   autoplay = true,
   onIntroComplete,
-  onNarratorComplete
+  onNarratorComplete,
+  loop = true
 }: UseIntroAudioOptions = {}) => {
   const [audioPlaying, setAudioPlaying] = useState<boolean>(autoplay);
   const [audioLoaded, setAudioLoaded] = useState<boolean>(false);
@@ -32,20 +34,26 @@ export const useIntroAudio = ({
     const audio = audioRef.current;
     const handleCanPlay = () => setAudioLoaded(true);
     const handleEnded = () => {
-      setAudioPlaying(false);
-      onIntroComplete?.();
+      if (loop) {
+        // Loop the audio if loop option is enabled
+        audio.currentTime = 0;
+        audio.play().catch(e => console.log('Error replaying intro audio:', e));
+      } else {
+        setAudioPlaying(false);
+        onIntroComplete?.();
+      }
     };
     
     audio.addEventListener('canplaythrough', handleCanPlay);
     audio.addEventListener('ended', handleEnded);
-    audio.loop = false; // Don't loop the intro music
+    audio.loop = loop; // Set the loop property based on the option
     
     return () => {
       audio.removeEventListener('canplaythrough', handleCanPlay);
       audio.removeEventListener('ended', handleEnded);
       audio.pause();
     };
-  }, [onIntroComplete]);
+  }, [onIntroComplete, loop]);
   
   // Set up narrator events
   useEffect(() => {

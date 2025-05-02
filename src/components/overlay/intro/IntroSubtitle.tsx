@@ -5,16 +5,13 @@ import { motion } from 'framer-motion';
 const IntroSubtitle: React.FC = () => {
   return (
     <motion.p 
-      className="text-2xl md:text-3xl text-white mb-12 text-center"
+      className="text-lg md:text-xl text-white mb-8 text-center max-w-xl px-4"
       initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: [0, 1, 1, 0], y: [20, 0, 0, -10] }}
-      transition={{ 
-        duration: 4, 
-        repeat: Infinity,
-        times: [0, 0.1, 0.9, 1],
-      }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, delay: 0.5 }}
     >
-      Zaraz zaczynamy!
+      Interaktywny teleturniej z trzema rundami, specjalnymi kartami i animacjami dla streamerów na Twitchu i Discordzie. 
+      Pytania z polskiego internetu, Twitcha i gier w Polsce.
     </motion.p>
   );
 };

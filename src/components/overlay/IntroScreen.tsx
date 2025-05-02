@@ -1,18 +1,14 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useIntroAudio } from '@/hooks/useIntroAudio';
-import { useIntroProgress } from '@/hooks/useIntroProgress';
 
-// Import our new component files
+// Import our component files
 import AnimatedBackground from './intro/AnimatedBackground';
 import GameLogo from './intro/GameLogo';
 import IntroTitle from './intro/IntroTitle';
 import IntroSubtitle from './intro/IntroSubtitle';
-import ProgressBar from './intro/ProgressBar';
-import StartButton from './intro/StartButton';
-import NarratorOverlay from './intro/NarratorOverlay';
-import Countdown from './intro/Countdown';
 import AudioControl from './intro/AudioControl';
 import FlashEffect from './intro/FlashEffect';
 
@@ -22,8 +18,6 @@ interface IntroScreenProps {
   autoplay?: boolean;
   primaryColor?: string;
   secondaryColor?: string;
-  onStartClick?: () => void;
-  isStarting?: boolean;
 }
 
 const IntroScreen: React.FC<IntroScreenProps> = ({ 
@@ -31,59 +25,33 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
   onFinished,
   autoplay = true,
   primaryColor = '#ff00ff',
-  secondaryColor = '#00ffff',
-  onStartClick,
-  isStarting = false
+  secondaryColor = '#39FF14',
 }) => {
-  const [manualIntroControl, setManualIntroControl] = React.useState(false);
+  const navigate = useNavigate();
+  const [flashActive, setFlashActive] = useState(false);
   
-  // Use our custom hooks
+  // Use our custom audio hook
   const {
     audioPlaying,
-    narratorPlaying,
-    narratorFinished,
     toggleAudio,
-    startNarrator
   } = useIntroAudio({
     autoplay,
-    onNarratorComplete: () => {
-      // After narrator finishes, show flash effect and trigger finish callback
-      triggerFlash();
-      setTimeout(() => {
-        if (onFinished) onFinished();
-      }, 1000);
+    onIntroComplete: () => {
+      // Loop the audio instead of finishing
     }
   });
   
-  const {
-    progress,
-    countdownActive,
-    countdownNumber,
-    flashActive,
-    triggerFlash
-  } = useIntroProgress({
-    show,
-    isStarting,
-    onCountdownComplete: () => {
-      if (!manualIntroControl) {
-        if (onFinished) onFinished();
-      }
-    }
-  });
-  
-  // Handle intro completion
-  const handleIntroFinished = () => {
-    if (!manualIntroControl) {
+  // Function to handle navigation with animation
+  const handleNavigation = (path: string) => {
+    // Show flash effect
+    setFlashActive(true);
+    
+    // Navigate after animation
+    setTimeout(() => {
+      navigate(path);
       if (onFinished) onFinished();
-    }
+    }, 500);
   };
-  
-  // Start narrator when "Start" is clicked
-  React.useEffect(() => {
-    if (isStarting && !narratorPlaying) {
-      startNarrator();
-    }
-  }, [isStarting, narratorPlaying, startNarrator]);
   
   if (!show) return null;
   
@@ -120,34 +88,69 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
             />
             
             {/* Title */}
-            <IntroTitle primaryColor={primaryColor} />
+            <IntroTitle primaryColor={primaryColor} secondaryColor={secondaryColor} />
             
             {/* Subtitle */}
             <IntroSubtitle />
             
-            {/* Progress bar */}
-            <ProgressBar 
-              progress={progress}
-              primaryColor={primaryColor}
-              secondaryColor={secondaryColor}
-            />
-            
-            {/* Start button - only shown for host */}
-            {onStartClick && !isStarting && !narratorPlaying && (
-              <StartButton 
-                onClick={onStartClick}
-                primaryColor={primaryColor}
-              />
-            )}
-            
-            {/* Narrator text overlay */}
-            <NarratorOverlay isPlaying={narratorPlaying} />
-            
-            {/* Countdown */}
-            <Countdown 
-              active={countdownActive} 
-              number={countdownNumber} 
-            />
+            {/* Action Buttons */}
+            <div className="flex flex-col md:flex-row gap-4 mt-4 mb-8">
+              <motion.button
+                onClick={() => handleNavigation('/unified-host')}
+                className="neon-button px-6 py-3 text-lg rounded-lg"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                animate={{
+                  boxShadow: [
+                    `0 0 5px rgba(255,255,255,0.5), 0 0 10px ${secondaryColor}`,
+                    `0 0 10px rgba(255,255,255,0.7), 0 0 20px ${secondaryColor}`,
+                    `0 0 5px rgba(255,255,255,0.5), 0 0 10px ${secondaryColor}`
+                  ]
+                }}
+                transition={{
+                  boxShadow: {
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatType: 'reverse',
+                  }
+                }}
+                style={{ 
+                  backgroundColor: 'rgba(0,0,0,0.3)',
+                  borderColor: secondaryColor,
+                  color: secondaryColor
+                }}
+              >
+                Panel Hosta
+              </motion.button>
+              
+              <motion.button
+                onClick={() => handleNavigation('/player/demo')}
+                className="neon-button px-6 py-3 text-lg rounded-lg"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                animate={{
+                  boxShadow: [
+                    `0 0 5px rgba(255,255,255,0.5), 0 0 10px #00FFFF`,
+                    `0 0 10px rgba(255,255,255,0.7), 0 0 20px #00FFFF`,
+                    `0 0 5px rgba(255,255,255,0.5), 0 0 10px #00FFFF`
+                  ]
+                }}
+                transition={{
+                  boxShadow: {
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatType: 'reverse',
+                  }
+                }}
+                style={{ 
+                  backgroundColor: 'rgba(0,0,0,0.3)',
+                  borderColor: '#00FFFF',
+                  color: '#00FFFF'
+                }}
+              >
+                Widok Gracza
+              </motion.button>
+            </div>
             
             {/* Audio control */}
             <AudioControl 
