@@ -4,12 +4,14 @@ import { useGameContext } from '@/context/GameContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlusCircle } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 import PlayerCardWithControls from './PlayerCardWithControls';
 import WelcomeMessage from './WelcomeMessage';
 import CountdownTimer from '@/components/CountdownTimer';
+import { Player } from '@/types/game-types';
 
 interface PreparationViewProps {
-  players: any[];
+  players: Player[];
   addEvent: (event: string) => void;
   handleTimerStart: (seconds: number) => void;
   timerRunning: boolean;
@@ -37,13 +39,19 @@ const PreparationView: React.FC<PreparationViewProps> = ({
       return;
     }
     
-    addPlayer({
+    // Create a complete Player object with all required properties
+    const newPlayer: Player = {
+      id: uuidv4(), // Generate a unique ID
       name: newPlayerName,
       cameraUrl: newPlayerCamera,
       health: 100,
       lives: 3,
       points: 0,
-    });
+      isActive: false,
+      isEliminated: false
+    };
+    
+    addPlayer(newPlayer);
     
     addEvent(`Dodano gracza: ${newPlayerName}`);
     
@@ -139,6 +147,7 @@ const PreparationView: React.FC<PreparationViewProps> = ({
               <PlayerCardWithControls 
                 key={player.id} 
                 player={player}
+                showControls={true}
               />
             ))}
           </div>

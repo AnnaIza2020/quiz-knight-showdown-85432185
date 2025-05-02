@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { SoundEffect } from '@/types/game-types';
 

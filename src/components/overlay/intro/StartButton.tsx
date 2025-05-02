@@ -16,7 +16,7 @@ const StartButton: React.FC<StartButtonProps> = ({
   label = "Rozpocznij Show",
   disabled = false
 }) => {
-  // Button click handler with ripple effect
+  // Button click handler with ripple effect and feedback
   const handleClick = () => {
     if (!disabled) {
       onClick();
@@ -39,18 +39,18 @@ const StartButton: React.FC<StartButtonProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Glow effect */}
+      {/* Enhanced glow effect */}
       <motion.span
         className="absolute inset-0 rounded-lg opacity-50"
         style={{ 
-          boxShadow: `0 0 15px ${primaryColor}`,
+          boxShadow: `0 0 25px ${primaryColor}`,
           pointerEvents: 'none'
         }}
-        animate={{ opacity: [0.3, 0.7, 0.3] }}
+        animate={{ opacity: [0.3, 0.8, 0.3] }}
         transition={{ duration: 2, repeat: Infinity }}
       />
       
-      {/* Border glow */}
+      {/* Enhanced border glow */}
       <motion.span
         className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100"
         style={{
@@ -60,30 +60,36 @@ const StartButton: React.FC<StartButtonProps> = ({
         animate={!disabled ? {
           boxShadow: [
             `0 0 5px ${primaryColor}`,
-            `0 0 15px ${primaryColor}`,
+            `0 0 25px ${primaryColor}`,
             `0 0 5px ${primaryColor}`
           ]
         } : {}}
         transition={{ duration: 1.5, repeat: Infinity }}
       />
       
-      {/* Button content with icon */}
+      {/* Button content with icon and enhanced feedback */}
       <span className="relative z-10 flex items-center justify-center">
-        <Play className="mr-2" size={24} />
+        <motion.span
+          animate={!disabled ? { scale: [1, 1.2, 1] } : {}}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="mr-2"
+        >
+          <Play className="text-neon-green" size={24} />
+        </motion.span>
         {label}
       </span>
       
-      {/* Background hover effect */}
+      {/* Background hover effect enhanced */}
       <motion.span
         className="absolute inset-0 opacity-0 group-hover:opacity-100"
         style={{
-          background: `linear-gradient(45deg, ${primaryColor}20, ${primaryColor}00)`,
+          background: `linear-gradient(45deg, ${primaryColor}40, ${primaryColor}10)`,
           pointerEvents: 'none'
         }}
         transition={{ duration: 0.3 }}
       />
       
-      {/* Ripple effect on click */}
+      {/* Enhanced ripple effect on click */}
       <motion.span
         className="absolute inset-0"
         style={{
@@ -93,11 +99,27 @@ const StartButton: React.FC<StartButtonProps> = ({
         whileTap={{
           background: [
             'radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 0%)',
-            'radial-gradient(circle at center, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 60%)'
+            'radial-gradient(circle at center, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 80%)'
           ]
         }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.8 }}
       />
+      
+      {/* Pulsing animation for idle state */}
+      {!disabled && (
+        <motion.span
+          className="absolute inset-0 rounded-lg opacity-0"
+          style={{
+            border: `1px solid ${primaryColor}`,
+            pointerEvents: 'none'
+          }}
+          animate={{ 
+            scale: [1, 1.05, 1],
+            opacity: [0, 0.4, 0]
+          }}
+          transition={{ duration: 3, repeat: Infinity }}
+        />
+      )}
     </motion.button>
   );
 };

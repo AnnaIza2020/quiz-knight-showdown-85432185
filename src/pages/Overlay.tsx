@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
-import { GameRound } from '@/types/game-types';
+import { GameRound, SoundEffect } from '@/types/game-types';
 import RoundIndicator from '@/components/overlay/RoundIndicator';
 import WinnerDisplay from '@/components/overlay/WinnerDisplay';
 import ConfettiEffect from '@/components/overlay/ConfettiEffect';
@@ -74,7 +73,8 @@ const Overlay = () => {
       // Handle sound control
       if (payload.type === 'sound_control') {
         if (payload.action === 'play') {
-          playSound(payload.sound, { volume: payload.volume || 0.7 });
+          const volumeLevel = payload.volume || 0.7;
+          playSound(payload.sound as SoundEffect, volumeLevel);
         } else if (payload.action === 'stop') {
           stopAllSounds();
         }

@@ -1,6 +1,3 @@
-
-import { SoundEffect } from '@/hooks/useSoundEffects';
-
 // Define player type
 export interface Player {
   id: string;
@@ -32,8 +29,19 @@ export interface Category {
   questions: Question[];
 }
 
-// Re-export SoundEffect for compatibility
-export type { SoundEffect };
+// Define sound effect type
+export type SoundEffect = 
+  'success' | 
+  'failure' | 
+  'click' | 
+  'wheel-spin' | 
+  'wheel-tick' | 
+  'card-reveal' | 
+  'victory' | 
+  'timeout' | 
+  'round-start' | 
+  'damage' | 
+  'powerup';
 
 // Define special cards
 export interface SpecialCard {
