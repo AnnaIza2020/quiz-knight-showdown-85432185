@@ -11,8 +11,8 @@ const GameLogo: React.FC<GameLogoProps> = ({ primaryColor, secondaryColor }) => 
   return (
     <motion.div 
       className="mb-8"
-      initial={{ x: -100, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
       transition={{ 
         type: "spring", 
         stiffness: 100,
@@ -22,6 +22,7 @@ const GameLogo: React.FC<GameLogoProps> = ({ primaryColor, secondaryColor }) => 
     >
       <motion.div
         animate={{
+          scale: [1, 1.05, 1],
           filter: [
             `drop-shadow(0 0 8px ${primaryColor}) drop-shadow(0 0 5px ${secondaryColor})`, 
             `drop-shadow(0 0 20px ${primaryColor}) drop-shadow(0 0 15px ${secondaryColor})`, 
@@ -29,7 +30,7 @@ const GameLogo: React.FC<GameLogoProps> = ({ primaryColor, secondaryColor }) => 
           ],
         }}
         transition={{
-          duration: 2,
+          duration: 3,
           repeat: Infinity,
           repeatType: 'reverse',
         }}
