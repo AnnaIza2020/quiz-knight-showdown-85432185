@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
-import { GameRound } from '@/context/GameContext';
+import { GameRound } from '@/types/game-types';
 import PlayerGrid from '@/components/overlay/PlayerGrid';
 import RoundIndicator from '@/components/overlay/RoundIndicator';
 import MiddleSection from '@/components/overlay/MiddleSection';
@@ -45,7 +45,7 @@ const Overlay = () => {
     round === GameRound.ROUND_THREE ? 3 : 10;
 
   // Get winners for display
-  const winners = winnerIds.map(id => players.find(p => p.id === id)).filter(Boolean) as Player[];
+  const winners = winnerIds.map(id => players.find(p => p.id === id)).filter(Boolean);
   
   return (
     <div className="w-full h-screen bg-neon-background overflow-hidden relative">

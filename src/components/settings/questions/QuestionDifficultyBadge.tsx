@@ -7,26 +7,39 @@ interface QuestionDifficultyBadgeProps {
 }
 
 const QuestionDifficultyBadge = ({ difficulty }: QuestionDifficultyBadgeProps) => {
-  let color = "bg-gray-600";
-  let label = "Nieznana";
-  
-  if (difficulty === 5) {
-    color = "bg-green-600";
-    label = "Łatwe (5 pkt)";
-  } else if (difficulty === 10) {
-    color = "bg-yellow-600";
-    label = "Średnie (10 pkt)";
-  } else if (difficulty === 15) {
-    color = "bg-orange-600";
-    label = "Trudne (15 pkt)";
-  } else if (difficulty === 20) {
-    color = "bg-red-600";
-    label = "Ekstremalne (20 pkt)";
-  }
+  const getColorClass = () => {
+    switch (difficulty) {
+      case 5:
+        return "bg-green-600 hover:bg-green-700";
+      case 10:
+        return "bg-yellow-600 hover:bg-yellow-700";
+      case 15:
+        return "bg-orange-600 hover:bg-orange-700";
+      case 20:
+        return "bg-red-600 hover:bg-red-700";
+      default:
+        return "bg-gray-600 hover:bg-gray-700";
+    }
+  };
+
+  const getLabel = () => {
+    switch (difficulty) {
+      case 5:
+        return "Łatwe (5 pkt)";
+      case 10:
+        return "Średnie (10 pkt)";
+      case 15:
+        return "Trudne (15 pkt)";
+      case 20:
+        return "Ekstremalne (20 pkt)";
+      default:
+        return "Nieznana";
+    }
+  };
   
   return (
-    <Badge className={`${color} text-white text-xs`}>
-      {label}
+    <Badge className={`${getColorClass()} text-white text-xs transition-colors`}>
+      {getLabel()}
     </Badge>
   );
 };

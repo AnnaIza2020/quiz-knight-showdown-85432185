@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useGameContext } from '@/context/GameContext';
 import Host from '@/pages/Host';
@@ -7,7 +7,17 @@ import HostPanel from '@/pages/HostPanel';
 
 const UnifiedHostPanel = () => {
   const [activeView, setActiveView] = useState<string>('modern');
-  const { round } = useGameContext();
+  const { round, loadGameData, saveGameData } = useGameContext();
+
+  // Load game data on initial render
+  useEffect(() => {
+    loadGameData();
+  }, [loadGameData]);
+
+  // Save game data whenever important game state changes
+  useEffect(() => {
+    saveGameData();
+  }, [round, saveGameData]);
 
   return (
     <div className="min-h-screen bg-neon-background p-4">

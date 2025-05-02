@@ -72,6 +72,48 @@ export const useGameStateManagement = () => {
     setActivePlayerId(playerId);
   };
 
+  // Load game data from localStorage if available
+  const loadGameData = () => {
+    try {
+      const savedPlayers = localStorage.getItem('gameShowPlayers');
+      if (savedPlayers) {
+        setPlayers(JSON.parse(savedPlayers));
+      }
+
+      const savedCategories = localStorage.getItem('gameShowCategories');
+      if (savedCategories) {
+        setCategories(JSON.parse(savedCategories));
+      }
+
+      const savedSettings = localStorage.getItem('gameShowSettings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        if (settings.primaryColor) setPrimaryColor(settings.primaryColor);
+        if (settings.secondaryColor) setSecondaryColor(settings.secondaryColor);
+        if (settings.gameLogo) setGameLogo(settings.gameLogo);
+        if (settings.hostCameraUrl) setHostCameraUrl(settings.hostCameraUrl);
+      }
+    } catch (error) {
+      console.error('Failed to load game data from localStorage:', error);
+    }
+  };
+
+  // Save game data to localStorage
+  const saveGameData = () => {
+    try {
+      localStorage.setItem('gameShowPlayers', JSON.stringify(players));
+      localStorage.setItem('gameShowCategories', JSON.stringify(categories));
+      localStorage.setItem('gameShowSettings', JSON.stringify({
+        primaryColor,
+        secondaryColor,
+        gameLogo,
+        hostCameraUrl
+      }));
+    } catch (error) {
+      console.error('Failed to save game data to localStorage:', error);
+    }
+  };
+
   return {
     // State
     round,
@@ -107,5 +149,7 @@ export const useGameStateManagement = () => {
     setActivePlayer,
     startTimer,
     stopTimer,
+    loadGameData,
+    saveGameData,
   };
 };
