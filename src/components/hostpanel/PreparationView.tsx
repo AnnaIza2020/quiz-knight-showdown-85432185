@@ -73,7 +73,6 @@ const PreparationView: React.FC<PreparationViewProps> = ({
               <PlayerCardWithControls 
                 key={player.id} 
                 player={player} 
-                showControls={false}
                 isCompact={true}
               />
             ))}

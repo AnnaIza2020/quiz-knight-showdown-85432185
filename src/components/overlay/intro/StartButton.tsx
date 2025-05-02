@@ -17,8 +17,8 @@ const StartButton: React.FC<StartButtonProps> = ({
       onClick={onClick}
       className="mt-4 text-xl mb-8 px-6 py-3 rounded-lg text-white border-2"
       style={{ 
-        backgroundColor: '#10B981', // Vivid green
-        borderColor: '#059669', // Darker green
+        backgroundColor: '#10B981',
+        borderColor: '#059669',
       }}
     >
       {label}

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { GameRound } from '@/types/game-types';
 import Host from '@/pages/Host';
@@ -41,10 +41,10 @@ const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
   useEffect(() => {
     if (events.length === 0) {
       setEvents([
-        "Witaj w panelu prowadzącego Quiz Knight Showdown!"
+        "Witaj w panelu prowadzącego!"
       ]);
     }
-  }, [events.length]);
+  }, []);
   
   // Function to add new events
   const addEvent = (event: string) => {
@@ -103,7 +103,7 @@ const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
             <X size={16} />
           </Button>
           <AlertDescription>
-            Witaj w panelu prowadzącego Quiz Knight Showdown! Wybierz potrzebne narzędzia i rozpocznij grę.
+            Witaj w panelu prowadzącego! Wybierz potrzebne narzędzia i rozpocznij grę.
           </AlertDescription>
         </Alert>
       )}

@@ -1,9 +1,8 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings } from 'lucide-react';
+import { Settings, Layout, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import EnhancedNavigation from '@/components/EnhancedNavigation';
 
 const HomePage = () => {
   return (
@@ -12,16 +11,7 @@ const HomePage = () => {
         background: 'linear-gradient(to bottom, #1A1F2C 0%, #0A0A0F 100%)'
       }}
     >
-      <div className="max-w-4xl w-full">
-        <div className="absolute top-4 right-4">
-          <Link to="/settings">
-            <Button variant="outline" className="flex items-center gap-2 border-white/20 text-white">
-              <Settings size={16} />
-              Ustawienia
-            </Button>
-          </Link>
-        </div>
-        
+      <div className="max-w-4xl w-full">        
         <div className="text-center mb-8">
           <div className="mb-4">
             <img 
@@ -45,7 +35,28 @@ const HomePage = () => {
             Wybierz jedną z poniższych opcji, aby kontynuować:
           </p>
           
-          <EnhancedNavigation />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <NavigationButton 
+              to="/unified-host" 
+              icon={<Home />}
+              label="Panel Hosta"
+              primaryClass="bg-[#10B981] hover:bg-[#10B981]/90"
+            />
+            
+            <NavigationButton 
+              to="/overlay" 
+              icon={<Layout />}
+              label="Nakładka OBS"
+              primaryClass="bg-[#3B82F6] hover:bg-[#3B82F6]/90"
+            />
+            
+            <NavigationButton 
+              to="/settings" 
+              icon={<Settings />}
+              label="Ustawienia"
+              primaryClass="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90"
+            />
+          </div>
         </div>
         
         <div className="bg-black/30 p-6 rounded-lg border border-white/10">
@@ -60,5 +71,15 @@ const HomePage = () => {
     </div>
   );
 };
+
+const NavigationButton = ({ to, icon, label, primaryClass }) => (
+  <Link 
+    to={to} 
+    className={`flex flex-col items-center p-4 rounded-lg ${primaryClass} text-white transition-all`}
+  >
+    <div className="text-3xl mb-2">{icon}</div>
+    <span className="text-lg font-medium">{label}</span>
+  </Link>
+);
 
 export default HomePage;
