@@ -1,189 +1,185 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
 
-// Define the available sound effects
-export type SoundEffect = 
-  | 'success'
-  | 'fail'
-  | 'timeout'
-  | 'bonus'
-  | 'eliminate'
-  | 'round-start'
-  | 'victory'
-  | 'wheel-spin'
-  | 'wheel-tick'
-  | 'card-reveal'
-  | 'intro-music';
+import { useState, useEffect, useRef } from 'react';
+import { SoundEffect } from '@/types/game-types';
 
-const SOUND_PATHS = {
-  'success': '/sounds/success.mp3',
-  'fail': '/sounds/fail.mp3',
-  'timeout': '/sounds/timeout.mp3',
-  'bonus': '/sounds/bonus.mp3',
-  'eliminate': '/sounds/eliminate.mp3',
-  'round-start': '/sounds/round-start.mp3',
-  'victory': '/sounds/victory.mp3',
-  'wheel-spin': '/sounds/wheel-tick.mp3', // Using wheel-tick for this
-  'wheel-tick': '/sounds/wheel-tick.mp3',
-  'card-reveal': '/sounds/card-reveal.mp3',
-  'intro-music': '/sounds/intro-music.mp3', // New intro music
-};
-
-// Interface for useSoundEffects options
-export interface UseSoundEffectsOptions {
-  enabled?: boolean;
-  defaultVolume?: number;
-  useLocalStorage?: boolean; // Store enabled state in localStorage
-}
-
-// Interface for sound playback options
-export interface PlaySoundOptions {
+interface SoundOptions {
   volume?: number;
   loop?: boolean;
-  onEnd?: () => void;
 }
 
-export const useSoundEffects = (options?: UseSoundEffectsOptions) => {
-  // Get the saved state from localStorage if requested
-  const getInitialState = () => {
-    if (options?.useLocalStorage) {
-      const savedState = localStorage.getItem('soundEffectsEnabled');
-      return savedState !== null ? savedState === 'true' : options?.enabled ?? true;
-    }
-    return options?.enabled ?? true;
-  };
+interface SoundEffectsOptions {
+  enabled?: boolean;
+  useLocalStorage?: boolean;
+  defaultVolume?: number;
+}
 
-  const [enabled, setEnabled] = useState<boolean>(getInitialState());
-  const [audioElements, setAudioElements] = useState<Record<SoundEffect, HTMLAudioElement | null>>({} as Record<SoundEffect, HTMLAudioElement | null>);
-  const defaultVolume = options?.defaultVolume ?? 1.0;
+export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
+  const [enabled, setEnabled] = useState(options.enabled !== false);
+  const [volume, setVolume] = useState(options.defaultVolume || 0.5);
+  const audioElements = useRef<Record<string, HTMLAudioElement>>({});
   
-  // Keep track of currently playing sounds
-  const playingRef = useRef<Record<SoundEffect, boolean>>({} as Record<SoundEffect, boolean>);
-
-  // Initialize audio elements on component mount
+  // Load enabled state from localStorage if requested
   useEffect(() => {
-    if (typeof Audio === 'undefined') return;
-    
-    const audioMap: Record<SoundEffect, HTMLAudioElement> = {} as Record<SoundEffect, HTMLAudioElement>;
-    
-    (Object.keys(SOUND_PATHS) as SoundEffect[]).forEach(effect => {
-      const audio = new Audio(SOUND_PATHS[effect]);
-      audioMap[effect] = audio;
-      playingRef.current[effect] = false;
+    if (options.useLocalStorage) {
+      const savedEnabled = localStorage.getItem('soundEffectsEnabled');
+      if (savedEnabled !== null) {
+        setEnabled(savedEnabled === 'true');
+      }
+      
+      const savedVolume = localStorage.getItem('soundEffectsVolume');
+      if (savedVolume !== null) {
+        setVolume(parseFloat(savedVolume));
+      }
+    }
+  }, [options.useLocalStorage]);
+  
+  // Save enabled state to localStorage if requested
+  useEffect(() => {
+    if (options.useLocalStorage) {
+      localStorage.setItem('soundEffectsEnabled', enabled.toString());
+      localStorage.setItem('soundEffectsVolume', volume.toString());
+    }
+  }, [enabled, volume, options.useLocalStorage]);
+  
+  // Sound effect URLs
+  const soundEffects: Record<SoundEffect, string> = {
+    'success': '/sounds/success.mp3',
+    'failure': '/sounds/failure.mp3',
+    'click': '/sounds/click.mp3',
+    'wheel-spin': '/sounds/wheel-spin.mp3',
+    'wheel-tick': '/sounds/wheel-tick.mp3',
+    'card-reveal': '/sounds/card-reveal.mp3',
+    'victory': '/sounds/victory.mp3',
+    'timeout': '/sounds/timeout.mp3',
+    'round-start': '/sounds/round-start.mp3',
+    'damage': '/sounds/damage.mp3',
+    'powerup': '/sounds/powerup.mp3'
+  };
+  
+  // Preload sound effects
+  useEffect(() => {
+    // Create audio elements for each sound effect
+    Object.entries(soundEffects).forEach(([name, url]) => {
+      const audio = new Audio(url);
+      audio.preload = 'auto';
+      audioElements.current[name] = audio;
     });
     
-    setAudioElements(audioMap);
-    
-    // Cleanup on unmount
+    // Cleanup
     return () => {
-      Object.values(audioMap).forEach(audio => {
-        if (!audio) return;
+      // Stop and remove all audio elements
+      Object.values(audioElements.current).forEach(audio => {
         audio.pause();
-        audio.currentTime = 0;
+        audio.src = '';
       });
+      audioElements.current = {};
     };
   }, []);
-
-  // Save enabled state to localStorage when it changes
-  useEffect(() => {
-    if (options?.useLocalStorage) {
-      localStorage.setItem('soundEffectsEnabled', enabled.toString());
-    }
-  }, [enabled, options?.useLocalStorage]);
-
+  
   // Play a sound effect
-  const playSound = useCallback((sound: SoundEffect, optionsOrVolume?: PlaySoundOptions | number) => {
+  const playSound = (sound: SoundEffect, customVolume?: number) => {
     if (!enabled) return;
-
-    const audio = audioElements[sound];
-    if (!audio) return;
     
-    // Handle different forms of options
-    let volume = defaultVolume;
-    let loop = false;
-    let onEnd: (() => void) | undefined;
-    
-    if (typeof optionsOrVolume === 'number') {
-      volume = optionsOrVolume;
-    } else if (optionsOrVolume) {
-      volume = optionsOrVolume.volume ?? defaultVolume;
-      loop = optionsOrVolume.loop ?? false;
-      onEnd = optionsOrVolume.onEnd;
-    }
-
-    // Reset and configure
-    audio.pause();
-    audio.currentTime = 0;
-    audio.volume = volume;
-    audio.loop = loop;
-    
-    if (onEnd) {
-      const handleEnded = () => {
-        onEnd?.();
-        audio.removeEventListener('ended', handleEnded);
-        playingRef.current[sound] = false;
-      };
-      audio.addEventListener('ended', handleEnded);
-    } else {
-      audio.onended = () => {
-        playingRef.current[sound] = false;
-      };
-    }
-    
-    // Play and catch errors silently (common in browsers before user interaction)
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playingRef.current[sound] = true;
-      playPromise.catch(error => {
-        console.info('Audio play prevented by browser:', error);
-        playingRef.current[sound] = false;
+    try {
+      // Get audio element for this sound
+      let audio = audioElements.current[sound];
+      
+      // If not preloaded, create it
+      if (!audio) {
+        const url = soundEffects[sound] || '';
+        audio = new Audio(url);
+        audioElements.current[sound] = audio;
+      }
+      
+      // Reset audio to start
+      audio.currentTime = 0;
+      
+      // Set volume
+      const effectiveVolume = customVolume !== undefined ? customVolume : volume;
+      audio.volume = Math.min(1, Math.max(0, effectiveVolume));
+      
+      // Play the sound
+      audio.play().catch(err => {
+        console.warn(`Failed to play sound effect "${sound}":`, err);
       });
+    } catch (error) {
+      console.error(`Error playing sound effect "${sound}":`, error);
     }
+  };
+  
+  // Play a sound with options
+  const playSoundWithOptions = (sound: SoundEffect, options: SoundOptions = {}) => {
+    if (!enabled) return;
     
-    return {
-      stop: () => {
-        audio.pause();
-        audio.currentTime = 0;
-        playingRef.current[sound] = false;
-      },
-      pause: () => {
-        audio.pause();
-        playingRef.current[sound] = false;
-      },
-      resume: () => {
-        if (enabled) {
-          audio.play().catch(console.error);
-          playingRef.current[sound] = true;
-        }
-      },
-      isPlaying: () => playingRef.current[sound]
-    };
-  }, [audioElements, enabled, defaultVolume]);
-
-  // Stop a specific sound if it's playing
-  const stopSound = useCallback((sound: SoundEffect) => {
-    const audio = audioElements[sound];
-    if (!audio) return;
-    
-    audio.pause();
-    audio.currentTime = 0;
-    playingRef.current[sound] = false;
-  }, [audioElements]);
-
-  // Stop all currently playing sounds
-  const stopAllSounds = useCallback(() => {
-    Object.entries(audioElements).forEach(([sound, audio]) => {
-      if (!audio || !playingRef.current[sound as SoundEffect]) return;
+    try {
+      // Get audio element for this sound
+      let audio = audioElements.current[sound];
+      
+      // If not preloaded, create it
+      if (!audio) {
+        const url = soundEffects[sound] || '';
+        audio = new Audio(url);
+        audioElements.current[sound] = audio;
+      }
+      
+      // Reset audio to start
+      audio.currentTime = 0;
+      
+      // Set volume
+      const effectiveVolume = options.volume !== undefined ? options.volume : volume;
+      audio.volume = Math.min(1, Math.max(0, effectiveVolume));
+      
+      // Set loop
+      audio.loop = !!options.loop;
+      
+      // Play the sound
+      audio.play().catch(err => {
+        console.warn(`Failed to play sound effect "${sound}":`, err);
+      });
+      
+      // Return the audio element for further control (e.g., stopping a looped sound)
+      return audio;
+    } catch (error) {
+      console.error(`Error playing sound effect "${sound}":`, error);
+      return null;
+    }
+  };
+  
+  // Stop a specific sound effect
+  const stopSound = (sound: SoundEffect) => {
+    const audio = audioElements.current[sound];
+    if (audio) {
       audio.pause();
       audio.currentTime = 0;
-      playingRef.current[sound as SoundEffect] = false;
+    }
+  };
+  
+  // Stop all sound effects
+  const stopAllSounds = () => {
+    Object.values(audioElements.current).forEach(audio => {
+      audio.pause();
+      audio.currentTime = 0;
     });
-  }, [audioElements]);
-
+  };
+  
+  // Set global volume for all sounds
+  const setGlobalVolume = (newVolume: number) => {
+    const clampedVolume = Math.min(1, Math.max(0, newVolume));
+    setVolume(clampedVolume);
+    
+    if (options.useLocalStorage) {
+      localStorage.setItem('soundEffectsVolume', clampedVolume.toString());
+    }
+  };
+  
   return {
+    enabled,
+    setEnabled,
     playSound,
+    playSoundWithOptions,
     stopSound,
     stopAllSounds,
-    enabled,
-    setEnabled
+    volume,
+    setVolume: setGlobalVolume
   };
 };

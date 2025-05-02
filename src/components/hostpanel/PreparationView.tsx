@@ -1,10 +1,15 @@
 
-import React from 'react';
-import { Player } from '@/types/game-types';
+import React, { useState } from 'react';
+import { useGameContext } from '@/context/GameContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { PlusCircle } from 'lucide-react';
 import PlayerCardWithControls from './PlayerCardWithControls';
+import WelcomeMessage from './WelcomeMessage';
+import CountdownTimer from '@/components/CountdownTimer';
 
 interface PreparationViewProps {
-  players: Player[];
+  players: any[];
   addEvent: (event: string) => void;
   handleTimerStart: (seconds: number) => void;
   timerRunning: boolean;
@@ -13,8 +18,8 @@ interface PreparationViewProps {
   startGame: () => void;
 }
 
-const PreparationView: React.FC<PreparationViewProps> = ({
-  players,
+const PreparationView: React.FC<PreparationViewProps> = ({ 
+  players, 
   addEvent,
   handleTimerStart,
   timerRunning,
@@ -22,62 +27,150 @@ const PreparationView: React.FC<PreparationViewProps> = ({
   stopTimer,
   startGame
 }) => {
+  const { addPlayer } = useGameContext();
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [newPlayerName, setNewPlayerName] = useState('');
+  const [newPlayerCamera, setNewPlayerCamera] = useState('');
+  
+  const handleAddPlayer = () => {
+    if (!newPlayerName.trim()) {
+      return;
+    }
+    
+    addPlayer({
+      name: newPlayerName,
+      cameraUrl: newPlayerCamera,
+      health: 100,
+      lives: 3,
+      points: 0,
+    });
+    
+    addEvent(`Dodano gracza: ${newPlayerName}`);
+    
+    setNewPlayerName('');
+    setNewPlayerCamera('');
+  };
+  
+  const dismissWelcome = () => {
+    setShowWelcome(false);
+  };
+  
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="bg-black/50 backdrop-blur-md p-6 rounded-lg border border-white/10">
-        <h2 className="text-2xl font-bold mb-4 text-white">Przygotowanie do gry</h2>
-        <p className="text-white/80 mb-4">
-          Dodaj graczy, kategorie i pytania przed rozpoczęciem gry.
-        </p>
+    <div className="grid grid-cols-1 gap-6">
+      {showWelcome && (
+        <WelcomeMessage 
+          onDismiss={dismissWelcome} 
+          onStartGame={startGame}
+        />
+      )}
+      
+      <div className="neon-card">
+        <h2 className="text-xl font-bold mb-4 text-white">Dodawanie graczy</h2>
         
-        <div className="flex flex-col gap-4">
-          <button
-            className="bg-neon-green text-black hover:bg-neon-green/80 rounded-md px-4 py-2 w-full"
-            onClick={startGame}
-          >
-            Rozpocznij grę
-          </button>
-
-          <button
-            className="bg-transparent border border-neon-blue text-neon-blue hover:bg-neon-blue/10 rounded-md px-4 py-2 w-full"
-            onClick={() => handleTimerStart(60)}
-          >
-            Rozpocznij odliczanie 60s
-          </button>
-
-          {timerRunning && (
-            <div className="flex gap-2">
-              <div className="bg-neon-pink/20 rounded-md px-4 py-2 flex-grow text-center">
-                Pozostało: {timerSeconds}s
-              </div>
-              <button
-                className="bg-neon-pink text-black hover:bg-neon-pink/80 rounded-md px-4 py-2"
-                onClick={stopTimer}
-              >
-                Zatrzymaj
-              </button>
-            </div>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm text-white/70 mb-1">Nazwa gracza</label>
+            <Input
+              value={newPlayerName}
+              onChange={(e) => setNewPlayerName(e.target.value)}
+              placeholder="Nazwa gracza"
+              className="bg-black/50 border-white/20 text-white"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm text-white/70 mb-1">URL kamery (opcjonalnie)</label>
+            <Input
+              value={newPlayerCamera}
+              onChange={(e) => setNewPlayerCamera(e.target.value)}
+              placeholder="https://..."
+              className="bg-black/50 border-white/20 text-white"
+            />
+          </div>
         </div>
+        
+        <Button 
+          onClick={handleAddPlayer}
+          className="w-full bg-neon-green text-black hover:bg-neon-green/80"
+        >
+          <PlusCircle size={18} className="mr-2" />
+          Dodaj gracza
+        </Button>
       </div>
       
-      <div className="bg-black/50 backdrop-blur-md p-6 rounded-lg border border-white/10">
-        <h2 className="text-2xl font-bold mb-4 text-white">Gracze</h2>
-        {players.length === 0 ? (
-          <p className="text-white/60 text-center py-6">
-            Brak graczy. Dodaj graczy w panelu ustawień.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {players.map(player => (
+      <div className="neon-card">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-white">Lista graczy ({players.length}/10)</h2>
+          
+          <div className="flex items-center space-x-2">
+            <CountdownTimer size="sm" />
+            
+            <div className="flex gap-1">
+              {[5, 10, 30].map(seconds => (
+                <Button
+                  key={seconds}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleTimerStart(seconds)}
+                  disabled={timerRunning}
+                  className="text-neon-green border-neon-green hover:bg-neon-green/20"
+                >
+                  {seconds}s
+                </Button>
+              ))}
+              
+              {timerRunning && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={stopTimer}
+                  className="text-neon-red border-neon-red hover:bg-neon-red/20"
+                >
+                  Stop
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {players.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {players.map((player) => (
               <PlayerCardWithControls 
                 key={player.id} 
-                player={player} 
-                isCompact={true}
+                player={player}
               />
             ))}
           </div>
+        ) : (
+          <div className="text-center py-8 text-white/50">
+            Brak graczy. Dodaj graczy powyżej.
+          </div>
         )}
+      </div>
+      
+      <div className="neon-card">
+        <h2 className="text-xl font-bold mb-4 text-white">Przygotowanie do gry</h2>
+        
+        <div className="bg-black/30 p-4 rounded-lg mb-4">
+          <div className="font-semibold text-white mb-2">Panel hosta Discord Game Show</div>
+          <p className="text-white/70 text-sm">
+            Dodaj co najmniej 6 graczy przed rozpoczęciem gry. Gra składa się z trzech rund:
+          </p>
+          <ul className="text-white/70 text-sm list-disc pl-5 mt-2">
+            <li>Runda 1: Eliminacje - 10 graczy, system zdrowia</li>
+            <li>Runda 2: 5 sekund - 6 graczy, 3 życia na gracza</li>
+            <li>Runda 3: Koło fortuny - 3 graczy, losowe kategorie</li>
+          </ul>
+        </div>
+        
+        <Button 
+          onClick={startGame}
+          className="w-full bg-neon-green text-black hover:bg-neon-green/80 font-bold text-lg py-6"
+          disabled={players.length === 0}
+        >
+          Rozpocznij grę
+        </Button>
       </div>
     </div>
   );

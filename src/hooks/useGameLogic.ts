@@ -1,5 +1,6 @@
 
 import { Player, GameRound } from '@/types/game-types';
+import { toast } from 'sonner';
 
 export const useGameLogic = (
   players: Player[],
@@ -19,33 +20,76 @@ export const useGameLogic = (
   };
 
   const deductHealth = (playerId: string, amount: number) => {
-    setPlayers((prev) =>
-      prev.map((player) =>
+    setPlayers((prev) => {
+      // Find the player
+      const player = prev.find(p => p.id === playerId);
+      if (!player) return prev;
+      
+      // Check if this deduction would eliminate the player
+      const newHealth = Math.max(0, player.health - amount);
+      const wouldEliminate = newHealth === 0;
+      
+      // Update all players
+      const updatedPlayers = prev.map((player) =>
         player.id === playerId
-          ? { ...player, health: Math.max(0, player.health - amount) }
+          ? { ...player, health: newHealth }
           : player
-      )
-    );
+      );
+      
+      // If player would be eliminated, mark them
+      if (wouldEliminate) {
+        toast.error(`Gracz ${player.name} stracił całe zdrowie!`, {
+          description: "W rundzie 1 zostaje wyeliminowany"
+        });
+      }
+      
+      return updatedPlayers;
+    });
   };
 
   const deductLife = (playerId: string) => {
-    setPlayers((prev) =>
-      prev.map((player) =>
+    setPlayers((prev) => {
+      // Find the player
+      const player = prev.find(p => p.id === playerId);
+      if (!player) return prev;
+      
+      // Check if this deduction would eliminate the player
+      const newLives = Math.max(0, player.lives - 1);
+      const wouldEliminate = newLives === 0;
+      
+      // Update all players
+      const updatedPlayers = prev.map((player) =>
         player.id === playerId
-          ? { ...player, lives: Math.max(0, player.lives - 1) }
+          ? { ...player, lives: newLives }
           : player
-      )
-    );
+      );
+      
+      // If player would be eliminated, mark them
+      if (wouldEliminate) {
+        toast.error(`Gracz ${player.name} stracił ostatnie życie!`, {
+          description: "Zostaje wyeliminowany z gry"
+        });
+      }
+      
+      return updatedPlayers;
+    });
   };
 
   const eliminatePlayer = (playerId: string) => {
-    setPlayers((prev) =>
-      prev.map((player) =>
+    setPlayers((prev) => {
+      // Find the player
+      const playerToEliminate = prev.find(p => p.id === playerId);
+      
+      if (playerToEliminate) {
+        toast.error(`Gracz ${playerToEliminate.name} został wyeliminowany!`);
+      }
+      
+      return prev.map((player) =>
         player.id === playerId
           ? { ...player, isEliminated: true }
           : player
-      )
-    );
+      );
+    });
   };
 
   // Round advancement
@@ -56,7 +100,7 @@ export const useGameLogic = (
     
     // Najpierw rozdzielamy graczy na tych z życiem i bez
     const playersWithHealth = players.filter(player => player.health > 0 && !player.isEliminated);
-    const playersWithoutHealth = players.filter(player => player.health === 0 && !player.isEliminated);
+    const playersWithoutHealth = players.filter(player => (player.health === 0 || player.isEliminated) && !player.isEliminated);
     
     // Sortujemy graczy z życiem według punktów (od najwyższych)
     const sortedPlayersWithHealth = [...playersWithHealth].sort((a, b) => b.points - a.points);
@@ -66,7 +110,28 @@ export const useGameLogic = (
     
     // Sortujemy graczy bez życia według punktów i bierzemy najlepszego jako lucky loser
     const sortedPlayersWithoutHealth = [...playersWithoutHealth].sort((a, b) => b.points - a.points);
-    const luckyLoser = sortedPlayersWithoutHealth.length > 0 ? [sortedPlayersWithoutHealth[0]] : [];
+    let luckyLoser: Player[] = [];
+    
+    if (sortedPlayersWithoutHealth.length > 0) {
+      luckyLoser = [sortedPlayersWithoutHealth[0]];
+      toast.success(`Lucky Loser: ${sortedPlayersWithoutHealth[0].name}`, {
+        description: "Gracz z najwyższym wynikiem mimo braku zdrowia przechodzi dalej!"
+      });
+    }
+    
+    // Jeśli mamy mniej niż 5 graczy z życiem, dodajemy więcej lucky loserów
+    if (topPlayers.length < 5 && sortedPlayersWithoutHealth.length > luckyLoser.length) {
+      const additionalLuckyLosers = sortedPlayersWithoutHealth
+        .slice(luckyLoser.length, 5 - topPlayers.length + luckyLoser.length);
+      
+      if (additionalLuckyLosers.length > 0) {
+        toast.success(`Dodatkowi Lucky Loserzy: ${additionalLuckyLosers.map(p => p.name).join(', ')}`, {
+          description: "Ze względu na małą liczbę graczy z życiem, dodajemy więcej graczy z rundy 1"
+        });
+        
+        luckyLoser = [...luckyLoser, ...additionalLuckyLosers];
+      }
+    }
     
     // Łączymy top graczy i lucky losera dla rundy 2
     const round2Players = [...topPlayers, ...luckyLoser].map(player => ({
@@ -87,35 +152,77 @@ export const useGameLogic = (
       )
     );
     
+    toast.success("Rozpoczynamy Rundę 2: 5 Sekund!", {
+      description: `${round2Players.length} graczy przechodzi do następnej rundy`
+    });
+    
     setRound(GameRound.ROUND_TWO);
   };
 
   const advanceToRoundThree = () => {
     // Pobieramy graczy z rundy 2, którzy mają życia
-    const remainingPlayers = players
-      .filter(player => !player.isEliminated && player.lives > 0)
-      .sort((a, b) => b.lives - a.lives || b.points - a.points)
-      .slice(0, 3)
-      .map(player => ({
-        ...player,
-        isEliminated: false
-      }));
+    const survivingPlayers = players
+      .filter(player => !player.isEliminated && player.lives > 0);
+    
+    // Sortujemy według życia (więcej = lepiej), a przy równej liczbie życia według punktów
+    const sortedSurvivors = [...survivingPlayers]
+      .sort((a, b) => b.lives - a.lives || b.points - a.points);
+    
+    // Bierzemy top 3 graczy lub wszystkich, jeśli jest ich mniej niż 3
+    const finalistsCount = Math.min(sortedSurvivors.length, 3);
+    const finalists = sortedSurvivors.slice(0, finalistsCount);
+    
+    // Jeśli mamy mniej niż 3 graczy, sprawdzamy czy możemy kogoś "ożywić"
+    if (finalists.length < 3) {
+      const eliminatedByLives = players
+        .filter(player => (player.lives === 0 || player.isEliminated) && !player.isEliminated)
+        .sort((a, b) => b.points - a.points);
+      
+      const neededPlayers = 3 - finalists.length;
+      const luckyPlayers = eliminatedByLives.slice(0, neededPlayers);
+      
+      if (luckyPlayers.length > 0) {
+        toast.success(`Lucky finaliści: ${luckyPlayers.map(p => p.name).join(', ')}`, {
+          description: "Ze względu na małą liczbę graczy, niektórzy wracają do gry!"
+        });
+        
+        finalists.push(...luckyPlayers);
+      }
+    }
+    
+    // Przygotowanie graczy do rundy 3
+    const round3Players = finalists.map(player => ({
+      ...player,
+      lives: 3, // Reset do 3 żyć dla rundy 3
+      isEliminated: false
+    }));
     
     // Oznaczamy wyeliminowanych graczy
-    const advancingPlayerIds = remainingPlayers.map(player => player.id);
+    const advancingPlayerIds = round3Players.map(player => player.id);
     
     setPlayers(prev => 
       prev.map(player => 
         advancingPlayerIds.includes(player.id)
-          ? remainingPlayers.find(p => p.id === player.id) || player
+          ? round3Players.find(p => p.id === player.id) || player
           : { ...player, isEliminated: true }
       )
     );
+    
+    toast.success("Rozpoczynamy Rundę 3: Koło Fortuny!", {
+      description: `${round3Players.length} finalistów walczy o zwycięstwo`
+    });
     
     setRound(GameRound.ROUND_THREE);
   };
 
   const finishGame = (winnerIds: string[]) => {
+    const winners = players.filter(player => winnerIds.includes(player.id));
+    const winnerNames = winners.map(w => w.name).join(', ');
+    
+    toast.success(`Koniec gry! Zwycięzca: ${winnerNames}`, {
+      description: "Gratulacje dla zwycięzcy!"
+    });
+    
     setWinnerIds(winnerIds);
     setRound(GameRound.FINISHED);
   };
@@ -135,8 +242,10 @@ export const useGameLogic = (
         .sort((a, b) => b.points - a.points);
       
       if (sortedByPoints.length > 0) {
+        toast.success(`Wszyscy stracili życie! Zwycięża gracz z największą liczbą punktów: ${sortedByPoints[0].name}`);
         finishGame([sortedByPoints[0].id]);
       } else {
+        toast.error("Brak zwycięzcy - wszyscy gracze zostali wyeliminowani!");
         finishGame([]); // Brak zwycięzcy
       }
       return true;
@@ -145,6 +254,10 @@ export const useGameLogic = (
   };
 
   const resetGame = () => {
+    toast.info("Resetowanie gry", {
+      description: "Wszystkie dane zostały zresetowane"
+    });
+    
     setRound(GameRound.SETUP);
     setWinnerIds([]);
     

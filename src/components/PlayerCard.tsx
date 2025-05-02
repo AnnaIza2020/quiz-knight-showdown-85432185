@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Player } from '@/types/game-types';
 import { Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useGameContext } from '@/context/GameContext';
 
 interface PlayerCardProps {
   player: Player;
@@ -20,6 +21,8 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
   showLives = true,
   className
 }) => {
+  const { playSound } = useGameContext();
+  
   // Card sizes
   const cardSizes = {
     sm: 'h-28',
@@ -60,6 +63,13 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
     borderStyle = 'border-neon-red/50';
   }
   
+  // Play elimination sound when player gets eliminated
+  useEffect(() => {
+    if (player.isEliminated || player.health === 0 || player.lives === 0) {
+      playSound('failure');
+    }
+  }, [player.isEliminated, player.health, player.lives, playSound]);
+  
   return (
     <motion.div 
       className={cn(
@@ -68,7 +78,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
         borderStyle,
         'bg-black/60 backdrop-blur-sm flex flex-col',
         'transition-all duration-300',
-        player.isEliminated && 'grayscale',
+        player.isEliminated ? 'grayscale opacity-60' : '',
         className
       )}
       initial={{ opacity: 0, scale: 0.9 }}
@@ -106,17 +116,29 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
         )}
         
         {/* Lives display - show in all rounds except round 1 */}
-        {showLives && (
+        {showLives && player.lives > 0 && (
           <div className="absolute bottom-2 right-2 flex">
-            {Array.from({ length: player.lives }).map((_, i) => (
-              <Heart 
-                key={i}
-                className={cn(
-                  'fill-neon-red text-neon-red ml-0.5',
-                  size === 'sm' ? 'w-3 h-3' : size === 'md' ? 'w-4 h-4' : 'w-5 h-5'
-                )}
-              />
-            ))}
+            <AnimatePresence>
+              {Array.from({ length: player.lives }).map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  className={cn(
+                    'ml-0.5',
+                    size === 'sm' ? 'w-3 h-3' : size === 'md' ? 'w-4 h-4' : 'w-5 h-5'
+                  )}
+                >
+                  <Heart 
+                    className={cn(
+                      'fill-neon-red text-neon-red',
+                      size === 'sm' ? 'w-3 h-3' : size === 'md' ? 'w-4 h-4' : 'w-5 h-5'
+                    )}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>

@@ -1,13 +1,24 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { cn } from "@/lib/utils";
 import { useGameContext } from '@/context/GameContext';
+import { motion } from 'framer-motion';
 
 interface FortuneWheelProps {
   className?: string;
   onSelectCategory?: (categoryId: string, categoryName: string) => void;
   disabled?: boolean;
 }
+
+// Default Polish categories if none are provided
+const DEFAULT_CATEGORIES = [
+  { id: 'polski-internet', name: 'Język polskiego internetu' },
+  { id: 'twitch', name: 'Polska scena Twitcha' },
+  { id: 'zagadki', name: 'Zagadki' },
+  { id: 'kalambury', name: 'Kalambury wizualne' },
+  { id: 'gry', name: 'Gry, które podbiły Polskę' },
+  { id: 'technologie', name: 'Technologie i internet w Polsce' },
+];
 
 const FortuneWheel: React.FC<FortuneWheelProps> = ({ 
   className, 
@@ -18,8 +29,11 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
+  const spinHistory = useRef<string[]>([]);
 
-  const gameCategories = categories.slice(0, 6); // Limit to 6 categories for wheel
+  // Use provided categories or fallback to defaults, limiting to 6 categories for wheel
+  const availableCategories = categories.length > 0 ? categories : DEFAULT_CATEGORIES;
+  const gameCategories = availableCategories.slice(0, 6);
   
   // Create segments for wheel with random colors
   const segments = gameCategories.map(category => ({
@@ -59,22 +73,39 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
     
     setIsSpinning(true);
     
-    // Random number of rotations (3-5 full spins) + random segment
-    const spinCount = 3 + Math.random() * 2;
-    const randomAngle = Math.random() * 360;
-    const finalRotation = rotation + (spinCount * 360) + randomAngle;
+    // Calculate spin to ensure fair distribution
+    // We'll avoid landing on the same segment twice in a row if possible
+    let spinCount = 3 + Math.random() * 2; // 3-5 full rotations
+    let randomAngle = Math.random() * 360;
     
+    // Determine which segment would be selected with this spin
+    const segmentAngle = 360 / segments.length;
+    const potentialSegmentIndex = Math.floor(randomAngle / segmentAngle);
+    const potentialSegment = segments[potentialSegmentIndex % segments.length];
+    
+    // If we've already landed on this segment recently and there are alternatives,
+    // adjust the angle to avoid it
+    const recentSegments = spinHistory.current.slice(-2); // Last 2 spins
+    if (recentSegments.includes(potentialSegment.id) && segments.length > 2) {
+      // Shift by 1-2 segments to avoid repetition
+      const offset = 1 + Math.floor(Math.random() * 2);
+      randomAngle = ((potentialSegmentIndex + offset) % segments.length) * segmentAngle + (Math.random() * segmentAngle);
+    }
+    
+    const finalRotation = rotation + (spinCount * 360) + randomAngle;
     setRotation(finalRotation);
     
     // Calculate which segment was selected
     setTimeout(() => {
       // Determine selected segment based on final angle
       const normalizedAngle = finalRotation % 360;
-      const segmentAngle = 360 / segments.length;
       const segmentIndex = Math.floor(normalizedAngle / segmentAngle);
       const selected = segments[segmentIndex % segments.length];
       
       setSelectedSegment(selected.id);
+      
+      // Update spin history
+      spinHistory.current = [...spinHistory.current, selected.id].slice(-5); // Keep last 5
       
       // Play success sound
       playSound('success', 0.5);
@@ -93,25 +124,30 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
   return (
     <div className={cn('relative w-full aspect-square', className)}>
       {/* Wheel */}
-      <div 
+      <motion.div 
         className="w-full h-full rounded-full overflow-hidden relative"
         style={{
           transform: `rotate(${rotation}deg)`,
           transition: isSpinning ? 'transform 3s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
           boxShadow: '0 0 20px rgba(255, 255, 255, 0.3)'
         }}
+        initial={{ scale: 0.95 }}
+        animate={{ scale: 1 }}
+        whileHover={{ scale: 1.02 }}
       >
         {segments.map((segment, index) => {
           const angle = 360 / segments.length;
           const isSelected = segment.id === selectedSegment;
           
           return (
-            <div
+            <motion.div
               key={segment.id}
               className={cn(
                 'absolute w-1/2 h-1/2 origin-bottom-right',
                 isSelected && 'animate-pulse'
               )}
+              initial={{ opacity: 0.7 }}
+              animate={{ opacity: 1 }}
               style={{
                 transform: `rotate(${angle * index}deg)`,
                 transformOrigin: 'bottom right',
@@ -134,13 +170,13 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
               >
                 {segment.name}
               </div>
-            </div>
+            </motion.div>
           );
         })}
-      </div>
+      </motion.div>
       
       {/* Center button */}
-      <button
+      <motion.button
         onClick={spinWheel}
         disabled={isSpinning || disabled}
         className={cn(
@@ -151,18 +187,44 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
           isSpinning ? 'border-red-500 text-red-500' : 'border-white text-white hover:border-neon-yellow hover:text-neon-yellow',
           disabled && 'opacity-50 cursor-not-allowed'
         )}
+        whileHover={!isSpinning && !disabled ? { scale: 1.1, rotate: 5 } : {}}
+        whileTap={!isSpinning && !disabled ? { scale: 0.95 } : {}}
       >
         {isSpinning ? 'KRĘCI...' : 'KRĘĆ'}
-      </button>
+      </motion.button>
       
       {/* Pointer */}
-      <div 
+      <motion.div 
         className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8"
         style={{
           clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
           backgroundColor: '#ff0066'
         }}
-      ></div>
+        animate={isSpinning ? { 
+          scale: [1, 1.2, 1],
+          rotate: [0, 5, -5, 0]
+        } : {}}
+        transition={{ duration: 0.5, repeat: isSpinning ? Infinity : 0 }}
+      />
+      
+      {/* Highlight ring when spinning */}
+      {isSpinning && (
+        <motion.div
+          className="absolute inset-0 rounded-full pointer-events-none"
+          style={{ 
+            boxShadow: '0 0 25px rgba(255, 255, 255, 0.5)',
+            border: '2px solid rgba(255, 255, 255, 0.3)',
+          }}
+          animate={{ 
+            boxShadow: [
+              '0 0 15px rgba(255, 255, 255, 0.3)',
+              '0 0 25px rgba(255, 255, 255, 0.6)',
+              '0 0 15px rgba(255, 255, 255, 0.3)'
+            ]
+          }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        />
+      )}
     </div>
   );
 };
