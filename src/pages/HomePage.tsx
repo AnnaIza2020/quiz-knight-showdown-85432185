@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Settings, Eye, Users, Shield } from 'lucide-react';
@@ -23,10 +22,10 @@ const HomePage = () => {
       {/* Main buttons */}
       <div className="flex gap-6 mb-16">
         <Link 
-          to="/host" 
-          className="px-10 py-3 text-lg font-medium rounded bg-gradient-to-r from-[#4DF73B] to-[#F25D94] hover:opacity-90 transition-opacity"
+          to="/unified-host" 
+          className="text-white hover:text-neon-blue"
         >
-          Panel Hosta
+          Panel Prowadzącego
         </Link>
         <Link 
           to="/overlay" 

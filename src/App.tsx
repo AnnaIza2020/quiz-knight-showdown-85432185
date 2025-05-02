@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { GameProvider } from "./context/GameContext";
 import Index from "./pages/Index";
 import HomePage from "./pages/HomePage";
@@ -29,8 +29,8 @@ const App = () => (
             <Route path="/" element={<HomePage />} />
             <Route path="/classic" element={<Index />} />
             <Route path="/overlay" element={<Overlay />} />
-            <Route path="/host" element={<Host />} />
-            <Route path="/hostpanel" element={<HostPanel />} />
+            <Route path="/host" element={<Navigate to="/unified-host" replace />} />
+            <Route path="/hostpanel" element={<Navigate to="/unified-host" replace />} />
             <Route path="/unified-host" element={<UnifiedHostPanel />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/player/:playerId" element={<PlayerView />} />
