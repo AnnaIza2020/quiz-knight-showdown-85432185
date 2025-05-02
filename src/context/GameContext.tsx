@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
-import { GameContextType } from '@/types/game-types';
+import { GameContextType, GameRound } from '@/types/game-types';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
@@ -98,12 +98,17 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     };
   }, [timerRunning, timerSeconds, setTimerSeconds, setTimerRunning, playSound]);
 
-  // Sprawdzaj koniec rundy 3 gdy gracz jest eliminowany
+  // Check end of round 3 when player is eliminated
   useEffect(() => {
-    if (round === 'round_three') {
+    if (round === GameRound.ROUND_THREE) {
       checkRoundThreeEnd();
     }
   }, [players, round, checkRoundThreeEnd]);
+
+  // Automatically save game data when important state changes
+  useEffect(() => {
+    saveGameData();
+  }, [players, round, activePlayerId, winnerIds, saveGameData]);
 
   const value: GameContextType = {
     // State

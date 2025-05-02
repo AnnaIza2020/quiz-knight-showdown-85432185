@@ -12,6 +12,7 @@ export interface Player {
   isActive: boolean;
   isEliminated: boolean;
   avatar?: string;
+  specialCards?: string[]; // IDs of special cards owned by player
 }
 
 // Define question types
@@ -29,6 +30,14 @@ export interface Category {
   id: string;
   name: string;
   questions: Question[];
+}
+
+// Define special cards
+export interface SpecialCard {
+  id: string;
+  name: string;
+  description: string;
+  iconName: string; // Lucide icon name
 }
 
 // Define round types
