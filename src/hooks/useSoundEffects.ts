@@ -19,6 +19,7 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
   const [volume, setVolume] = useState(options.defaultVolume || 0.5);
   const audioElements = useRef<Record<string, HTMLAudioElement>>({});
   const [soundsPreloaded, setSoundsPreloaded] = useState(false);
+  const fallbacksCreated = useRef<Record<string, boolean>>({});
   
   // Load enabled state from localStorage if requested
   useEffect(() => {
@@ -61,13 +62,48 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
     'eliminate': '/sounds/eliminate.mp3'
   };
   
+  // Create a simple fallback sound (beep)
+  const createFallbackSound = (soundName: string) => {
+    if (fallbacksCreated.current[soundName]) return;
+    
+    // Create a simple beep sound as fallback
+    const beepCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = beepCtx.createOscillator();
+    oscillator.type = 'sine';
+    
+    // Different frequencies for different sound types
+    if (soundName === 'success' || soundName === 'powerup') {
+      oscillator.frequency.value = 660; // Higher pitch for positive sounds
+    } else if (soundName === 'failure' || soundName === 'fail' || soundName === 'eliminate') {
+      oscillator.frequency.value = 330; // Lower pitch for negative sounds
+    } else {
+      oscillator.frequency.value = 440; // Medium pitch for neutral sounds
+    }
+    
+    const gainNode = beepCtx.createGain();
+    gainNode.gain.value = 0.1;
+    oscillator.connect(gainNode);
+    gainNode.connect(beepCtx.destination);
+    
+    const duration = 0.15;
+    oscillator.start();
+    oscillator.stop(beepCtx.currentTime + duration);
+    
+    fallbacksCreated.current[soundName] = true;
+    
+    // Log fallback creation once per session
+    if (Object.keys(fallbacksCreated.current).length === 1) {
+      console.info('Created fallback sound for missing sound effects');
+    }
+  };
+  
   // Preload sound effects
   useEffect(() => {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     
     // Create audio elements for each sound effect
     const preloadPromises = Object.entries(soundEffects).map(([name, url]) => {
-      return new Promise<void>((resolve, reject) => {
+      return new Promise<void>((resolve) => {
         const audio = new Audio();
         audio.preload = 'auto';
         
@@ -78,7 +114,9 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
         
         audio.onerror = () => {
           console.warn(`Failed to load sound effect "${name}" from ${url}`);
-          reject();
+          // Instead of rejecting, resolve anyway but note that we'll
+          // use a fallback sound later
+          resolve();
         };
         
         audio.src = url;
@@ -110,47 +148,51 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
       // Get audio element for this sound
       let audio = audioElements.current[sound];
       
-      // If not preloaded, create it
+      // If not preloaded or failed to load, use fallback
       if (!audio) {
+        createFallbackSound(sound);
         const url = soundEffects[sound] || '';
-        if (!url) {
-          console.warn(`Sound effect "${sound}" not found`);
-          return;
-        }
         
+        // Try loading again
         audio = new Audio(url);
         audioElements.current[sound] = audio;
       }
       
       // Reset audio to start
-      audio.currentTime = 0;
-      
-      // Set volume
-      const effectiveVolume = customVolume !== undefined ? customVolume : volume;
-      audio.volume = Math.min(1, Math.max(0, effectiveVolume));
-      
-      // Play the sound and handle autoplay restrictions
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(err => {
-          console.warn(`Failed to play sound effect "${sound}":`, err);
-          // Handle autoplay restrictions
-          if (err.name === 'NotAllowedError') {
-            toast.error('Twoja przeglądarka blokuje automatyczne odtwarzanie dźwięku', {
-              description: 'Kliknij gdziekolwiek na stronie, aby odblokować dźwięki'
-            });
-            
-            // Add one-time click listener to enable audio
-            const enableAudio = () => {
-              audio.play().catch(e => console.error('Still cannot play audio:', e));
-              document.removeEventListener('click', enableAudio);
-            };
-            document.addEventListener('click', enableAudio, { once: true });
-          }
-        });
+      if (!audio.error) {
+        audio.currentTime = 0;
+        
+        // Set volume
+        const effectiveVolume = customVolume !== undefined ? customVolume : volume;
+        audio.volume = Math.min(1, Math.max(0, effectiveVolume));
+        
+        // Play the sound and handle autoplay restrictions
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(err => {
+            console.warn(`Failed to play sound effect "${sound}":`, err);
+            // Handle autoplay restrictions
+            if (err.name === 'NotAllowedError') {
+              toast.error('Twoja przeglądarka blokuje automatyczne odtwarzanie dźwięku', {
+                description: 'Kliknij gdziekolwiek na stronie, aby odblokować dźwięki'
+              });
+              
+              // Add one-time click listener to enable audio
+              const enableAudio = () => {
+                audio.play().catch(e => console.error('Still cannot play audio:', e));
+                document.removeEventListener('click', enableAudio);
+              };
+              document.addEventListener('click', enableAudio, { once: true });
+            }
+          });
+        }
+      } else {
+        // Audio element has error - use fallback sound
+        createFallbackSound(sound);
       }
     } catch (error) {
       console.error(`Error playing sound effect "${sound}":`, error);
+      createFallbackSound(sound);
     }
   };
   
@@ -162,8 +204,10 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
       // Get audio element for this sound
       let audio = audioElements.current[sound];
       
-      // If not preloaded, create it
-      if (!audio) {
+      // If not preloaded or failed to load, use fallback
+      if (!audio || audio.error) {
+        createFallbackSound(sound);
+        
         const url = soundEffects[sound] || '';
         if (!url) {
           console.warn(`Sound effect "${sound}" not found`);
@@ -190,6 +234,7 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
         playPromise.catch(err => {
           console.warn(`Failed to play sound effect "${sound}":`, err);
           // Same autoplay handling as in playSound
+          createFallbackSound(sound);
         });
       }
       
@@ -197,12 +242,13 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
       return audio;
     } catch (error) {
       console.error(`Error playing sound effect "${sound}":`, error);
+      createFallbackSound(sound);
       return null;
     }
   };
   
   // Add a custom sound effect
-  const addCustomSound = (name: string, soundUrl: string | File) => {
+  const addCustomSound = (name: string, soundUrl: string | File): boolean => {
     try {
       if (soundEffects[name as SoundEffect]) {
         console.warn(`Sound effect "${name}" already exists, overwriting`);

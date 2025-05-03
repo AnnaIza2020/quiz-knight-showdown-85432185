@@ -1,16 +1,13 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { RotateCcw, Play, Pause, SkipForward, X, Volume2, VolumeX, Save, ChevronRight, PlayCircle } from 'lucide-react';
-import { useGameContext } from '@/context/GameContext';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { saveGameEdition } from '@/lib/supabase';
-import { toast } from 'sonner';
-import { GameRound } from '@/types/game-types';
-import { motion } from 'framer-motion';
+import { 
+  Pause, Play, FastForward, SkipForward, 
+  Repeat, RefreshCw, FileWarning 
+} from 'lucide-react';
+import PreviewMode from '@/components/host/PreviewMode';
+import WinnerHistory from '@/components/host/WinnerHistory';
+import DebugPanel from '@/components/host/DebugPanel';
 
 interface ControlPanelProps {
   isPaused: boolean;
@@ -20,221 +17,100 @@ interface ControlPanelProps {
   resetGame: () => void;
 }
 
-const ControlPanel: React.FC<ControlPanelProps> = ({ 
-  isPaused, 
-  handleTogglePause, 
-  handleSkipQuestion, 
-  handleFinishGame, 
-  resetGame 
-}) => {
-  const navigate = useNavigate();
-  const [soundMuted, setSoundMuted] = React.useState(false);
-  const [editionName, setEditionName] = React.useState('default');
-  const [saveDialogOpen, setSaveDialogOpen] = React.useState(false);
-  const [isSkipping, setIsSkipping] = React.useState(false);
-  
-  const { playSound, setEnabled: setSoundsEnabled, round, setRound } = useGameContext();
-
-  const handleSoundToggle = () => {
-    setSoundMuted(!soundMuted);
-    setSoundsEnabled(!soundMuted);
-    toast.info(soundMuted ? 'Dźwięki włączone' : 'Dźwięki wyciszone');
-  };
-  
-  const handleSaveEdition = async () => {
-    if (!editionName.trim()) {
-      toast.error('Nazwa edycji nie może być pusta');
-      return;
-    }
-    
-    // Get all game data to save
-    const gameData = {
-      players: localStorage.getItem('gameShowPlayers') ? 
-        JSON.parse(localStorage.getItem('gameShowPlayers')!) : [],
-      categories: localStorage.getItem('gameShowCategories') ? 
-        JSON.parse(localStorage.getItem('gameShowCategories')!) : [],
-      specialCards: localStorage.getItem('gameShowSpecialCards') ? 
-        JSON.parse(localStorage.getItem('gameShowSpecialCards')!) : [],
-      specialCardRules: localStorage.getItem('gameShowSpecialCardRules') ? 
-        JSON.parse(localStorage.getItem('gameShowSpecialCardRules')!) : [],
-      settings: localStorage.getItem('gameShowSettings') ? 
-        JSON.parse(localStorage.getItem('gameShowSettings')!) : {},
-      savedAt: new Date().toISOString()
-    };
-    
-    try {
-      // Save to Supabase
-      const result = await saveGameEdition(gameData, editionName);
-      
-      if (result.success) {
-        toast.success(`Edycja "${editionName}" zapisana pomyślnie!`);
-        setSaveDialogOpen(false);
-      } else {
-        throw new Error('Failed to save game edition');
-      }
-    } catch (error) {
-      toast.error('Wystąpił błąd podczas zapisywania edycji');
-      console.error(error);
-    }
-  };
-  
-  // Enhanced skip question functionality with animation
-  const handleSkipQuestionWithFeedback = () => {
-    setIsSkipping(true);
-    playSound('wheel-tick');
-    
-    setTimeout(() => {
-      handleSkipQuestion();
-      toast.info('Pytanie pominięte!');
-      setIsSkipping(false);
-    }, 500);
-  };
-  
-  // Start game with intro
-  const startGame = () => {
-    setRound(GameRound.ROUND_ONE);
-    toast.success('Runda 1 rozpoczęta!');
-    playSound('success');
-  };
+const ControlPanel = ({
+  isPaused,
+  handleTogglePause,
+  handleSkipQuestion,
+  handleFinishGame,
+  resetGame
+}: ControlPanelProps) => {
+  // Preview mode state
+  const [previewMode, setPreviewMode] = React.useState(false);
 
   return (
-    <div className="hidden lg:block w-64 space-y-4">
-      <div className="bg-black/70 backdrop-blur-md p-4 rounded-lg border border-white/10">
-        <h3 className="text-xl font-bold mb-4 text-white">Akcje</h3>
-        
-        <div className="space-y-3">
-          {round === GameRound.SETUP && (
-            <motion.button 
-              className="w-full py-3 px-4 bg-black border-2 border-neon-green text-neon-green rounded-md hover:bg-neon-green/20 flex items-center justify-center transition-colors font-bold"
-              onClick={startGame}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <PlayCircle size={18} className="mr-2" /> Start Gry
-            </motion.button>
-          )}
-          
-          <motion.button 
-            className="w-full py-3 px-4 bg-black border border-neon-purple text-neon-purple rounded-md hover:bg-neon-purple/20 flex items-center justify-center transition-colors"
-            onClick={resetGame}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <RotateCcw size={18} className="mr-2" /> Nowa Gra
-          </motion.button>
-          
-          <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-            <DialogTrigger asChild>
-              <motion.button
-                className="w-full py-3 px-4 bg-black border border-neon-blue text-neon-blue rounded-md hover:bg-neon-blue/20 flex items-center justify-center transition-colors"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Save size={18} className="mr-2" /> Zapisz Edycję
-              </motion.button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Zapisz edycję gry</DialogTitle>
-                <DialogDescription>
-                  Podaj nazwę edycji, aby zapisać aktualny stan gry, w tym pytania, graczy i ustawienia.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edition-name" className="text-right">
-                    Nazwa
-                  </Label>
-                  <Input
-                    id="edition-name"
-                    value={editionName}
-                    onChange={(e) => setEditionName(e.target.value)}
-                    className="col-span-3"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
-                  Anuluj
-                </Button>
-                <Button onClick={handleSaveEdition}>Zapisz</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-          
-          <motion.button 
-            className="w-full py-3 px-4 bg-black border border-neon-yellow text-neon-yellow rounded-md hover:bg-neon-yellow/20 flex items-center justify-center transition-colors"
-            onClick={handleTogglePause}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            {isPaused ? (
-              <><Play size={18} className="mr-2" /> Wznów Grę</>
-            ) : (
-              <><Pause size={18} className="mr-2" /> Przerwa</>
-            )}
-          </motion.button>
-          
-          <motion.button 
-            className={`w-full py-3 px-4 bg-black border border-neon-blue text-neon-blue rounded-md hover:bg-neon-blue/20 flex items-center justify-center transition-colors ${isSkipping ? 'animate-pulse' : ''}`}
-            onClick={handleSkipQuestionWithFeedback}
-            disabled={isSkipping}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <SkipForward size={18} className="mr-2" /> Pomiń Pytanie
-          </motion.button>
+    <div className="w-96 space-y-4">
+      {/* Preview Mode Panel */}
+      <PreviewMode 
+        onToggle={setPreviewMode}
+        isActive={previewMode}
+      />
 
-          <motion.button 
-            className="w-full py-3 px-4 bg-black border border-neon-green text-neon-green rounded-md hover:bg-neon-green/20 flex items-center justify-center transition-colors"
-            onClick={handleSoundToggle}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+      {/* Main Control Panel */}
+      <div className="bg-black/50 backdrop-blur-md p-4 rounded-lg border border-white/10">
+        <h2 className="text-2xl font-bold mb-4 text-white">Kontrola Gry</h2>
+        
+        {/* Play/Pause Button */}
+        <Button
+          className={`w-full mb-3 h-14 text-lg font-bold ${
+            isPaused 
+              ? 'bg-neon-green text-black hover:bg-neon-green/90' 
+              : 'bg-red-600 hover:bg-red-700'
+          }`}
+          onClick={handleTogglePause}
+        >
+          {isPaused ? (
+            <>
+              <Play className="mr-2 h-6 w-6" />
+              Wznów Grę
+            </>
+          ) : (
+            <>
+              <Pause className="mr-2 h-6 w-6" />
+              Pauzuj Grę
+            </>
+          )}
+        </Button>
+        
+        {/* Game Control Buttons */}
+        <div className="grid grid-cols-1 gap-3">
+          <Button
+            variant="outline"
+            className="border-orange-400 text-orange-400 hover:bg-orange-400/20"
+            onClick={handleSkipQuestion}
           >
-            {soundMuted ? (
-              <><VolumeX size={18} className="mr-2" /> Włącz Dźwięk</>
-            ) : (
-              <><Volume2 size={18} className="mr-2" /> Wycisz Dźwięk</>
-            )}
-          </motion.button>
+            <SkipForward className="mr-2 h-5 w-5" />
+            Pomiń Pytanie
+          </Button>
           
-          <motion.button 
-            className="w-full py-4 px-4 bg-black border-2 border-neon-red text-neon-red rounded-md hover:bg-neon-red/20 flex items-center justify-center font-bold mt-6 transition-colors"
+          <Button
+            variant="outline"
+            className="border-neon-yellow text-neon-yellow hover:bg-yellow-600/10"
             onClick={handleFinishGame}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
-            <X size={18} className="mr-2" /> Zakończ Grę
-          </motion.button>
+            <FastForward className="mr-2 h-5 w-5" />
+            Zakończ Grę
+          </Button>
+          
+          <Button
+            variant="destructive"
+            onClick={resetGame}
+          >
+            <RefreshCw className="mr-2 h-5 w-5" />
+            Resetuj Grę
+          </Button>
         </div>
+        
+        {/* Warning for preview mode */}
+        {previewMode && (
+          <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-600 rounded text-sm">
+            <div className="flex">
+              <FileWarning className="mr-2 text-yellow-500" size={18} />
+              <div>
+                <h4 className="text-yellow-500 font-medium">Tryb Podglądu Aktywny</h4>
+                <p className="text-white/70 text-xs">
+                  Niektóre funkcje mogą być ograniczone. Wyłącz tryb podglądu, aby korzystać ze wszystkich funkcji.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       
-      <div className="bg-black/70 backdrop-blur-md p-4 rounded-lg border border-white/10">
-        <h3 className="text-xl font-bold mb-2 text-white">Nawigacja</h3>
-        <div className="space-y-2">
-          <motion.button 
-            className="w-full p-2 bg-black/50 text-white rounded hover:bg-white/10 text-left transition-colors"
-            onClick={() => navigate('/')}
-            whileHover={{ x: 5 }}
-          >
-            Strona Główna
-          </motion.button>
-          <motion.button 
-            className="w-full p-2 bg-black/50 text-white rounded hover:bg-white/10 text-left transition-colors"
-            onClick={() => navigate('/overlay')}
-            whileHover={{ x: 5 }}
-          >
-            Przejdź do Overlay
-          </motion.button>
-          <motion.button 
-            className="w-full p-2 bg-black/50 text-white rounded hover:bg-white/10 text-left transition-colors"
-            onClick={() => navigate('/settings')}
-            whileHover={{ x: 5 }}
-          >
-            Ustawienia
-          </motion.button>
-        </div>
-      </div>
+      {/* Winners History */}
+      <WinnerHistory />
+      
+      {/* Debug Panel */}
+      <DebugPanel />
     </div>
   );
 };

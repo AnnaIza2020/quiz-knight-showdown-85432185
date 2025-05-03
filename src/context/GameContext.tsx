@@ -82,11 +82,16 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   // Initialize sound effects with options properly
   const { 
     playSound,
+    playSoundWithOptions,
+    stopSound,
+    stopAllSounds,
+    enabled: soundsEnabled,
     setEnabled: setSoundsEnabled,
     volume,
     setVolume,
+    soundsPreloaded,
     addCustomSound,
-    availableSounds = {}
+    availableSounds
   } = useSoundEffects({ 
     enabled: true,
     useLocalStorage: true
@@ -158,7 +163,11 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     availableSounds,
     addCustomSound,
     playSound,
+    playSoundWithOptions,
+    stopSound,
+    stopAllSounds,
     setEnabled: setSoundsEnabled,
+    soundsEnabled,
     
     // Methods
     setRound,

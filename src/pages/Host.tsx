@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { GameRound, Player } from '@/types/game-types';
 import GameHeader from '@/components/host/GameHeader';
@@ -7,6 +7,8 @@ import PlayerSelection from '@/components/host/PlayerSelection';
 import GameControls from '@/components/host/GameControls';
 import PlayerActions from '@/components/host/PlayerActions';
 import GameSaveManager from '@/components/host/GameSaveManager';
+import { useGameWinners } from '@/hooks/useGameWinners';
+import { toast } from 'sonner';
 
 const Host = () => {
   const { 
@@ -27,8 +29,25 @@ const Host = () => {
     timerRunning,
     currentQuestion,
     resetGame,
-    playSound
+    playSound,
+    winnerIds
   } = useGameContext();
+  
+  // Winners management
+  const { recordWinner } = useGameWinners();
+  
+  // Record winners when game is finished
+  useEffect(() => {
+    if (round === GameRound.FINISHED && winnerIds.length > 0) {
+      // Get the winner player objects
+      const winningPlayers = players.filter(p => winnerIds.includes(p.id));
+      
+      // Record each winner in the database
+      winningPlayers.forEach(async (player) => {
+        await recordWinner(player, getRoundNumber(round));
+      });
+    }
+  }, [round, winnerIds, players]);
   
   const activePlayers = players.filter(p => !p.isEliminated);
   const eliminatedPlayers = players.filter(p => p.isEliminated);
@@ -123,6 +142,21 @@ const Host = () => {
       
       // Play victory sound
       playSound('victory');
+      
+      // Show toast notification
+      toast.success(`${sortedPlayers[0].name} wygrywa grę!`, {
+        description: `z wynikiem ${sortedPlayers[0].points} punktów`
+      });
+    }
+  };
+  
+  // Helper to get numerical round for recording winners
+  const getRoundNumber = (round: GameRound): number => {
+    switch(round) {
+      case GameRound.ROUND_ONE: return 1;
+      case GameRound.ROUND_TWO: return 2;
+      case GameRound.ROUND_THREE: return 3;
+      default: return 0;
     }
   };
   

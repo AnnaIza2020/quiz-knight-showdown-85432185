@@ -1,579 +1,544 @@
 
 import React, { useState, useEffect } from 'react';
-import { useGameContext } from '@/context/GameContext';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Download, Upload, RotateCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useGameContext } from '@/context/GameContext';
 import { supabase } from '@/lib/supabase';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import SettingsLayout from './SettingsLayout';
 
-interface ThemeOption {
-  id: string;
-  name: string;
-  primaryColor: string;
-  buttonColor: string;
-  backgroundColor: string;
-  textColor: string;
-  font?: string;
-}
-
 interface ThemeData {
-  name: string;
   primaryColor: string;
+  secondaryColor: string;
   backgroundColor: string;
-  cardColor: string;
-  textColor: string;
-  font: string;
+  fontFamily: string;
+  buttonStyle: string;
+  logoUrl?: string;
 }
 
-const defaultThemes: ThemeOption[] = [
-  {
-    id: "default",
-    name: "Default",
-    primaryColor: "#9b87f5",
-    buttonColor: "#9b87f5",
-    backgroundColor: "#1A1F2C",
-    textColor: "#FFFFFF",
-    font: "Inter, sans-serif"
-  },
-  {
-    id: "cyberpunk",
-    name: "Cyberpunk",
-    primaryColor: "#00FFF7",
-    buttonColor: "#00FFF7",
-    backgroundColor: "#141421",
-    textColor: "#00FFF7",
-    font: "JetBrains Mono, monospace"
-  },
-  {
-    id: "retrowave",
-    name: "RetroWave",
-    primaryColor: "#FF00FF",
-    buttonColor: "#FF00FF",
-    backgroundColor: "#120634",
-    textColor: "#FF00FF",
-    font: "Orbitron, sans-serif"
-  },
-  {
-    id: "classicTV",
-    name: "Classic TV",
-    primaryColor: "#FFD700",
-    buttonColor: "#FFD700",
-    backgroundColor: "#191919",
-    textColor: "#FFFFFF",
-    font: "Roboto, sans-serif"
-  },
-  {
-    id: "neon",
-    name: "Neon",
-    primaryColor: "#39FF14",
-    buttonColor: "#39FF14",
-    backgroundColor: "#0D0D0D",
-    textColor: "#FFFFFF",
-    font: "Montserrat, sans-serif"
-  },
-];
-
-const fontOptions = [
-  { value: "Inter, sans-serif", label: "Inter (Sans Serif)" },
-  { value: "Roboto, sans-serif", label: "Roboto (Sans Serif)" },
-  { value: "Georgia, serif", label: "Georgia (Serif)" },
-  { value: "JetBrains Mono, monospace", label: "JetBrains Mono (Monospace)" },
-  { value: "Orbitron, sans-serif", label: "Orbitron (Display)" },
-  { value: "Dancing Script, cursive", label: "Dancing Script (Handwriting)" }
-];
+const DEFAULT_THEME: ThemeData = {
+  primaryColor: '#FF00FF',
+  secondaryColor: '#00FFFF',
+  backgroundColor: '#0F111A',
+  fontFamily: 'Inter, sans-serif',
+  buttonStyle: 'neon',
+  logoUrl: '/lovable-uploads/5d43e62b-61b1-4821-beff-4abb5eb500f5.png'
+};
 
 const ThemeSettings = () => {
-  const { primaryColor, secondaryColor, setPrimaryColor, setSecondaryColor, setGameLogo } = useGameContext();
+  const [theme, setTheme] = useState<ThemeData>(DEFAULT_THEME);
+  const [selectedFont, setSelectedFont] = useState<string>(DEFAULT_THEME.fontFamily);
+  const [selectedButtonStyle, setSelectedButtonStyle] = useState<string>(DEFAULT_THEME.buttonStyle);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   
-  const [selectedTheme, setSelectedTheme] = useState<string | null>("default");
-  const [customTheme, setCustomTheme] = useState<ThemeData>({
-    name: "Custom Theme",
-    primaryColor: primaryColor || "#9b87f5",
-    backgroundColor: secondaryColor || "#1A1F2C",
-    cardColor: "#203748",
-    textColor: "#FFFFFF",
-    font: "Inter, sans-serif"
-  });
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Load theme from Supabase or localStorage when component mounts
+  const { setPrimaryColor, setSecondaryColor, setGameLogo } = useGameContext();
+  
+  // Load theme settings from Supabase
   useEffect(() => {
-    const loadTheme = async () => {
+    const loadThemeSettings = async () => {
       try {
-        // Try to load from Supabase first if available
-        if (supabase) {
+        const { data, error } = await supabase
+          .from('game_settings')
+          .select('value')
+          .eq('id', 'theme')
+          .single();
+          
+        if (error) {
+          console.error('Error fetching theme settings:', error);
+          return;
+        }
+        
+        if (data?.value) {
+          // Ensure data.value is treated as JSON and properly parsed
+          let themeData: Partial<ThemeData> = {};
+          
           try {
-            const { data, error } = await supabase
-              .from('game_settings')
-              .select('*')
-              .eq('id', 'theme')
-              .single();
-              
-            if (data && !error) {
-              // Safely parse the JSON value
-              try {
-                // If value is already an object, use it directly
-                let themeData: ThemeData;
-                
-                if (typeof data.value === 'string') {
-                  themeData = JSON.parse(data.value);
-                } else if (typeof data.value === 'object') {
-                  // Create a safe copy with required fields
-                  themeData = {
-                    name: (data.value as any)?.name || "Custom Theme",
-                    primaryColor: (data.value as any)?.primaryColor || "#9b87f5",
-                    backgroundColor: (data.value as any)?.backgroundColor || "#1A1F2C",
-                    cardColor: (data.value as any)?.cardColor || "#203748",
-                    textColor: (data.value as any)?.textColor || "#FFFFFF",
-                    font: (data.value as any)?.font || "Inter, sans-serif"
-                  };
-                } else {
-                  throw new Error("Invalid theme data format");
-                }
-
-                // Update state with the parsed theme data
-                setCustomTheme(themeData);
-                setPrimaryColor(themeData.primaryColor);
-                setSecondaryColor(themeData.backgroundColor);
-                
-                // Find matching predefined theme if any
-                const matchingTheme = defaultThemes.find(
-                  t => t.primaryColor === themeData.primaryColor && t.backgroundColor === themeData.backgroundColor
-                );
-                if (matchingTheme) {
-                  setSelectedTheme(matchingTheme.id);
-                } else {
-                  setSelectedTheme(null);
-                }
-                return;
-              } catch (parseError) {
-                console.error('Error parsing theme data:', parseError);
-              }
+            // If data.value is already an object, use it directly
+            if (typeof data.value === 'object' && data.value !== null) {
+              themeData = data.value as Partial<ThemeData>;
+            } 
+            // If it's a string, try to parse it
+            else if (typeof data.value === 'string') {
+              themeData = JSON.parse(data.value) as Partial<ThemeData>;
             }
-          } catch (error) {
-            console.error('Error loading theme from Supabase:', error);
+            
+            // Apply parsed values with defaults for any missing properties
+            setTheme({
+              primaryColor: themeData.primaryColor || DEFAULT_THEME.primaryColor,
+              secondaryColor: themeData.secondaryColor || DEFAULT_THEME.secondaryColor,
+              backgroundColor: themeData.backgroundColor || DEFAULT_THEME.backgroundColor,
+              fontFamily: themeData.fontFamily || DEFAULT_THEME.fontFamily,
+              buttonStyle: themeData.buttonStyle || DEFAULT_THEME.buttonStyle,
+              logoUrl: themeData.logoUrl || DEFAULT_THEME.logoUrl
+            });
+            
+            setSelectedFont(themeData.fontFamily || DEFAULT_THEME.fontFamily);
+            setSelectedButtonStyle(themeData.buttonStyle || DEFAULT_THEME.buttonStyle);
+            
+            // Apply loaded theme to context
+            if (themeData.primaryColor) setPrimaryColor(themeData.primaryColor);
+            if (themeData.secondaryColor) setSecondaryColor(themeData.secondaryColor);
+            if (themeData.logoUrl) setGameLogo(themeData.logoUrl);
+            
+            // Set logo preview if available
+            if (themeData.logoUrl) {
+              setLogoPreview(themeData.logoUrl);
+            }
+          } catch (parseError) {
+            console.error('Error parsing theme data:', parseError);
+            toast.error('Błąd wczytywania ustawień motywu', {
+              description: 'Format danych jest niepoprawny'
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Unexpected error loading theme settings:', err);
+      }
+    };
+    
+    loadThemeSettings();
+  }, [setPrimaryColor, setSecondaryColor, setGameLogo]);
+  
+  // Handle color change
+  const handleColorChange = (color: string, type: keyof ThemeData) => {
+    setTheme({ ...theme, [type]: color });
+    
+    // Apply changes immediately to preview
+    if (type === 'primaryColor') {
+      setPrimaryColor(color);
+    } else if (type === 'secondaryColor') {
+      setSecondaryColor(color);
+    }
+  };
+  
+  // Handle font change
+  const handleFontChange = (fontFamily: string) => {
+    setSelectedFont(fontFamily);
+    setTheme({ ...theme, fontFamily });
+    
+    // Apply font to document for preview
+    document.documentElement.style.setProperty('--font-primary', fontFamily);
+  };
+  
+  // Handle button style change
+  const handleButtonStyleChange = (style: string) => {
+    setSelectedButtonStyle(style);
+    setTheme({ ...theme, buttonStyle: style });
+  };
+  
+  // Handle logo file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      if (file.type.startsWith('image/')) {
+        setLogoFile(file);
+        
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = () => {
+          setLogoPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        toast.error('Niepoprawny format pliku', {
+          description: 'Proszę wybrać plik graficzny (np. PNG, JPG)'
+        });
+      }
+    }
+  };
+  
+  // Save theme settings to Supabase
+  const handleSaveTheme = async () => {
+    setLoading(true);
+    let updatedTheme = { ...theme };
+    
+    try {
+      // Handle logo upload if file is selected
+      if (logoFile) {
+        const fileName = `logo_${Date.now()}.${logoFile.name.split('.').pop()}`;
+        
+        // Create storage bucket if it doesn't exist
+        const { data: bucketExists } = await supabase
+          .storage
+          .getBucket('game_assets');
+          
+        if (!bucketExists) {
+          const { error: createBucketError } = await supabase
+            .storage
+            .createBucket('game_assets', {
+              public: true,
+              allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'],
+              fileSizeLimit: 1024 * 1024 * 2 // 2MB
+            });
+          
+          if (createBucketError) {
+            console.error('Error creating bucket:', createBucketError);
+            toast.error('Błąd tworzenia przestrzeni dla plików');
+            return;
           }
         }
         
-        // Fallback to localStorage if Supabase fails or isn't available
-        const savedTheme = localStorage.getItem('gameTheme');
-        if (savedTheme) {
-          try {
-            const themeData = JSON.parse(savedTheme);
-            setCustomTheme(themeData);
-            setPrimaryColor(themeData.primaryColor);
-            setSecondaryColor(themeData.backgroundColor);
-          } catch (error) {
-            console.error('Error parsing localStorage theme data:', error);
+        // Upload file
+        const { error: uploadError, data: uploadData } = await supabase
+          .storage
+          .from('game_assets')
+          .upload(fileName, logoFile, {
+            upsert: true
+          });
+        
+        if (uploadError) {
+          console.error('Error uploading logo:', uploadError);
+          toast.error('Błąd przesyłania logo', {
+            description: uploadError.message
+          });
+        } else if (uploadData) {
+          // Get public URL
+          const { data: publicUrlData } = supabase
+            .storage
+            .from('game_assets')
+            .getPublicUrl(fileName);
+          
+          if (publicUrlData) {
+            const logoUrl = publicUrlData.publicUrl;
+            updatedTheme.logoUrl = logoUrl;
+            setGameLogo(logoUrl);
           }
         }
-      } catch (error) {
-        console.error('Error loading theme:', error);
-      }
-    };
-    
-    loadTheme();
-  }, [setPrimaryColor, setSecondaryColor]);
-
-  const handleThemeSelect = (themeId: string) => {
-    setSelectedTheme(themeId);
-    
-    const theme = defaultThemes.find(t => t.id === themeId);
-    if (theme) {
-      setPrimaryColor(theme.primaryColor);
-      setSecondaryColor(theme.backgroundColor);
-      
-      // Update custom theme with selected theme values
-      setCustomTheme({
-        ...customTheme,
-        primaryColor: theme.primaryColor,
-        backgroundColor: theme.backgroundColor,
-        textColor: theme.textColor,
-        font: theme.font || customTheme.font
-      });
-    }
-  };
-
-  const handleCustomThemeChange = (field: string, value: string) => {
-    setCustomTheme(prev => ({ ...prev, [field]: value }));
-    
-    // If a predefined theme was selected, deselect it when user modifies values
-    if (selectedTheme) {
-      setSelectedTheme(null);
-    }
-  };
-
-  const applyCustomTheme = async () => {
-    setIsSaving(true);
-    
-    try {
-      // Apply to UI immediately
-      setPrimaryColor(customTheme.primaryColor);
-      setSecondaryColor(customTheme.backgroundColor);
-      
-      // Font styles applied via CSS custom properties
-      document.documentElement.style.setProperty('--font-family', customTheme.font);
-      
-      // Save to Supabase if available
-      if (supabase) {
-        try {
-          // Convert the ThemeData to a format Supabase accepts (JSON)
-          const { error } = await supabase
-            .from('game_settings')
-            .upsert({
-              id: 'theme',
-              value: customTheme as any // Cast as any to prevent TypeScript error
-            });
-            
-          if (error) throw error;
-        } catch (error) {
-          console.error('Error saving to Supabase:', error);
-          throw error;
-        }
       }
       
-      // Always save to localStorage as backup
-      localStorage.setItem('gameTheme', JSON.stringify(customTheme));
+      // Save theme settings
+      const { error } = await supabase
+        .from('game_settings')
+        .upsert(
+          { id: 'theme', value: updatedTheme },
+          { onConflict: 'id' }
+        );
       
-      toast.success('Motyw zastosowany', {
-        description: 'Zmiany zostały zapisane i zastosowane'
-      });
-    } catch (error) {
-      console.error('Error saving theme:', error);
-      toast.error('Nie udało się zapisać motywu', {
-        description: 'Spróbuj ponownie później'
-      });
+      if (error) {
+        console.error('Error saving theme settings:', error);
+        toast.error('Błąd zapisywania ustawień motywu', {
+          description: error.message
+        });
+      } else {
+        toast.success('Ustawienia motywu zapisane', {
+          description: 'Wszystkie zmiany zostały zastosowane'
+        });
+      }
+    } catch (err) {
+      console.error('Unexpected error saving theme:', err);
+      toast.error('Wystąpił nieoczekiwany błąd');
     } finally {
-      setIsSaving(false);
+      setLoading(false);
     }
   };
   
-  const resetToDefault = () => {
-    const defaultTheme = defaultThemes[0];
-    setSelectedTheme('default');
-    setPrimaryColor(defaultTheme.primaryColor);
-    setSecondaryColor(defaultTheme.backgroundColor);
-    setCustomTheme({
-      name: "Default Theme",
-      primaryColor: defaultTheme.primaryColor,
-      backgroundColor: defaultTheme.backgroundColor,
-      cardColor: "#203748",
-      textColor: defaultTheme.textColor,
-      font: defaultTheme.font || "Inter, sans-serif"
+  // Reset theme to defaults
+  const handleResetTheme = () => {
+    setTheme(DEFAULT_THEME);
+    setSelectedFont(DEFAULT_THEME.fontFamily);
+    setSelectedButtonStyle(DEFAULT_THEME.buttonStyle);
+    setPrimaryColor(DEFAULT_THEME.primaryColor);
+    setSecondaryColor(DEFAULT_THEME.secondaryColor);
+    setGameLogo(DEFAULT_THEME.logoUrl || '');
+    
+    toast.info('Ustawienia motywu zresetowane', {
+      description: 'Wszystkie ustawienia przywrócone do domyślnych wartości'
     });
-    
-    document.documentElement.style.setProperty('--font-family', defaultTheme.font || "Inter, sans-serif");
-    
-    toast.info('Zresetowano do ustawień domyślnych', {
-      description: 'Aby zachować zmiany, kliknij "Zastosuj motyw"'
-    });
-  };
-  
-  const exportTheme = () => {
-    try {
-      const dataStr = JSON.stringify(customTheme, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      
-      const downloadLink = document.createElement('a');
-      downloadLink.href = url;
-      downloadLink.download = `motyw_${customTheme.name.replace(/\s/g, '_').toLowerCase()}.json`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      
-      toast.success('Motyw wyeksportowany', {
-        description: 'Plik z motywem został pobrany'
-      });
-    } catch (error) {
-      toast.error('Nie udało się wyeksportować motywu');
-    }
-  };
-  
-  const importTheme = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    
-    input.onchange = (e: any) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const importedTheme = JSON.parse(event?.target?.result as string);
-          
-          if (
-            !importedTheme.primaryColor || 
-            !importedTheme.backgroundColor || 
-            !importedTheme.textColor
-          ) {
-            throw new Error('Nieprawidłowy format pliku motywu');
-          }
-          
-          setCustomTheme({
-            ...customTheme,
-            ...importedTheme
-          });
-          
-          setSelectedTheme(null); // Deselect predefined themes
-          
-          toast.success('Zaimportowano motyw', {
-            description: 'Aby zastosować zmiany, kliknij "Zastosuj motyw"'
-          });
-        } catch (error) {
-          toast.error('Nieprawidłowy format pliku motywu');
-        }
-      };
-      reader.readAsText(file);
-    };
-    
-    input.click();
   };
   
   return (
-    <SettingsLayout 
-      title="Motywy i Style" 
-      description="Tu zmienisz wygląd sceny, motywy i efekty."
-      actions={
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={importTheme}>
-            <Upload size={16} className="mr-1" /> Importuj
-          </Button>
-          <Button variant="outline" size="sm" onClick={exportTheme}>
-            <Download size={16} className="mr-1" /> Eksportuj
-          </Button>
-          <Button variant="outline" size="sm" onClick={resetToDefault}>
-            <RotateCcw size={16} className="mr-1" /> Resetuj
-          </Button>
-        </div>
-      }
+    <SettingsLayout
+      title="Ustawienia Motywu"
+      description="Dostosuj wygląd aplikacji, kolory, czcionki i styl elementów interfejsu."
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Predefined themes */}
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Gotowe motywy</h3>
-          <div className="grid grid-cols-2 gap-4">
-            {defaultThemes.map((theme) => (
-              <div
-                key={theme.id}
-                className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                  selectedTheme === theme.id 
-                    ? 'border-2 border-white shadow-lg' 
-                    : 'border-gray-700 hover:border-gray-500'
-                }`}
-                style={{ backgroundColor: theme.backgroundColor }}
-                onClick={() => handleThemeSelect(theme.id)}
-              >
-                <div 
-                  className="absolute top-2 right-2 w-4 h-4 rounded-full"
-                  style={{ 
-                    backgroundColor: theme.primaryColor,
-                    boxShadow: selectedTheme === theme.id ? `0 0 8px 2px ${theme.primaryColor}` : 'none' 
-                  }}
-                />
-                <h4 
-                  className="font-medium mb-2" 
-                  style={{ color: theme.textColor }}
-                >
-                  {theme.name}
-                </h4>
-                <p style={{ color: theme.textColor }}>Przykładowy tekst</p>
-                <div 
-                  className="mt-2 text-center py-1 rounded-md text-sm"
-                  style={{ backgroundColor: theme.buttonColor, color: theme.backgroundColor }}
-                >
-                  Przycisk
-                </div>
-              </div>
-            ))}
+      <div className="space-y-6">
+        {/* Color settings */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="primaryColor">Kolor główny</Label>
+            <div className="flex gap-2 mt-2 items-center">
+              <div 
+                className="w-8 h-8 rounded border border-white/30" 
+                style={{ backgroundColor: theme.primaryColor }}
+              />
+              <Input 
+                type="text" 
+                id="primaryColor" 
+                value={theme.primaryColor} 
+                onChange={(e) => handleColorChange(e.target.value, 'primaryColor')}
+                className="font-mono"
+              />
+              <Input 
+                type="color" 
+                value={theme.primaryColor} 
+                onChange={(e) => handleColorChange(e.target.value, 'primaryColor')}
+                className="w-10 h-10 p-1 rounded cursor-pointer"
+              />
+            </div>
           </div>
           
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-4">Podgląd na żywo</h3>
-            <div 
-              className="border border-gray-700 rounded-lg p-4"
-              style={{ 
-                backgroundColor: customTheme.backgroundColor,
-                color: customTheme.textColor,
-                fontFamily: customTheme.font
-              }}
+          <div>
+            <Label htmlFor="secondaryColor">Kolor akcenta</Label>
+            <div className="flex gap-2 mt-2 items-center">
+              <div 
+                className="w-8 h-8 rounded border border-white/30" 
+                style={{ backgroundColor: theme.secondaryColor }}
+              />
+              <Input 
+                type="text" 
+                id="secondaryColor" 
+                value={theme.secondaryColor} 
+                onChange={(e) => handleColorChange(e.target.value, 'secondaryColor')}
+                className="font-mono"
+              />
+              <Input 
+                type="color" 
+                value={theme.secondaryColor} 
+                onChange={(e) => handleColorChange(e.target.value, 'secondaryColor')}
+                className="w-10 h-10 p-1 rounded cursor-pointer"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="backgroundColor">Kolor tła</Label>
+            <div className="flex gap-2 mt-2 items-center">
+              <div 
+                className="w-8 h-8 rounded border border-white/30" 
+                style={{ backgroundColor: theme.backgroundColor }}
+              />
+              <Input 
+                type="text" 
+                id="backgroundColor" 
+                value={theme.backgroundColor} 
+                onChange={(e) => handleColorChange(e.target.value, 'backgroundColor')}
+                className="font-mono"
+              />
+              <Input 
+                type="color" 
+                value={theme.backgroundColor} 
+                onChange={(e) => handleColorChange(e.target.value, 'backgroundColor')}
+                className="w-10 h-10 p-1 rounded cursor-pointer"
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Font settings */}
+        <div className="space-y-2">
+          <Label htmlFor="fontFamily">Czcionka aplikacji</Label>
+          <Select 
+            value={selectedFont} 
+            onValueChange={handleFontChange}
+          >
+            <SelectTrigger id="fontFamily" className="w-full">
+              <SelectValue placeholder="Wybierz czcionkę" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Inter, sans-serif">Inter (domyślna)</SelectItem>
+              <SelectItem value="Roboto, sans-serif">Roboto</SelectItem>
+              <SelectItem value="'Playfair Display', serif">Playfair Display</SelectItem>
+              <SelectItem value="'Press Start 2P', cursive">Press Start 2P</SelectItem>
+              <SelectItem value="'Orbitron', sans-serif">Orbitron</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {/* Font preview */}
+          <div 
+            className="mt-2 p-3 border border-white/10 rounded bg-black/30"
+            style={{ fontFamily: selectedFont }}
+          >
+            <p className="text-lg mb-1">Przykładowy tekst w wybranej czcionce</p>
+            <p className="text-sm opacity-70">ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789</p>
+          </div>
+        </div>
+        
+        {/* Button style settings */}
+        <div className="space-y-2">
+          <Label>Styl przycisków</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+            <button
+              type="button"
+              onClick={() => handleButtonStyleChange('neon')}
+              className={`border-2 rounded-md p-3 h-20 flex items-center justify-center ${
+                selectedButtonStyle === 'neon' 
+                  ? 'border-neon-blue bg-black/40 shadow-[0_0_10px_rgba(0,255,255,0.5)]' 
+                  : 'border-white/20 bg-black/20'
+              }`}
             >
-              <div className="text-center">
-                <h4 className="text-xl font-bold mb-2" style={{ color: customTheme.primaryColor }}>
-                  QUIZ SHOW
-                </h4>
-                
-                <div className="bg-black/40 rounded-lg p-4 mt-4 mb-2">
-                  <p>Przykładowe pytanie</p>
-                  <p className="text-sm opacity-70">W którym roku miała miejsce bitwa pod Grunwaldem?</p>
-                  
-                  <div className="grid grid-cols-2 gap-2 mt-4">
-                    <div className="bg-black/60 rounded p-2">1410</div>
-                    <div className="bg-black/60 rounded p-2">1492</div>
-                    <div className="bg-black/60 rounded p-2">1385</div>
-                    <div className="bg-black/60 rounded p-2">1505</div>
-                  </div>
-                </div>
-                
-                <button 
-                  className="px-4 py-2 rounded-md text-sm mt-4 font-medium"
-                  style={{ 
-                    backgroundColor: customTheme.primaryColor, 
-                    color: customTheme.backgroundColor
+              <div className="neon-button text-white">
+                Styl Neonowy
+              </div>
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => handleButtonStyleChange('modern')}
+              className={`border-2 rounded-md p-3 h-20 flex items-center justify-center ${
+                selectedButtonStyle === 'modern' 
+                  ? 'border-neon-blue bg-black/40 shadow-[0_0_10px_rgba(0,255,255,0.5)]' 
+                  : 'border-white/20 bg-black/20'
+              }`}
+            >
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium px-4 py-2 rounded-md">
+                Styl Nowoczesny
+              </div>
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => handleButtonStyleChange('retro')}
+              className={`border-2 rounded-md p-3 h-20 flex items-center justify-center ${
+                selectedButtonStyle === 'retro' 
+                  ? 'border-neon-blue bg-black/40 shadow-[0_0_10px_rgba(0,255,255,0.5)]' 
+                  : 'border-white/20 bg-black/20'
+              }`}
+            >
+              <div className="bg-gray-900 border-2 border-gray-700 font-pixel text-white px-4 py-2 rounded">
+                Styl Retro
+              </div>
+            </button>
+          </div>
+        </div>
+        
+        {/* Logo upload */}
+        <div className="space-y-2">
+          <Label htmlFor="logoUpload">Logo gry</Label>
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-2">
+              <Input
+                id="logoUpload"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="flex-grow"
+              />
+              {logoPreview && (
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setLogoPreview(null);
+                    setLogoFile(null);
                   }}
                 >
-                  Przykładowy Przycisk
+                  Usuń
+                </Button>
+              )}
+            </div>
+            
+            {/* Logo preview */}
+            <div className="flex justify-center p-4 border border-white/10 rounded bg-black/30 min-h-32">
+              {logoPreview ? (
+                <img
+                  src={logoPreview}
+                  alt="Logo podgląd"
+                  className="max-h-32 object-contain"
+                />
+              ) : (
+                <div className="flex items-center justify-center text-white/50 h-32">
+                  Brak wybranego logo
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-white/60">
+              Zalecany rozmiar: 400x200 pikseli, format PNG z przezroczystością
+            </p>
+          </div>
+        </div>
+        
+        {/* Preview section */}
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-3">Podgląd motywu</h3>
+          <div 
+            className="rounded-lg p-6 border border-white/10 relative overflow-hidden"
+            style={{ 
+              background: `linear-gradient(135deg, ${theme.backgroundColor} 0%, rgba(0,0,0,0.9) 100%)`,
+              fontFamily: theme.fontFamily
+            }}
+          >
+            <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
+            
+            <div className="relative z-10">
+              <h2 
+                className="text-2xl font-bold mb-4 text-center"
+                style={{ color: theme.primaryColor, textShadow: `0 0 10px ${theme.primaryColor}` }}
+              >
+                Discord Game Show
+              </h2>
+              
+              <div className="flex justify-center gap-4 mb-6">
+                <button 
+                  className={`px-4 py-2 rounded transition-all ${
+                    theme.buttonStyle === 'neon' ? 'neon-button' : 
+                    theme.buttonStyle === 'modern' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium' :
+                    'bg-gray-900 border-2 border-gray-700 font-pixel text-white'
+                  }`}
+                  style={{ 
+                    borderColor: theme.secondaryColor,
+                    color: theme.secondaryColor
+                  }}
+                >
+                  Przycisk 1
                 </button>
+                
+                <button 
+                  className={`px-4 py-2 rounded transition-all ${
+                    theme.buttonStyle === 'neon' ? 'neon-button' : 
+                    theme.buttonStyle === 'modern' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium' :
+                    'bg-gray-900 border-2 border-gray-700 font-pixel text-white'
+                  }`}
+                  style={{ 
+                    borderColor: theme.primaryColor,
+                    color: theme.primaryColor
+                  }}
+                >
+                  Przycisk 2
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div 
+                  className="bg-black/50 backdrop-blur-sm p-4 rounded-lg border text-sm"
+                  style={{ borderColor: `${theme.secondaryColor}40` }}
+                >
+                  <p style={{ color: theme.secondaryColor }}>
+                    Element interfejsu 1
+                  </p>
+                </div>
+                
+                <div 
+                  className="bg-black/50 backdrop-blur-sm p-4 rounded-lg border text-sm"
+                  style={{ borderColor: `${theme.primaryColor}40` }}
+                >
+                  <p style={{ color: theme.primaryColor }}>
+                    Element interfejsu 2
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
         
-        {/* Custom theme settings */}
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Dostosuj motyw</h3>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="theme-name">Nazwa motywu</Label>
-              <Input
-                id="theme-name"
-                value={customTheme.name}
-                onChange={(e) => handleCustomThemeChange('name', e.target.value)}
-                className="bg-black/50 border border-gray-700 text-white"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="primary-color">Kolor główny (przyciski, akcenty)</Label>
-              <div className="flex gap-2 items-center">
-                <Input
-                  type="color"
-                  id="primary-color"
-                  value={customTheme.primaryColor}
-                  onChange={(e) => handleCustomThemeChange('primaryColor', e.target.value)}
-                  className="w-12 h-10 p-1 bg-transparent border-0"
-                />
-                <Input
-                  type="text"
-                  value={customTheme.primaryColor}
-                  onChange={(e) => handleCustomThemeChange('primaryColor', e.target.value)}
-                  className="bg-black/50 border border-gray-700 text-white"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="background-color">Kolor tła</Label>
-              <div className="flex gap-2 items-center">
-                <Input
-                  type="color"
-                  id="background-color"
-                  value={customTheme.backgroundColor}
-                  onChange={(e) => handleCustomThemeChange('backgroundColor', e.target.value)}
-                  className="w-12 h-10 p-1 bg-transparent border-0"
-                />
-                <Input
-                  type="text"
-                  value={customTheme.backgroundColor}
-                  onChange={(e) => handleCustomThemeChange('backgroundColor', e.target.value)}
-                  className="bg-black/50 border border-gray-700 text-white"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="card-color">Kolor kart</Label>
-              <div className="flex gap-2 items-center">
-                <Input
-                  type="color"
-                  id="card-color"
-                  value={customTheme.cardColor}
-                  onChange={(e) => handleCustomThemeChange('cardColor', e.target.value)}
-                  className="w-12 h-10 p-1 bg-transparent border-0"
-                />
-                <Input
-                  type="text"
-                  value={customTheme.cardColor}
-                  onChange={(e) => handleCustomThemeChange('cardColor', e.target.value)}
-                  className="bg-black/50 border border-gray-700 text-white"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="text-color">Kolor tekstu</Label>
-              <div className="flex gap-2 items-center">
-                <Input
-                  type="color"
-                  id="text-color"
-                  value={customTheme.textColor}
-                  onChange={(e) => handleCustomThemeChange('textColor', e.target.value)}
-                  className="w-12 h-10 p-1 bg-transparent border-0"
-                />
-                <Input
-                  type="text"
-                  value={customTheme.textColor}
-                  onChange={(e) => handleCustomThemeChange('textColor', e.target.value)}
-                  className="bg-black/50 border border-gray-700 text-white"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="font-family">Czcionka</Label>
-              <select
-                id="font-family"
-                className="w-full bg-black/50 border border-gray-700 text-white px-3 py-2 rounded-md"
-                value={customTheme.font}
-                onChange={(e) => handleCustomThemeChange('font', e.target.value)}
-              >
-                {fontOptions.map(font => (
-                  <option key={font.value} value={font.value}>
-                    {font.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <Label htmlFor="logo-upload">Logo</Label>
-              <div className="flex flex-col gap-2">
-                <Input
-                  id="logo-upload"
-                  type="file"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      // In a real app, we would upload this file
-                      // For now, we'll just use a placeholder
-                      setGameLogo("/placeholder.svg");
-                    }
-                  }}
-                />
-                <label 
-                  htmlFor="logo-upload" 
-                  className="bg-black/50 border border-gray-700 text-white px-3 py-2 rounded-md cursor-pointer text-sm flex items-center"
-                >
-                  <Upload size={16} className="mr-2" />
-                  Wybierz plik. Nie wybrano pliku
-                </label>
-              </div>
-            </div>
-            
-            <Button 
-              onClick={applyCustomTheme} 
-              className="w-full bg-neon-green hover:bg-neon-green/80 mt-4"
-              disabled={isSaving}
-            >
-              {isSaving ? 'Zapisywanie...' : 'Zastosuj motyw'}
-            </Button>
-          </div>
+        {/* Action buttons */}
+        <div className="flex gap-3 justify-end pt-4 border-t border-white/10">
+          <Button 
+            variant="outline" 
+            onClick={handleResetTheme}
+          >
+            Przywróć domyślne
+          </Button>
+          
+          <Button 
+            onClick={handleSaveTheme} 
+            disabled={loading}
+            className="bg-neon-blue hover:bg-neon-blue/80 text-black"
+          >
+            {loading ? 'Zapisywanie...' : 'Zapisz zmiany'}
+          </Button>
         </div>
       </div>
     </SettingsLayout>
