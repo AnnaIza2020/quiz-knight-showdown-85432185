@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Upload, HelpCircle } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -22,9 +22,49 @@ import GamePasswordSettings from '@/components/settings/GamePasswordSettings';
 import { usePlayerConnection } from '@/hooks/usePlayerConnection';
 import { toast } from 'sonner';
 
+// Tab mapping for URL handling
+const tabToPath = {
+  "gracze": "/settings",
+  "pytania": "/settings/pytania",
+  "karty": "/settings/karty",
+  "motywy": "/settings/motywy",
+  "dzwieki": "/settings/dzwieki",
+  "role": "/settings/role",
+  "ranking": "/settings/ranking",
+  "automatyzacja": "/settings/automatyzacja",
+  "haslo": "/settings/haslo"
+};
+
+const pathToTab = {
+  "/settings": "gracze",
+  "/settings/pytania": "pytania",
+  "/settings/karty": "karty",
+  "/settings/motywy": "motywy",
+  "/settings/dzwieki": "dzwieki",
+  "/settings/role": "role",
+  "/settings/ranking": "ranking",
+  "/settings/automatyzacja": "automatyzacja",
+  "/settings/haslo": "haslo"
+};
+
 const Settings = () => {
-  const [activeTab, setActiveTab] = useState("gracze");
+  const navigate = useNavigate();
+  const location = useLocation();
   const { status: connectionStatus } = usePlayerConnection();
+  
+  // Determine active tab based on current path
+  const getCurrentTab = () => {
+    const path = location.pathname;
+    // Default to 'gracze' if path not found
+    return pathToTab[path] || "gracze";
+  };
+  
+  const [activeTab, setActiveTab] = useState(getCurrentTab());
+  
+  const handleTabChange = (value) => {
+    setActiveTab(value);
+    navigate(tabToPath[value]);
+  };
   
   const handleExportSettings = () => {
     try {
@@ -123,7 +163,7 @@ const Settings = () => {
         <Tabs 
           defaultValue="gracze" 
           value={activeTab}
-          onValueChange={setActiveTab}
+          onValueChange={handleTabChange}
           className="w-full"
         >
           <TabsList className="bg-neon-background/20 border-b border-gray-800 w-full flex justify-start overflow-x-auto">
@@ -183,41 +223,59 @@ const Settings = () => {
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="gracze" className="mt-4">
-            <SettingsPlayers />
-          </TabsContent>
-          
-          <TabsContent value="pytania" className="mt-4">
-            <SettingsQuestions />
-          </TabsContent>
-          
-          <TabsContent value="karty" className="mt-4">
-            <SettingsCards />
-          </TabsContent>
-          
-          <TabsContent value="motywy" className="mt-4">
-            <ThemeSettings />
-          </TabsContent>
-          
-          <TabsContent value="dzwieki" className="mt-4">
-            <SettingsSounds />
-          </TabsContent>
-          
-          <TabsContent value="role" className="mt-4">
-            <SettingsRoles />
-          </TabsContent>
-          
-          <TabsContent value="ranking" className="mt-4">
-            <SettingsRanking />
-          </TabsContent>
-          
-          <TabsContent value="automatyzacja" className="mt-4">
-            <SettingsAutomation />
-          </TabsContent>
-          
-          <TabsContent value="haslo" className="mt-4">
-            <GamePasswordSettings />
-          </TabsContent>
+          {/* Content for each tab */}
+          <Routes>
+            <Route index element={
+              <TabsContent value="gracze" className="mt-4">
+                <SettingsPlayers />
+              </TabsContent>
+            } />
+            <Route path="pytania" element={
+              <TabsContent value="pytania" className="mt-4">
+                <SettingsQuestions />
+              </TabsContent>
+            } />
+            <Route path="karty" element={
+              <TabsContent value="karty" className="mt-4">
+                <SettingsCards />
+              </TabsContent>
+            } />
+            <Route path="motywy" element={
+              <TabsContent value="motywy" className="mt-4">
+                <ThemeSettings />
+              </TabsContent>
+            } />
+            <Route path="dzwieki" element={
+              <TabsContent value="dzwieki" className="mt-4">
+                <SettingsSounds />
+              </TabsContent>
+            } />
+            <Route path="role" element={
+              <TabsContent value="role" className="mt-4">
+                <SettingsRoles />
+              </TabsContent>
+            } />
+            <Route path="ranking" element={
+              <TabsContent value="ranking" className="mt-4">
+                <SettingsRanking />
+              </TabsContent>
+            } />
+            <Route path="automatyzacja" element={
+              <TabsContent value="automatyzacja" className="mt-4">
+                <SettingsAutomation />
+              </TabsContent>
+            } />
+            <Route path="haslo" element={
+              <TabsContent value="haslo" className="mt-4">
+                <GamePasswordSettings />
+              </TabsContent>
+            } />
+            <Route path="*" element={
+              <TabsContent value="gracze" className="mt-4">
+                <SettingsPlayers />
+              </TabsContent>
+            } />
+          </Routes>
         </Tabs>
       </div>
     </div>
