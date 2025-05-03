@@ -3,151 +3,93 @@ import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
+type SubscriptionCallback<T> = (payload: T) => void;
+
+interface UseSubscriptionOptions {
+  immediate?: boolean;
+}
+
 /**
- * Enhanced hook for subscribing to real-time changes
- * @param channel - Channel name to subscribe to
- * @param event - Event name to listen for
- * @param callback - Callback function to execute when event is triggered
- * @param options - Optional configuration options
+ * Custom hook to subscribe to Supabase Realtime channels
  */
-export const useSubscription = <T>(
-  channel: string,
-  event: string,
-  callback: (payload: T) => void,
-  options?: {
-    immediate?: boolean; // Whether to subscribe immediately
-    reconnect?: boolean; // Whether to attempt reconnection on disconnect
-    retryInterval?: number; // Retry interval in ms
-    retryMax?: number; // Maximum number of retries
-  }
-) => {
-  // Default options
-  const defaultOptions = {
-    immediate: true,
-    reconnect: true,
-    retryInterval: 5000,
-    retryMax: 10
-  };
-  
-  const opts = { ...defaultOptions, ...options };
-  
-  // Keep a reference to the subscription to prevent recreation on re-renders
-  const subscriptionRef = useRef<RealtimeChannel | null>(null);
-  const callbackRef = useRef(callback); // Keep callback reference for closures
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const retryCountRef = useRef<number>(0);
+export function useSubscription<T = any>(
+  channelName: string,
+  eventType: string,
+  callback: SubscriptionCallback<T>,
+  options: UseSubscriptionOptions = { immediate: true }
+) {
+  const { immediate = true } = options;
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const callbackRef = useRef(callback);
   
   // Update callback reference when it changes
   useEffect(() => {
     callbackRef.current = callback;
   }, [callback]);
   
-  // Subscribe to channel function
+  // Function to subscribe to the channel
   const subscribe = useCallback(() => {
-    // Clear any existing subscription
-    if (subscriptionRef.current) {
-      subscriptionRef.current.unsubscribe();
-      subscriptionRef.current = null;
-    }
-
+    if (channelRef.current) return;
+    
     try {
-      // Initialize Supabase subscription
-      subscriptionRef.current = supabase
-        .channel(channel)
-        .on('broadcast', { event }, (payload) => {
-          callbackRef.current(payload.payload as T);
-        })
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            console.log(`Subscribed to ${channel}:${event} successfully`);
-            
-            // Reset retry counter on successful connection
-            retryCountRef.current = 0;
-            
-            // Clear any pending retry timeouts
-            if (retryTimeoutRef.current) {
-              clearTimeout(retryTimeoutRef.current);
-              retryTimeoutRef.current = null;
-            }
-          } else if (status === 'CHANNEL_ERROR' && opts.reconnect) {
-            console.warn(`Error subscribing to ${channel}:${event}, will retry (${retryCountRef.current + 1}/${opts.retryMax})`);
-            
-            // Cleanup current subscription
-            if (subscriptionRef.current) {
-              subscriptionRef.current.unsubscribe();
-              subscriptionRef.current = null;
-            }
-            
-            // Check if we should retry
-            if (retryCountRef.current < opts.retryMax) {
-              retryCountRef.current += 1;
-              
-              // Set retry timeout with exponential backoff
-              const backoffTime = opts.retryInterval * Math.pow(1.5, Math.min(retryCountRef.current, 8));
-              
-              retryTimeoutRef.current = setTimeout(() => {
-                subscribe();
-              }, backoffTime);
-            } else {
-              console.error(`Max retries (${opts.retryMax}) reached for ${channel}:${event}`);
-            }
-          }
-        });
-        
-      return subscriptionRef.current;
+      // Create a new channel subscription
+      const channel = supabase.channel(channelName);
+      
+      // Subscribe to events
+      channel.on('broadcast', { event: eventType }, (payload) => {
+        callbackRef.current(payload.payload as T);
+      });
+      
+      // Subscribe to the channel
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`Subscribed to channel ${channelName}, event ${eventType}`);
+        }
+      });
+      
+      // Store channel reference
+      channelRef.current = channel;
     } catch (error) {
-      console.error(`Error creating subscription for ${channel}:${event}:`, error);
-      return null;
-    }
-  }, [channel, event, opts.reconnect, opts.retryInterval, opts.retryMax]);
-  
-  // Unsubscribe function
-  const unsubscribe = useCallback(() => {
-    if (subscriptionRef.current) {
-      subscriptionRef.current.unsubscribe();
-      subscriptionRef.current = null;
+      console.error(`Error subscribing to ${channelName}:`, error);
     }
     
-    if (retryTimeoutRef.current) {
-      clearTimeout(retryTimeoutRef.current);
-      retryTimeoutRef.current = null;
-    }
-    
-    // Reset retry counter
-    retryCountRef.current = 0;
-  }, []);
-  
-  // Subscribe on mount if immediate is true
-  useEffect(() => {
-    if (opts.immediate) {
-      subscribe();
-    }
-    
-    // Cleanup on unmount
+    // Cleanup function to unsubscribe
     return () => {
-      unsubscribe();
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
-  }, [subscribe, unsubscribe, opts.immediate]);
-
-  // Broadcast function
-  const broadcast = useCallback(async (payload: T) => {
+  }, [channelName, eventType]);
+  
+  // Function to broadcast a message
+  const broadcast = useCallback((payload: any) => {
+    if (!channelRef.current) {
+      console.warn('Cannot broadcast message: channel is not subscribed');
+      return { success: false };
+    }
+    
     try {
-      return await supabase.channel(channel).send({
+      channelRef.current.send({
         type: 'broadcast',
-        event,
+        event: eventType,
         payload
       });
+      return { success: true };
     } catch (error) {
-      console.error(`Error broadcasting to ${channel}:${event}:`, error);
-      return { error };
+      console.error('Error broadcasting message:', error);
+      return { success: false, error };
     }
-  }, [channel, event]);
+  }, [eventType]);
+  
+  // Subscribe when the component mounts if immediate is true
+  useEffect(() => {
+    if (immediate) {
+      return subscribe();
+    }
+  }, [immediate, subscribe]);
+  
+  return { subscribe, broadcast };
+}
 
-  // Return functions to manage subscription and broadcast
-  return {
-    broadcast,
-    subscribe,
-    unsubscribe,
-    isSubscribed: !!subscriptionRef.current
-  };
-};
+export default useSubscription;

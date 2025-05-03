@@ -39,8 +39,14 @@ export const supabase = createClient<Database>(
 try {
   window.addEventListener('storage', (event) => {
     if (event.key === 'player-token' && event.newValue) {
-      // Update headers with new token
-      supabase.rest.headers['player-token'] = event.newValue;
+      // Update headers by creating new headers object
+      const newHeaders = { ...supabase.headers };
+      newHeaders['player-token'] = event.newValue;
+      
+      // No direct access to supabase.rest.headers, so we update through functions
+      if (event.newValue) {
+        supabase.functions.setAuth(event.newValue);
+      }
     }
   });
 } catch (e) {

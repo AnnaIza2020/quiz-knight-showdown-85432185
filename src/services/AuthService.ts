@@ -1,141 +1,73 @@
 
-import { supabase } from '@/lib/supabase';
-import { User, Session, AuthError } from '@supabase/supabase-js';
-
-export interface AuthResponse {
-  user: User | null;
-  session: Session | null;
-  error: AuthError | null;
-}
-
-// Create a helper function to convert generic Error to AuthError
-const createAuthError = (error: any): AuthError => {
-  // Check if it's already an AuthError
-  if (error && typeof error === 'object' && 'code' in error && 'status' in error) {
-    return error as AuthError;
-  }
-  
-  // Convert to unknown first, then cast to AuthError to avoid TypeScript protected property error
-  const authErrorObj = {
-    code: 'unknown',
-    status: 500,
-    message: error?.message || 'Unknown authentication error',
-    name: 'AuthError'
-  };
-  
-  // Two-step casting to avoid TypeScript protected property error
-  return (authErrorObj as unknown) as AuthError;
-};
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export class AuthService {
-  // Zaloguj się używając emaila i hasła
-  static async signIn(email: string, password: string): Promise<AuthResponse> {
+  /**
+   * Authenticates a player using their token
+   */
+  static async authenticateWithToken(token: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      if (!token) {
+        toast.error('No player token provided');
+        return false;
+      }
       
-      return {
-        user: data?.user || null,
-        session: data?.session || null,
-        error: error || null
-      };
-    } catch (error) {
-      console.error('Błąd logowania:', error);
-      return {
-        user: null,
-        session: null,
-        error: createAuthError(error)
-      };
-    }
-  }
-
-  // Rejestracja nowego użytkownika
-  static async signUp(email: string, password: string): Promise<AuthResponse> {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      // Try to find the player with the given token
+      const { data, error } = await supabase
+        .from('players')
+        .select('*')
+        .or(`token.eq.${token},unique_link_token.eq.${token}`)
+        .single();
       
-      return {
-        user: data?.user || null,
-        session: data?.session || null,
-        error: error || null
-      };
+      if (error || !data) {
+        console.error('Player authentication error:', error);
+        toast.error('Invalid player token');
+        return false;
+      }
+      
+      // Store token in localStorage
+      localStorage.setItem('player-token', data.token);
+      localStorage.setItem('player-link-token', data.unique_link_token || '');
+      
+      toast.success(`Welcome, ${data.nickname}!`);
+      return true;
     } catch (error) {
-      console.error('Błąd rejestracji:', error);
-      return {
-        user: null,
-        session: null,
-        error: createAuthError(error)
-      };
+      console.error('Authentication error:', error);
+      toast.error('Authentication failed');
+      return false;
     }
   }
-
-  // Wylogowanie
-  static async signOut(): Promise<{ error: AuthError | null }> {
-    try {
-      const { error } = await supabase.auth.signOut();
-      return { error };
-    } catch (error) {
-      console.error('Błąd wylogowania:', error);
-      return {
-        error: createAuthError(error)
-      };
-    }
+  
+  /**
+   * Logs out the current player
+   */
+  static logout(): void {
+    localStorage.removeItem('player-token');
+    localStorage.removeItem('player-link-token');
+    toast.info('Logged out');
   }
-
-  // Pobranie aktualnie zalogowanego użytkownika
-  static async getCurrentUser(): Promise<User | null> {
-    try {
-      const { data } = await supabase.auth.getUser();
-      return data?.user || null;
-    } catch (error) {
-      console.error('Błąd pobierania użytkownika:', error);
-      return null;
-    }
+  
+  /**
+   * Checks if a player is currently authenticated
+   */
+  static isAuthenticated(): boolean {
+    return !!localStorage.getItem('player-token');
   }
-
-  // Pobranie aktualnej sesji
-  static async getSession(): Promise<Session | null> {
-    try {
-      const { data } = await supabase.auth.getSession();
-      return data?.session || null;
-    } catch (error) {
-      console.error('Błąd pobierania sesji:', error);
-      return null;
-    }
+  
+  /**
+   * Gets the current player's token
+   */
+  static getPlayerToken(): string | null {
+    return localStorage.getItem('player-token');
   }
-
-  // Resetowanie hasła
-  static async resetPassword(email: string): Promise<{ error: AuthError | null }> {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      return { error };
-    } catch (error) {
-      console.error('Błąd resetowania hasła:', error);
-      return {
-        error: createAuthError(error)
-      };
-    }
-  }
-
-  // Aktualizacja hasła
-  static async updatePassword(password: string): Promise<{ error: AuthError | null }> {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password
-      });
-      return { error };
-    } catch (error) {
-      console.error('Błąd aktualizacji hasła:', error);
-      return {
-        error: createAuthError(error)
-      };
-    }
+  
+  /**
+   * Gets the current player's link token
+   */
+  static getPlayerLinkToken(): string | null {
+    return localStorage.getItem('player-link-token');
   }
 }
+
+export default AuthService;

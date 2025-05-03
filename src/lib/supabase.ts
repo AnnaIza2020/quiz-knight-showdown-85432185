@@ -2,6 +2,9 @@
 import { toast } from 'sonner';
 import { supabase as supabaseClient } from '@/integrations/supabase/client';
 
+// Export supabase for compatibility with existing imports
+export const supabase = supabaseClient;
+
 // Helper function to check if Supabase is configured
 export const isSupabaseConfigured = () => {
   return typeof supabaseClient !== 'undefined';
@@ -69,6 +72,49 @@ export const getPlayerByToken = async (token: string) => {
   } catch (error) {
     console.error('Error getting player by token:', error);
     return { success: false, error, data: null };
+  }
+};
+
+// Additional functions needed by other components
+export const saveGameEdition = async (data: any, name: string) => {
+  return saveGameData(data, name);
+};
+
+export const loadGameEdition = async (name: string) => {
+  return loadGameData(name);
+};
+
+export const saveUsedQuestion = async (question: any) => {
+  try {
+    const usedQuestions = JSON.parse(localStorage.getItem('usedQuestions') || '[]');
+    usedQuestions.push(question);
+    localStorage.setItem('usedQuestions', JSON.stringify(usedQuestions));
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving used question:', error);
+    return { success: false, error };
+  }
+};
+
+export const getUsedQuestions = async () => {
+  try {
+    const usedQuestions = JSON.parse(localStorage.getItem('usedQuestions') || '[]');
+    return { success: true, data: usedQuestions };
+  } catch (error) {
+    console.error('Error getting used questions:', error);
+    return { success: false, error, data: [] };
+  }
+};
+
+export const restoreQuestion = async (questionId: string) => {
+  try {
+    const usedQuestions = JSON.parse(localStorage.getItem('usedQuestions') || '[]');
+    const updatedQuestions = usedQuestions.filter((q: any) => q.id !== questionId);
+    localStorage.setItem('usedQuestions', JSON.stringify(updatedQuestions));
+    return { success: true };
+  } catch (error) {
+    console.error('Error restoring question:', error);
+    return { success: false, error };
   }
 };
 
