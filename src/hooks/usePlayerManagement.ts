@@ -4,13 +4,16 @@ import { Player } from '@/types/game-types';
 import { toast } from 'sonner';
 import { generateUniqueId, getRandomNeonColor } from '@/utils/utils';
 import { getRandomName } from '@/utils/name-generator';
+import { useRafState } from '@/hooks/useRafState';
 
 interface PlayerManagementOptions {
   initialPlayers?: Player[];
+  optimizeRendering?: boolean;
 }
 
 export const usePlayerManagement = (options?: PlayerManagementOptions) => {
-  const [players, setPlayers] = useState<Player[]>(options?.initialPlayers || []);
+  const useStateHook = options?.optimizeRendering ? useRafState : useState;
+  const [players, setPlayers] = useStateHook<Player[]>(options?.initialPlayers || []);
   
   // Funkcja do tworzenia gracza z wartościami domyślnymi
   const createPlayer = useCallback((data: Partial<Player>): Player => {
@@ -33,7 +36,7 @@ export const usePlayerManagement = (options?: PlayerManagementOptions) => {
   // Funkcja do dodania nowego gracza
   const addPlayer = useCallback((player: Player) => {
     setPlayers((prevPlayers) => [...prevPlayers, player]);
-  }, []);
+  }, [setPlayers]);
 
   // Funkcja do aktualizacji istniejącego gracza
   const updatePlayer = useCallback((playerId: string, updates: Partial<Player>) => {
@@ -42,12 +45,12 @@ export const usePlayerManagement = (options?: PlayerManagementOptions) => {
         player.id === playerId ? { ...player, ...updates } : player
       )
     );
-  }, []);
+  }, [setPlayers]);
 
   // Funkcja do usuwania gracza
   const removePlayer = useCallback((playerId: string) => {
     setPlayers((prevPlayers) => prevPlayers.filter((player) => player.id !== playerId));
-  }, []);
+  }, [setPlayers]);
   
   // Funkcja do dodania losowego gracza
   const addRandomPlayer = useCallback(() => {
@@ -70,7 +73,7 @@ export const usePlayerManagement = (options?: PlayerManagementOptions) => {
     setPlayers(prevPlayers => [...prevPlayers, newPlayer]);
     
     toast.success(`Dodano gracza ${randomName}`);
-  }, []);
+  }, [setPlayers]);
   
   // Funkcja do masowego dodawania graczy
   const bulkAddPlayers = useCallback((count: number) => {
@@ -97,7 +100,19 @@ export const usePlayerManagement = (options?: PlayerManagementOptions) => {
     setPlayers(prevPlayers => [...prevPlayers, ...newPlayers]);
     
     toast.success(`Dodano ${count} graczy`);
-  }, []);
+  }, [setPlayers]);
+
+  // Funkcja do aktualizacji wielu graczy jednocześnie (zoptymalizowana)
+  const updateMultiplePlayers = useCallback((updates: { id: string, changes: Partial<Player> }[]) => {
+    setPlayers(prevPlayers => {
+      const updatesMap = new Map(updates.map(u => [u.id, u.changes]));
+      
+      return prevPlayers.map(player => {
+        const playerUpdates = updatesMap.get(player.id);
+        return playerUpdates ? { ...player, ...playerUpdates } : player;
+      });
+    });
+  }, [setPlayers]);
 
   return {
     players,
@@ -106,6 +121,7 @@ export const usePlayerManagement = (options?: PlayerManagementOptions) => {
     removePlayer,
     createPlayer,
     addRandomPlayer,
-    bulkAddPlayers
+    bulkAddPlayers,
+    updateMultiplePlayers
   };
 };

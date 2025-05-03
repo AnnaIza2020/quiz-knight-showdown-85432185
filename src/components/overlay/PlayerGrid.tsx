@@ -2,6 +2,8 @@
 import React, { useCallback, useMemo } from 'react';
 import { Player } from '@/types/game-types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LazyLoadedImage } from '@/components/ui/LazyLoadedImage';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface PlayerGridProps {
   players: Player[];
@@ -74,11 +76,15 @@ const PlayerGrid: React.FC<PlayerGridProps> = React.memo(({
                 loading="lazy"
               />
             ) : player.avatar ? (
-              <img 
+              <LazyLoadedImage 
                 src={player.avatar} 
                 alt={player.name} 
                 className="w-full h-full object-cover"
-                loading="lazy"
+                placeholderSrc="/placeholder.svg"
+                rootMargin="200px"
+                fallbackElement={
+                  <Skeleton className="w-full h-full bg-black/40" />
+                }
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-white/30">

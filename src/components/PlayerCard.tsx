@@ -194,4 +194,6 @@ const PlayerCard: React.FC<PlayerCardProps> = memo(({
   );
 });
 
+PlayerCard.displayName = 'PlayerCard';
+
 export default PlayerCard;

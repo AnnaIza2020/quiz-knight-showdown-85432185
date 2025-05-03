@@ -1,3 +1,4 @@
+
 // Istniejący kod
 export const getRandomNeonColor = () => {
   const colors = [

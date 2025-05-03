@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import PlayerStats from '@/components/player/PlayerStats';
 import QuestionSection from '@/components/player/QuestionSection';
 import AnswerInput from '@/components/player/AnswerInput';
@@ -9,6 +9,9 @@ import StatusPanel from '@/components/player/StatusPanel';
 import GameEventNotification from '@/components/player/GameEventNotification';
 import ConnectionIndicator from '@/components/player/ConnectionIndicator';
 import { usePlayerConnection } from '@/hooks/usePlayerConnection';
+import { Skeleton } from '@/components/ui/skeleton';
+import { LazyLoadedImage } from '@/components/ui/LazyLoadedImage';
+import { useMemoizedSelector } from '@/hooks/useMemoizedSelector';
 
 interface PlayerViewContentProps {
   player: any;
@@ -26,15 +29,21 @@ const PlayerViewContent: React.FC<PlayerViewContentProps> = ({ player }) => {
     playerNickname: player.nickname
   });
   
-  const handleAnswerSubmit = (answer: string) => {
+  // Optymalizacja renderowania przy korzystaniu z kontekstu gry
+  const gameSettings = useMemoizedSelector(state => ({
+    primaryColor: state.primaryColor,
+    secondaryColor: state.secondaryColor
+  }));
+  
+  const handleAnswerSubmit = useCallback((answer: string) => {
     console.log('Submitted answer:', answer);
     // Here you would typically send the answer to the game host/server
-  };
+  }, []);
 
-  const handleUseCard = (cardId: string) => {
+  const handleUseCard = useCallback((cardId: string) => {
     console.log('Using card:', cardId);
     // Here you would typically send the card usage to the game host/server
-  };
+  }, []);
   
   const playerCards = player.specialCards?.map((cardId: string) => {
     // This would typically fetch card details from a cards context/state
@@ -78,7 +87,7 @@ const PlayerViewContent: React.FC<PlayerViewContentProps> = ({ player }) => {
         />
       )}
       
-      {/* Camera preview */}
+      {/* Camera preview - zoptymalizowane z lazy loading */}
       <div className="aspect-video rounded-lg overflow-hidden bg-black/50 border border-white/20 mb-6">
         {player.camera_url ? (
           <iframe 
@@ -86,12 +95,16 @@ const PlayerViewContent: React.FC<PlayerViewContentProps> = ({ player }) => {
             className="w-full h-full" 
             allowFullScreen
             title="Player camera"
+            loading="lazy"
           />
         ) : player.avatar_url ? (
-          <img 
+          <LazyLoadedImage 
             src={player.avatar_url} 
             alt={player.nickname} 
-            className="w-full h-full object-cover" 
+            className="w-full h-full object-cover"
+            fallbackElement={
+              <Skeleton className="w-full h-full bg-gray-800/50" />
+            }
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -114,4 +127,10 @@ const PlayerViewContent: React.FC<PlayerViewContentProps> = ({ player }) => {
   );
 };
 
-export default PlayerViewContent;
+// Wykorzystanie memo do zoptymalizowania renderowania komponentu
+export default React.memo(PlayerViewContent, (prevProps, nextProps) => {
+  return prevProps.player.id === nextProps.player.id &&
+         prevProps.player.nickname === nextProps.player.nickname &&
+         prevProps.player.points === nextProps.player.points &&
+         prevProps.player.health === nextProps.player.health;
+});

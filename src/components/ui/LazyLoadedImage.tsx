@@ -16,7 +16,7 @@ interface LazyLoadedImageProps extends React.ImgHTMLAttributes<HTMLImageElement>
   fallbackElement?: React.ReactNode;
 }
 
-const LazyLoadedImage: React.FC<LazyLoadedImageProps> = ({
+export const LazyLoadedImage: React.FC<LazyLoadedImageProps> = ({
   src,
   alt,
   placeholderSrc = '/placeholder.svg',
@@ -129,5 +129,3 @@ const LazyLoadedImage: React.FC<LazyLoadedImageProps> = ({
     </div>
   );
 };
-
-export default LazyLoadedImage;
