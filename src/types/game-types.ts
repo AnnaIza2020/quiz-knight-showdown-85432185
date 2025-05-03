@@ -96,6 +96,12 @@ export interface GameContextType {
   secondaryColor: string;
   hostCameraUrl: string;
   
+  // Sound settings - adding the missing properties
+  volume: number;
+  setVolume: (volume: number) => void;
+  availableSounds: Record<string, string>;
+  addCustomSound: (name: string, file: File) => boolean;
+  
   // Special cards
   specialCards: SpecialCard[];
   specialCardRules: SpecialCardAwardRule[];

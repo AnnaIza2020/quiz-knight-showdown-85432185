@@ -2,19 +2,61 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, Upload } from 'lucide-react';
+import { ArrowLeft, Download, Upload, HelpCircle } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import SettingsPlayers from '@/components/settings/SettingsPlayers';
-import SettingsQuestions from '@/components/settings/SettingsQuestions';
-import SettingsCards from '@/components/settings/SettingsCards';
-import SettingsThemes from '@/components/settings/SettingsThemes';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import ThemeSettings from '@/components/settings/ThemeSettings';
 import SettingsSounds from '@/components/settings/SettingsSounds';
 import SettingsRoles from '@/components/settings/SettingsRoles';
 import SettingsRanking from '@/components/settings/SettingsRanking';
 import SettingsAutomation from '@/components/settings/SettingsAutomation';
+import SettingsPlayers from '@/components/settings/SettingsPlayers';
+import SettingsQuestions from '@/components/settings/SettingsQuestions';
+import SettingsCards from '@/components/settings/SettingsCards';
+import GamePasswordSettings from '@/components/settings/GamePasswordSettings';
+import { usePlayerConnection } from '@/hooks/usePlayerConnection';
+import { toast } from 'sonner';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("gracze");
+  const { status: connectionStatus } = usePlayerConnection();
+  
+  const handleExportSettings = () => {
+    try {
+      // Get all settings from localStorage
+      const settings = {
+        players: JSON.parse(localStorage.getItem('gameShowPlayers') || '[]'),
+        categories: JSON.parse(localStorage.getItem('gameShowCategories') || '[]'),
+        specialCards: JSON.parse(localStorage.getItem('gameShowSpecialCards') || '[]'),
+        specialCardRules: JSON.parse(localStorage.getItem('gameShowSpecialCardRules') || '[]'),
+        settings: JSON.parse(localStorage.getItem('gameShowSettings') || '{}'),
+        theme: JSON.parse(localStorage.getItem('gameTheme') || '{}'),
+        exportedAt: new Date().toISOString(),
+      };
+      
+      // Create a downloadable file
+      const dataStr = JSON.stringify(settings, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const downloadLink = document.createElement('a');
+      downloadLink.href = url;
+      downloadLink.download = `gameshow_settings_${new Date().toLocaleDateString('pl-PL')}.json`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      toast.success('Ustawienia zostały wyeksportowane');
+    } catch (error) {
+      console.error('Error exporting settings:', error);
+      toast.error('Nie udało się wyeksportować ustawień');
+    }
+  };
   
   return (
     <div className="min-h-screen bg-black text-white p-4 pb-24">
@@ -29,13 +71,48 @@ const Settings = () => {
             <span>Powrót do strony głównej</span>
           </Link>
           <h1 className="text-2xl font-bold ml-4">Panel Ustawień</h1>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="ml-2">
+                  <HelpCircle size={16} className="text-white/60" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p className="max-w-xs">
+                  W panelu ustawień możesz skonfigurować wszystkie aspekty gry.
+                  Zmiany są zapisywane automatycznie.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          {connectionStatus === 'connected' && (
+            <div className="flex items-center gap-1 ml-3 bg-green-500/20 text-green-500 px-2 py-0.5 rounded-full text-xs">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              Połączono z bazą danych
+            </div>
+          )}
+          
+          {connectionStatus === 'error' && (
+            <div className="flex items-center gap-1 ml-3 bg-red-500/20 text-red-500 px-2 py-0.5 rounded-full text-xs">
+              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+              Problem z połączeniem
+            </div>
+          )}
         </div>
         
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="text-xs">
-            <Download size={14} className="mr-1" /> Pokaż ustawienia haseł
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-xs"
+            onClick={handleExportSettings}
+          >
+            <Download size={14} className="mr-1" /> Eksportuj ustawienia
           </Button>
-          <Button variant="outline" size="sm" className="text-xs">
+          <Button variant="outline" size="sm" className="text-xs" onClick={() => toast.info('Wylogowywanie nie jest jeszcze zaimplementowane')}>
             <Upload size={14} className="mr-1" /> Wyloguj
           </Button>
         </div>
@@ -98,6 +175,12 @@ const Settings = () => {
             >
               Automatyzacja
             </TabsTrigger>
+            <TabsTrigger 
+              value="haslo"
+              className="data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-white rounded-none"
+            >
+              Hasło
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="gracze" className="mt-4">
@@ -113,7 +196,7 @@ const Settings = () => {
           </TabsContent>
           
           <TabsContent value="motywy" className="mt-4">
-            <SettingsThemes />
+            <ThemeSettings />
           </TabsContent>
           
           <TabsContent value="dzwieki" className="mt-4">
@@ -130,6 +213,10 @@ const Settings = () => {
           
           <TabsContent value="automatyzacja" className="mt-4">
             <SettingsAutomation />
+          </TabsContent>
+          
+          <TabsContent value="haslo" className="mt-4">
+            <GamePasswordSettings />
           </TabsContent>
         </Tabs>
       </div>

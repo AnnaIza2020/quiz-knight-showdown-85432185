@@ -1,6 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { useGameContext } from '@/context/GameContext';
+import React, { useState, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -8,30 +7,23 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Play, RefreshCcw, Download, Upload, X, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSoundManagement } from '@/hooks/useSoundManagement';
+import SettingsLayout from './SettingsLayout';
 
 const SettingsSounds = () => {
-  const { playSound, setEnabled, volume, setVolume, availableSounds, addCustomSound } = useGameContext();
-  const [soundsEnabled, setSoundsEnabled] = useState(true);
-  const [volumeLevel, setVolumeLevel] = useState(Math.round(volume * 100));
+  const { 
+    soundsEnabled, 
+    setSoundsEnabled, 
+    volumeLevel, 
+    setVolumeLevel, 
+    availableSounds, 
+    testSound, 
+    addSound 
+  } = useSoundManagement({ initialEnabled: true });
+  
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [customSoundName, setCustomSoundName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Sync with context
-  useEffect(() => {
-    setSoundsEnabled(soundsEnabled);
-    setVolumeLevel(Math.round(volume * 100));
-  }, [volume]);
-  
-  // Update volume in context when slider changes
-  useEffect(() => {
-    setVolume(volumeLevel / 100);
-  }, [volumeLevel, setVolume]);
-  
-  // Update enabled state in context
-  useEffect(() => {
-    setEnabled(soundsEnabled);
-  }, [soundsEnabled, setEnabled]);
   
   // Sound type definitions - matching the ones provided in useSoundEffects
   const gameSounds = [
@@ -48,10 +40,6 @@ const SettingsSounds = () => {
     { id: 'powerup', name: 'Power-up', description: 'Dźwięk zdobycia wzmocnienia' },
     { id: 'bonus', name: 'Bonus', description: 'Dźwięk zdobycia bonusu' },
   ];
-  
-  const handleTestSound = (soundId: string) => {
-    playSound(soundId as any);
-  };
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -90,7 +78,7 @@ const SettingsSounds = () => {
     }
     
     // Add custom sound
-    const success = addCustomSound(customSoundName, selectedFile);
+    const success = addSound(customSoundName, selectedFile);
     
     if (success) {
       toast.success('Dodano nowy dźwięk', {
@@ -119,9 +107,10 @@ const SettingsSounds = () => {
   };
   
   return (
-    <div className="bg-[#0c0e1a] rounded-lg p-6 shadow-lg border border-gray-800">
-      <h2 className="text-xl font-bold mb-6 text-white">Zarządzanie dźwiękami</h2>
-      
+    <SettingsLayout 
+      title="Zarządzanie dźwiękami"
+      description="Dodawaj, modyfikuj i zarządzaj efektami dźwiękowymi w grze."
+    >
       <div className="mb-8">
         <h3 className="text-lg font-semibold mb-4">Ustawienia globalne</h3>
         <div className="flex justify-between items-center mb-6">
@@ -241,7 +230,7 @@ const SettingsSounds = () => {
                   size="sm" 
                   variant="outline" 
                   className="h-9 px-3 border-gray-700"
-                  onClick={() => handleTestSound(sound.id)}
+                  onClick={() => testSound(sound.id)}
                   disabled={!soundsEnabled}
                 >
                   <Play size={16} className="mr-1" /> Test
@@ -280,7 +269,7 @@ const SettingsSounds = () => {
           </li>
         </ul>
       </div>
-    </div>
+    </SettingsLayout>
   );
 };
 
