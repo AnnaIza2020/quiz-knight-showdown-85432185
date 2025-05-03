@@ -1,39 +1,22 @@
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { Trophy, Calendar, User, Award, RefreshCw, Trash2 } from 'lucide-react';
+import { Trophy, Calendar, Award, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-
-interface Winner {
-  id: string;
-  player_name: string;
-  round: number;
-  score: number;
-  created_at: string;
-}
+import { GameWinner, useGameWinners } from '@/hooks/useGameWinners';
 
 const WinnerHistory = () => {
-  const [winners, setWinners] = useState<Winner[]>([]);
+  const [winners, setWinners] = useState<GameWinner[]>([]);
   const [loading, setLoading] = useState(true);
+  const { getRecentWinners } = useGameWinners();
 
   const fetchWinners = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('game_winners')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-        
-      if (error) {
-        console.error('Error fetching winners:', error);
-        return;
-      }
-      
+      const data = await getRecentWinners(10);
       setWinners(data || []);
     } catch (error) {
       console.error('Unexpected error fetching winners:', error);
@@ -45,36 +28,18 @@ const WinnerHistory = () => {
   useEffect(() => {
     fetchWinners();
     
-    // Subscribe to winner changes
-    const subscription = supabase
-      .channel('winners_changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'game_winners' 
-      }, () => {
-        fetchWinners();
-      })
-      .subscribe();
+    // Set up a refresh interval
+    const interval = setInterval(fetchWinners, 30000);
       
     return () => {
-      subscription.unsubscribe();
+      clearInterval(interval);
     };
   }, []);
   
   const clearHistory = async () => {
     try {
-      const { error } = await supabase
-        .from('game_winners')
-        .delete()
-        .neq('id', 'placeholder'); // Delete all records
-      
-      if (error) {
-        console.error('Error clearing winner history:', error);
-        toast.error('Błąd podczas czyszczenia historii');
-        return;
-      }
-      
+      // Clear localStorage
+      localStorage.setItem('gameWinners', '[]');
       setWinners([]);
       toast.success('Historia zwycięzców wyczyszczona');
     } catch (error) {

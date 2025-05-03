@@ -1,86 +1,75 @@
 
-// Define player type
+import { SoundEffectOptions } from '@/hooks/useSoundEffects';
+
+// Game rounds
+export enum GameRound {
+  SETUP = 0,
+  ROUND_ONE = 1,
+  ROUND_TWO = 2,
+  ROUND_THREE = 3,
+  FINISHED = 4
+}
+
+// Player interface
 export interface Player {
   id: string;
   name: string;
-  cameraUrl: string;
+  avatar?: string;
   points: number;
   health: number;
   lives: number;
-  isActive: boolean;
   isEliminated: boolean;
-  avatar?: string;
+  specialCards: string[];
+  cameraUrl?: string;
   color?: string;
-  uniqueLinkToken?: string;
-  specialCards?: string[]; // IDs of special cards owned by player
 }
 
-// Define question types
-export interface Question {
-  id: string;
-  category: string;
-  difficulty: number; // 5, 10, 15, 20
-  question: string;
-  answer: string;
-  options?: string[];
-  imageUrl?: string;
-}
-
+// Category interface
 export interface Category {
   id: string;
   name: string;
+  round: GameRound;
   questions: Question[];
 }
 
-// Define sound effect type
-export type SoundEffect = 
-  'success' | 
-  'failure' | 
-  'click' | 
-  'wheel-spin' | 
-  'wheel-tick' | 
-  'card-reveal' | 
-  'victory' | 
-  'timeout' | 
-  'round-start' | 
-  'damage' | 
-  'powerup' |
-  'bonus' |    // Added new sound effect
-  'fail' |     // Added new sound effect
-  'eliminate'; // Added new sound effect
+// Question interface
+export interface Question {
+  id: string;
+  text: string;
+  options?: string[];
+  correctAnswer: string;
+  categoryId: string;
+  difficulty: number;
+  imageUrl?: string;
+  used?: boolean;
+}
 
-// Define special cards
+// Special Card interface
 export interface SpecialCard {
   id: string;
   name: string;
   description: string;
-  iconName: string; // Lucide icon name
-  soundEffect?: SoundEffect;
+  imageUrl?: string;
+  soundEffect?: string;
+  iconName?: string;
   animationStyle?: string;
-  imageUrl?: string; // URL to the card's image
 }
 
-// Define special card award condition
+// Special Card Award Rule interface
 export interface SpecialCardAwardRule {
   id: string;
-  condition: string;
   cardId: string;
-  roundType?: GameRound;
-  description: string;
-  isEnabled: boolean;
+  condition: 'correct_answer' | 'incorrect_answer' | 'round_start' | 'round_end' | 'random';
+  probability: number; // 0-100
+  roundApplicable: GameRound[];
 }
 
-// Define round types
-export enum GameRound {
-  SETUP = 'setup',
-  ROUND_ONE = 'round_one',
-  ROUND_TWO = 'round_two',
-  ROUND_THREE = 'round_three',
-  FINISHED = 'finished'
-}
+// Sound effects
+export type SoundEffect = 'success' | 'fail' | 'timeout' | 'eliminate' | 'round-start' | 'victory' | 'card-reveal' | 'wheel-tick' | 'bonus' | 'narrator' | 'intro-music' | string;
 
+// Game context type
 export interface GameContextType {
-  // Game state
+  // State
   round: GameRound;
   players: Player[];
   categories: Category[];
@@ -89,24 +78,24 @@ export interface GameContextType {
   timerRunning: boolean;
   timerSeconds: number;
   winnerIds: string[];
-  
-  // Game settings
   gameLogo: string | null;
   primaryColor: string;
   secondaryColor: string;
   hostCameraUrl: string;
+  specialCards: SpecialCard[];
+  specialCardRules: SpecialCardAwardRule[];
   
-  // Sound settings
+  // Sound-related properties
   volume: number;
   setVolume: (volume: number) => void;
   availableSounds: Record<string, string>;
-  addCustomSound: (name: string, file: File) => boolean;
-  playSound: (sound: SoundEffect, volume?: number) => void;
-  setEnabled: (enabled: boolean) => void;
-  
-  // Special cards
-  specialCards: SpecialCard[];
-  specialCardRules: SpecialCardAwardRule[];
+  addCustomSound: (name: string, url: string) => void;
+  playSound: (sound: SoundEffect) => void;
+  playSoundWithOptions: (sound: SoundEffect, options: SoundEffectOptions) => void;
+  stopSound: (sound: SoundEffect) => void;
+  stopAllSounds: () => void;
+  soundsEnabled: boolean;
+  setSoundsEnabled: (enabled: boolean) => void;
   
   // Methods
   setRound: (round: GameRound) => void;
@@ -128,9 +117,9 @@ export interface GameContextType {
   advanceToRoundTwo: () => void;
   advanceToRoundThree: () => void;
   finishGame: (winnerIds: string[]) => void;
-  checkRoundThreeEnd: () => boolean;
+  checkRoundThreeEnd: () => void;
   resetGame: () => void;
-  setWinnerIds: (winnerIds: string[]) => void;
+  setWinnerIds: (ids: string[]) => void;
   
   // Special cards methods
   addSpecialCard: (card: SpecialCard) => void;
@@ -139,11 +128,11 @@ export interface GameContextType {
   addSpecialCardRule: (rule: SpecialCardAwardRule) => void;
   updateSpecialCardRule: (rule: SpecialCardAwardRule) => void;
   removeSpecialCardRule: (ruleId: string) => void;
-  giveCardToPlayer: (cardId: string, playerId: string) => void;
-  usePlayerCard: (cardId: string, playerId: string) => void;
+  giveCardToPlayer: (playerId: string, cardId: string) => void;
+  usePlayerCard: (playerId: string, cardId: string) => void;
   
   // Settings methods
-  setGameLogo: (logoUrl: string | null) => void;
+  setGameLogo: (url: string | null) => void;
   setPrimaryColor: (color: string) => void;
   setSecondaryColor: (color: string) => void;
   setHostCameraUrl: (url: string) => void;

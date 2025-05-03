@@ -166,8 +166,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     playSoundWithOptions,
     stopSound,
     stopAllSounds,
-    setEnabled: setSoundsEnabled,
     soundsEnabled,
+    setSoundsEnabled,
     
     // Methods
     setRound,

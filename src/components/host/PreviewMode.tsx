@@ -87,10 +87,10 @@ const PreviewMode: React.FC<PreviewModeProps> = ({ onToggle, isActive }) => {
               </div>
               
               <Button
-                className={isActive ? "bg-gray-700 hover:bg-gray-600" : "bg-neon-green text-black hover:bg-neon-green/80"}
+                variant={isActive ? "outline" : "default"}
                 onClick={handleToggle}
                 size="sm"
-                className="w-full"
+                className={`w-full ${isActive ? "bg-gray-700 hover:bg-gray-600" : "bg-neon-green text-black hover:bg-neon-green/80"}`}
               >
                 {isActive ? (
                   <><X size={16} className="mr-1" /> Wyłącz tryb podglądu</>

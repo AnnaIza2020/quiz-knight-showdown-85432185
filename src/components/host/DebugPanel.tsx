@@ -72,7 +72,7 @@ const DebugPanel = () => {
   // Check sounds status
   useEffect(() => {
     // If we have available sounds and sounds are enabled, we're ok
-    if (availableSounds && availableSounds.length > 0 && soundsEnabled) {
+    if (availableSounds && Object.keys(availableSounds).length > 0 && soundsEnabled) {
       setSoundsStatus('ok');
     } else {
       setSoundsStatus('issues');

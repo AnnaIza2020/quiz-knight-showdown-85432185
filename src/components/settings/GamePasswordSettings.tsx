@@ -1,253 +1,190 @@
 
 import React, { useState, useEffect } from 'react';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import SettingsLayout from './SettingsLayout';
-import { z } from 'zod';
+import { PasswordSettings, safeJsonParse } from '@/types/supabase-custom-types';
 
-interface PasswordSettings {
-  enabled: boolean;
-  password: string;
-  attempts: number;
-  expiresAfter: number;
-}
-
-const DEFAULT_SETTINGS: PasswordSettings = {
-  enabled: false,
-  password: "discord123",
-  attempts: 3,
-  expiresAfter: 24
-};
-
-// Password validation schema
 const passwordSchema = z.object({
-  password: z.string().min(6, "Hasło musi mieć co najmniej 6 znaków")
+  enabled: z.boolean(),
+  password: z.string().min(1, { message: 'Hasło jest wymagane' }),
+  attempts: z.number().int().min(1).max(10),
+  expiresAfter: z.number().int().min(1).max(24),
 });
 
-const GamePasswordSettings = () => {
-  const [settings, setSettings] = useState<PasswordSettings>(DEFAULT_SETTINGS);
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
+const defaultPasswordSettings: PasswordSettings = {
+  enabled: false,
+  password: '1234',
+  attempts: 3,
+  expiresAfter: 24,
+};
 
+const GamePasswordSettings = () => {
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const form = useForm<PasswordSettings>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: defaultPasswordSettings,
+  });
+
+  // Load settings from Supabase
   useEffect(() => {
-    const loadSettings = async () => {
+    const loadPasswordSettings = async () => {
       try {
+        setIsLoading(true);
         const { data, error } = await supabase
           .from('game_settings')
-          .select('value')
-          .eq('id', 'password')
+          .select('*')
+          .eq('id', 'password_settings')
           .single();
 
         if (error) {
-          console.error("Error loading password settings:", error);
+          console.error('Error loading password settings:', error);
           return;
         }
 
         if (data?.value) {
-          try {
-            // Handle data.value as JSON object or string
-            let parsedData: PasswordSettings;
-            
-            if (typeof data.value === 'object' && data.value !== null) {
-              parsedData = data.value as PasswordSettings;
-            } else if (typeof data.value === 'string') {
-              parsedData = JSON.parse(data.value) as PasswordSettings;
-            } else {
-              throw new Error('Invalid data format');
-            }
-            
-            // Ensure all required fields are present
-            setSettings({
-              enabled: parsedData.enabled ?? DEFAULT_SETTINGS.enabled,
-              password: parsedData.password ?? DEFAULT_SETTINGS.password,
-              attempts: parsedData.attempts ?? DEFAULT_SETTINGS.attempts,
-              expiresAfter: parsedData.expiresAfter ?? DEFAULT_SETTINGS.expiresAfter
-            });
-          } catch (parseErr) {
-            console.error("Error parsing password settings:", parseErr);
-            toast.error("Błąd odczytu ustawień hasła");
-          }
+          // Safely parse JSON data with fallback to defaults
+          const settings = safeJsonParse<PasswordSettings>(data.value, defaultPasswordSettings);
+          form.reset(settings);
         }
       } catch (err) {
-        console.error("Unexpected error loading password settings:", err);
+        console.error('Unexpected error loading password settings:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    loadSettings();
-  }, []);
+    loadPasswordSettings();
+  }, [form]);
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const handleSettingChange = (field: keyof PasswordSettings, value: any) => {
-    setSettings({ ...settings, [field]: value });
-    
-    // Clear validation error when editing password
-    if (field === 'password') {
-      setValidationError(null);
-    }
-  };
-
-  const generateRandomPassword = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 10; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setSettings({ ...settings, password: result });
-    setValidationError(null);
-  };
-
-  const saveSettings = async () => {
+  const onSubmit = async (data: PasswordSettings) => {
+    setIsSaving(true);
     try {
-      // Validate password
-      const validation = passwordSchema.safeParse({ password: settings.password });
-      
-      if (!validation.success) {
-        setValidationError(validation.error.errors[0].message);
-        return;
-      }
-      
-      setLoading(true);
-      
       const { error } = await supabase
         .from('game_settings')
-        .upsert(
-          { id: 'password', value: settings },
-          { onConflict: 'id' }
-        );
+        .upsert({
+          id: 'password_settings',
+          value: data as any, // Type assertion needed due to Json type constraints
+        });
 
       if (error) {
-        console.error("Error saving password settings:", error);
-        toast.error("Błąd zapisywania ustawień hasła", {
-          description: error.message
-        });
+        console.error('Error saving password settings:', error);
+        toast.error('Błąd podczas zapisywania ustawień hasła');
         return;
       }
 
-      toast.success("Ustawienia hasła zapisane", {
-        description: settings.enabled 
-          ? "Hasło zostało włączone" 
-          : "Hasło zostało wyłączone"
-      });
-      
+      toast.success('Ustawienia hasła zapisane');
     } catch (err) {
-      console.error("Error saving password settings:", err);
-      toast.error("Wystąpił nieoczekiwany błąd");
+      console.error('Unexpected error saving password settings:', err);
+      toast.error('Nieoczekiwany błąd');
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
   return (
-    <SettingsLayout
-      title="Hasło Dostępu"
-      description="Ustaw hasło wymagane do dołączenia do gry jako gracz lub widz."
-    >
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-medium">Włącz hasło</h3>
-            <p className="text-sm text-white/60">
-              Wymagaj hasła od graczy dołączających do gry
-            </p>
-          </div>
-          <Switch
-            checked={settings.enabled}
-            onCheckedChange={(checked) => handleSettingChange('enabled', checked)}
-          />
-        </div>
+    <div className="p-6 rounded-lg bg-black/20 backdrop-blur-sm border border-white/10">
+      <h2 className="text-xl font-bold mb-4">Hasło dostępu</h2>
+      <p className="text-white/70 mb-6">
+        Ustaw hasło dostępu dla graczy, którzy chcą dołączyć do gry.
+      </p>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Hasło</Label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={settings.password}
-                onChange={(e) => handleSettingChange('password', e.target.value)}
-                className={validationError ? "border-red-500 pr-10" : "pr-10"}
-                placeholder="Minimum 6 znaków"
-                disabled={!settings.enabled}
-              />
-              <button
-                type="button"
-                onClick={togglePasswordVisibility}
-                className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400"
-                tabIndex={-1}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name="enabled"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-white/10 p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Włącz hasło dostępu</FormLabel>
+                  <FormDescription>
+                    Wymagaj hasła od graczy dołączających do gry
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          {form.watch('enabled') && (
+            <>
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Hasło</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Wpisz hasło" {...field} />
+                    </FormControl>
+                  </FormItem>
                 )}
-              </button>
-            </div>
-            <Button
-              variant="outline"
-              onClick={generateRandomPassword}
-              disabled={!settings.enabled}
-              className="gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Losuj
-            </Button>
-          </div>
-          {validationError && (
-            <p className="text-red-500 text-sm">{validationError}</p>
+              />
+
+              <FormField
+                control={form.control}
+                name="attempts"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Liczba prób: {field.value}</FormLabel>
+                    <FormControl>
+                      <Slider
+                        min={1}
+                        max={10}
+                        step={1}
+                        value={[field.value]}
+                        onValueChange={(value) => field.onChange(value[0])}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Ilość prób przed zablokowaniem dostępu graczowi
+                    </FormDescription>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="expiresAfter"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Wygasa po: {field.value} godzinach</FormLabel>
+                    <FormControl>
+                      <Slider
+                        min={1}
+                        max={24}
+                        step={1}
+                        value={[field.value]}
+                        onValueChange={(value) => field.onChange(value[0])}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Czas ważności dostępu po zalogowaniu
+                    </FormDescription>
+                  </FormItem>
+                )}
+              />
+            </>
           )}
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="attempts">Dozwolone próby</Label>
-          <Input
-            id="attempts"
-            type="number"
-            min={1}
-            max={10}
-            value={settings.attempts}
-            onChange={(e) => handleSettingChange('attempts', parseInt(e.target.value, 10))}
-            disabled={!settings.enabled}
-          />
-          <p className="text-sm text-white/60">
-            Liczba prób przed czasowym zablokowaniem dostępu
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="expires">Wygasa po (godziny)</Label>
-          <Input
-            id="expires"
-            type="number"
-            min={1}
-            value={settings.expiresAfter}
-            onChange={(e) => handleSettingChange('expiresAfter', parseInt(e.target.value, 10))}
-            disabled={!settings.enabled}
-          />
-          <p className="text-sm text-white/60">
-            Czas w godzinach, po którym hasło wygasa i trzeba będzie wygenerować nowe
-          </p>
-        </div>
-
-        <div className="mt-6 pt-4 border-t border-white/10">
-          <Button
-            onClick={saveSettings}
-            disabled={loading}
-            className="w-full"
-          >
-            {loading ? 'Zapisywanie...' : 'Zapisz ustawienia hasła'}
+          <Button type="submit" disabled={isSaving || isLoading} className="w-full">
+            {isSaving ? 'Zapisywanie...' : 'Zapisz ustawienia'}
           </Button>
-        </div>
-      </div>
-    </SettingsLayout>
+        </form>
+      </Form>
+    </div>
   );
 };
 
