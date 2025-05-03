@@ -1,5 +1,6 @@
+
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
-import { GameContextType, GameRound, SpecialCard, SpecialCardAwardRule, SoundEffect } from '@/types/game-types';
+import { GameContextType, GameRound, SpecialCard, SpecialCardAwardRule, SoundEffect, Question } from '@/types/game-types';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
@@ -108,6 +109,51 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     usePlayerCard,
   } = useSpecialCards(players, setPlayers, specialCards, setSpecialCards, specialCardRules, setSpecialCardRules, playSound);
 
+  // Question management
+  const addQuestion = (categoryId: string, question: Question) => {
+    setCategories(prevCategories => {
+      return prevCategories.map(category => {
+        if (category.id === categoryId) {
+          return {
+            ...category,
+            questions: [...category.questions, question]
+          };
+        }
+        return category;
+      });
+    });
+  };
+
+  const removeQuestion = (categoryId: string, questionId: string) => {
+    setCategories(prevCategories => {
+      return prevCategories.map(category => {
+        if (category.id === categoryId) {
+          return {
+            ...category,
+            questions: category.questions.filter(q => q.id !== questionId)
+          };
+        }
+        return category;
+      });
+    });
+  };
+
+  const updateQuestion = (categoryId: string, updatedQuestion: Question) => {
+    setCategories(prevCategories => {
+      return prevCategories.map(category => {
+        if (category.id === categoryId) {
+          return {
+            ...category,
+            questions: category.questions.map(q => 
+              q.id === updatedQuestion.id ? updatedQuestion : q
+            )
+          };
+        }
+        return category;
+      });
+    });
+  };
+
   // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -159,7 +205,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     // Sound-related properties
     volume,
     setVolume,
-    availableSounds: availableSounds as Record<string, string>, // Cast to the correct type
+    availableSounds: availableSounds as Record<string, string>,
     addCustomSound,
     playSound,
     playSoundWithOptions,
@@ -210,7 +256,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     
     // Data persistence methods
     loadGameData,
-    saveGameData
+    saveGameData,
+    
+    // Questions methods
+    addQuestion,
+    removeQuestion,
+    updateQuestion
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

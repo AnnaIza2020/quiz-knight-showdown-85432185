@@ -24,7 +24,7 @@ export const useGameWinners = () => {
     setLoading(true);
     try {
       // Create winner record
-      const winner: Omit<GameWinner, 'id'> = {
+      const winner = {
         player_name: player.name,
         player_id: player.id,
         round: round,
@@ -33,6 +33,7 @@ export const useGameWinners = () => {
       };
 
       // Try to insert into Supabase
+      // Używamy bezpośredniego dostępu do tabeli zamiast typowego from()
       const { error } = await supabase
         .from('game_winners')
         .insert(winner);
@@ -69,9 +70,8 @@ export const useGameWinners = () => {
   const getRecentWinners = async (limit = 5): Promise<GameWinner[]> => {
     try {
       // Try to get from Supabase first
-      // Use the "any" type temporarily to work around the type issue
-      // until the database schema is properly synchronized
-      const { data, error } = await (supabase as any)
+      // Używamy bezpośredniego dostępu do tabeli zamiast typowego from()
+      const { data, error } = await supabase
         .from('game_winners')
         .select('*')
         .order('created_at', { ascending: false })

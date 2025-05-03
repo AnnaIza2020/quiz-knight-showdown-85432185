@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useGameContext } from '@/context/GameContext';
 import { Player } from '@/types/game-types';
@@ -37,7 +37,7 @@ const SettingsPlayers = () => {
       isActive: false,
       isEliminated: false,
       avatar: '',
-      specialCards: [], // Add the missing property
+      specialCards: [],
       uniqueLinkToken: generateUniqueToken(),
       color: getRandomNeonColor()
     };
@@ -75,16 +75,16 @@ const SettingsPlayers = () => {
   
   // Function to handle removing a player
   const handleRemovePlayer = (playerId: string) => {
-    setPlayers(prevPlayers => prevPlayers.filter(player => player.id !== playerId));
+    const updatedPlayers = players.filter(player => player.id !== playerId);
+    setPlayers(updatedPlayers);
   };
   
   // Function to handle updating a player's name
   const handleUpdatePlayerName = (playerId: string, newName: string) => {
-    setPlayers(prevPlayers =>
-      prevPlayers.map(player =>
-        player.id === playerId ? { ...player, name: newName } : player
-      )
+    const updatedPlayers = players.map(player =>
+      player.id === playerId ? { ...player, name: newName } : player
     );
+    setPlayers(updatedPlayers);
   };
   
   return (

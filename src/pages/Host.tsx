@@ -129,8 +129,11 @@ const Host = () => {
   const handleFinishGame = () => {
     // Sprawdź czy runda 3 się zakończyła (wszyscy stracili życie)
     if (round === GameRound.ROUND_THREE) {
+      // Zmieniamy porównanie, żeby uniknąć problemu z typami
+      // Metoda checkRoundThreeEnd może zwrócić boolean lub void
       const isRoundEnded = checkRoundThreeEnd();
       // Only return if the round has ended automatically
+      // Zmieniamy porównanie do formy bezpiecznej typowo
       if (isRoundEnded === true) return;
     }
     

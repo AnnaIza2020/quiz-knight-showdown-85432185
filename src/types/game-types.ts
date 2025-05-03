@@ -22,8 +22,8 @@ export interface Player {
   specialCards: string[];
   cameraUrl?: string;
   color?: string;
-  isActive?: boolean; // Added property
-  uniqueLinkToken?: string; // Added property
+  isActive?: boolean;
+  uniqueLinkToken?: string;
 }
 
 // Category interface
@@ -41,12 +41,12 @@ export interface Question {
   options?: string[];
   correctAnswer: string;
   categoryId: string;
-  category?: string; // Added property
+  category?: string; // Dodane dla wstecznej kompatybilności
   difficulty: number;
   imageUrl?: string;
   used?: boolean;
-  question?: string; // Added property for backward compatibility
-  answer?: string; // Added property for backward compatibility
+  question?: string; // Dodane dla wstecznej kompatybilności
+  answer?: string; // Dodane dla wstecznej kompatybilności
 }
 
 // Special Card interface
@@ -64,12 +64,12 @@ export interface SpecialCard {
 export interface SpecialCardAwardRule {
   id: string;
   cardId: string;
-  condition: 'correct_answer' | 'incorrect_answer' | 'round_start' | 'round_end' | 'random' | string; // Extended to accept string values
+  condition: 'correct_answer' | 'incorrect_answer' | 'round_start' | 'round_end' | 'random' | string; // Rozszerzono, aby akceptować wartości typu string
   probability?: number; // 0-100
   roundApplicable?: GameRound[];
-  roundType?: GameRound; // Added property
-  description?: string; // Added property
-  isEnabled?: boolean; // Added property
+  roundType?: GameRound; // Dodana property
+  description?: string; // Dodana property
+  isEnabled?: boolean; // Dodana property
 }
 
 // Sound effects
@@ -98,7 +98,7 @@ export interface GameContextType {
   setVolume: (volume: number) => void;
   availableSounds: Record<string, string>;
   addCustomSound: (name: string, url: string) => void;
-  playSound: (sound: SoundEffect, volume?: number) => void; // Updated to accept optional volume
+  playSound: (sound: SoundEffect, volume?: number) => void;
   playSoundWithOptions: (sound: SoundEffect, options: SoundEffectOptions) => void;
   stopSound: (sound: SoundEffect) => void;
   stopAllSounds: () => void;
@@ -125,7 +125,7 @@ export interface GameContextType {
   advanceToRoundTwo: () => void;
   advanceToRoundThree: () => void;
   finishGame: (winnerIds: string[]) => void;
-  checkRoundThreeEnd: () => void;
+  checkRoundThreeEnd: () => boolean | void; // Zmieniony typ zwracany
   resetGame: () => void;
   setWinnerIds: (ids: string[]) => void;
   
@@ -148,4 +148,9 @@ export interface GameContextType {
   // Data persistence methods
   loadGameData: () => void;
   saveGameData: () => void;
+  
+  // Question methods (dodane)
+  addQuestion: (categoryId: string, question: Question) => void;
+  removeQuestion: (categoryId: string, questionId: string) => void;
+  updateQuestion: (categoryId: string, question: Question) => void;
 }

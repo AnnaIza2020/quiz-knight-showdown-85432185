@@ -1,230 +1,181 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
-import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface FortuneWheelProps {
-  className?: string;
-  onSelectCategory?: (categoryId: string, categoryName: string) => void;
+  categories: string[];
+  onCategorySelected: (category: string) => void;
   disabled?: boolean;
 }
 
-// Default Polish categories if none are provided
-const DEFAULT_CATEGORIES = [
-  { id: 'polski-internet', name: 'Język polskiego internetu' },
-  { id: 'twitch', name: 'Polska scena Twitcha' },
-  { id: 'zagadki', name: 'Zagadki' },
-  { id: 'kalambury', name: 'Kalambury wizualne' },
-  { id: 'gry', name: 'Gry, które podbiły Polskę' },
-  { id: 'technologie', name: 'Technologie i internet w Polsce' },
-];
-
-const FortuneWheel: React.FC<FortuneWheelProps> = ({ 
-  className, 
-  onSelectCategory,
+const FortuneWheel: React.FC<FortuneWheelProps> = ({
+  categories,
+  onCategorySelected,
   disabled = false
 }) => {
-  const { categories, playSound } = useGameContext();
   const [rotation, setRotation] = useState(0);
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
-  const spinHistory = useRef<string[]>([]);
-
-  // Use provided categories or fallback to defaults, limiting to 6 categories for wheel
-  const availableCategories = categories.length > 0 ? categories : DEFAULT_CATEGORIES;
-  const gameCategories = availableCategories.slice(0, 6);
+  const [spinning, setSpinning] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { playSound } = useGameContext();
+  const wheelRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  // Create segments for wheel with random colors
-  const segments = gameCategories.map(category => ({
-    id: category.id,
-    name: category.name,
-    color: getRandomNeonColor(),
-  }));
-
-  // Fill with dummy segments if less than 6
-  while (segments.length < 6) {
-    segments.push({
-      id: `dummy-${segments.length}`,
-      name: `Kategoria ${segments.length + 1}`,
-      color: getRandomNeonColor(),
-    });
-  }
-
-  function getRandomNeonColor() {
-    const neonColors = [
-      '#ff00ff', // neon pink
-      '#00ffff', // neon cyan
-      '#ff00cc', // neon magenta
-      '#33ff00', // neon lime
-      '#ff3300', // neon orange
-      '#ff0066', // neon rose
-      '#9900ff', // neon purple
-      '#ffff00', // neon yellow
-    ];
-    return neonColors[Math.floor(Math.random() * neonColors.length)];
-  }
-
-  const spinWheel = () => {
-    if (isSpinning || segments.length === 0 || disabled) return;
+  // Prepare the wheel when categories change
+  useEffect(() => {
+    if (categories.length > 0 && canvasRef.current) {
+      drawWheel();
+    }
+  }, [categories]);
+  
+  // Draw the wheel on the canvas
+  const drawWheel = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = Math.min(centerX, centerY) - 10;
+    
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw sections
+    const numCategories = categories.length;
+    const arc = (2 * Math.PI) / numCategories;
+    
+    for (let i = 0; i < numCategories; i++) {
+      const angle = i * arc;
+      const endAngle = angle + arc;
+      
+      // Set colors alternating
+      ctx.fillStyle = i % 2 === 0 ? '#9b87f5' : '#7E69AB';
+      
+      // Draw section
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, angle, endAngle);
+      ctx.lineTo(centerX, centerY);
+      ctx.fill();
+      
+      // Add text
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      const textAngle = angle + arc / 2;
+      ctx.rotate(textAngle);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '14px sans-serif';
+      ctx.fillText(categories[i], radius - 20, 5);
+      ctx.restore();
+    }
+    
+    // Draw center circle
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
+    ctx.fillStyle = '#1A1F2C';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.stroke();
+  };
+  
+  // Spin the wheel
+  const handleSpin = () => {
+    if (spinning || disabled) return;
+    
+    setSpinning(true);
+    setSelectedCategory(null);
     
     // Play spin sound
     playSound('wheel-spin');
     
-    setIsSpinning(true);
+    const minRotation = 2000; // Minimum rotation to ensure multiple spins
+    const randomRotation = Math.floor(Math.random() * 1000) + minRotation;
     
-    // Calculate spin to ensure fair distribution
-    // We'll avoid landing on the same segment twice in a row if possible
-    let spinCount = 3 + Math.random() * 2; // 3-5 full rotations
-    let randomAngle = Math.random() * 360;
+    // Animate spinning
+    setRotation(prev => prev + randomRotation);
     
-    // Determine which segment would be selected with this spin
-    const segmentAngle = 360 / segments.length;
-    const potentialSegmentIndex = Math.floor(randomAngle / segmentAngle);
-    const potentialSegment = segments[potentialSegmentIndex % segments.length];
-    
-    // If we've already landed on this segment recently and there are alternatives,
-    // adjust the angle to avoid it
-    const recentSegments = spinHistory.current.slice(-2); // Last 2 spins
-    if (recentSegments.includes(potentialSegment.id) && segments.length > 2) {
-      // Shift by 1-2 segments to avoid repetition
-      const offset = 1 + Math.floor(Math.random() * 2);
-      randomAngle = ((potentialSegmentIndex + offset) % segments.length) * segmentAngle + (Math.random() * segmentAngle);
-    }
-    
-    const finalRotation = rotation + (spinCount * 360) + randomAngle;
-    setRotation(finalRotation);
-    
-    // Calculate which segment was selected
+    // Wait for animation to complete
     setTimeout(() => {
-      // Determine selected segment based on final angle
-      const normalizedAngle = finalRotation % 360;
-      const segmentIndex = Math.floor(normalizedAngle / segmentAngle);
-      const selected = segments[segmentIndex % segments.length];
-      
-      setSelectedSegment(selected.id);
-      
-      // Update spin history
-      spinHistory.current = [...spinHistory.current, selected.id].slice(-5); // Keep last 5
+      const selectedIndex = getSelectedCategory(randomRotation);
+      const selected = categories[selectedIndex];
+      setSelectedCategory(selected);
       
       // Play success sound
       playSound('success');
       
-      if (onSelectCategory && !selected.id.startsWith('dummy-')) {
-        onSelectCategory(selected.id, selected.name);
-      }
+      // Notify selection
+      toast.success(`Wybrano kategorię: ${selected}`);
       
-      setTimeout(() => {
-        setIsSpinning(false);
-        setSelectedSegment(null);
-      }, 3000);
-    }, 3000);
+      // Callback with selected category
+      onCategorySelected(selected);
+      
+      setSpinning(false);
+    }, 5000); // Match this with the CSS transition duration
   };
-
+  
+  // Calculate which category is selected based on final rotation
+  const getSelectedCategory = (addedRotation: number) => {
+    const totalRotation = rotation + addedRotation;
+    const numCategories = categories.length;
+    const degreesPerCategory = 360 / numCategories;
+    
+    // Calculate how many degrees past 0 the wheel landed on
+    const normalizedRotation = totalRotation % 360;
+    
+    // Convert to index (reverse because wheel spins clockwise)
+    const index = Math.floor((360 - normalizedRotation) / degreesPerCategory) % numCategories;
+    
+    return index;
+  };
+  
   return (
-    <div className={cn('relative w-full aspect-square', className)}>
-      {/* Wheel */}
-      <motion.div 
-        className="w-full h-full rounded-full overflow-hidden relative"
-        style={{
-          transform: `rotate(${rotation}deg)`,
-          transition: isSpinning ? 'transform 3s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
-          boxShadow: '0 0 20px rgba(255, 255, 255, 0.3)'
-        }}
-        initial={{ scale: 0.95 }}
-        animate={{ scale: 1 }}
-        whileHover={{ scale: 1.02 }}
-      >
-        {segments.map((segment, index) => {
-          const angle = 360 / segments.length;
-          const isSelected = segment.id === selectedSegment;
+    <Card className="w-full overflow-hidden">
+      <CardHeader>
+        <CardTitle className="text-center">Koło Fortuny</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col items-center">
+        <div className="relative w-[300px] h-[300px] mb-6">
+          {/* Canvas for wheel drawing */}
+          <canvas 
+            ref={canvasRef}
+            width={300}
+            height={300}
+            className="absolute top-0 left-0 w-full h-full"
+          />
           
-          return (
-            <motion.div
-              key={segment.id}
-              className={cn(
-                'absolute w-1/2 h-1/2 origin-bottom-right',
-                isSelected && 'animate-pulse'
-              )}
-              initial={{ opacity: 0.7 }}
-              animate={{ opacity: 1 }}
-              style={{
-                transform: `rotate(${angle * index}deg)`,
-                transformOrigin: 'bottom right',
-                backgroundColor: segment.color,
-                borderLeftWidth: '1px',
-                borderTopWidth: '1px',
-                borderColor: 'rgba(0,0,0,0.2)',
-                clipPath: 'polygon(0 0, 100% 0, 100% 100%)'
-              }}
-            >
-              <div 
-                className="absolute text-black font-bold text-xs md:text-sm"
-                style={{
-                  transform: `rotate(${angle/2}deg) translateY(-80%) translateX(20%)`,
-                  maxWidth: '60%',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {segment.name}
-              </div>
-            </motion.div>
-          );
-        })}
-      </motion.div>
-      
-      {/* Center button */}
-      <motion.button
-        onClick={spinWheel}
-        disabled={isSpinning || disabled}
-        className={cn(
-          'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2',
-          'w-16 h-16 rounded-full bg-black border-4',
-          'flex items-center justify-center font-bold text-sm',
-          'transition-all',
-          isSpinning ? 'border-red-500 text-red-500' : 'border-white text-white hover:border-neon-yellow hover:text-neon-yellow',
-          disabled && 'opacity-50 cursor-not-allowed'
+          {/* Spinning Wheel */}
+          <div 
+            ref={wheelRef}
+            className="absolute top-0 left-0 w-full h-full transition-transform duration-[5s] ease-out"
+            style={{ transform: `rotate(${rotation}deg)` }}
+          />
+          
+          {/* Pointer */}
+          <div className="absolute top-0 left-[calc(50%-12px)] w-0 h-0 border-l-[12px] border-r-[12px] border-b-[24px] border-l-transparent border-r-transparent border-b-red-500 z-10" />
+        </div>
+        
+        {selectedCategory && (
+          <div className="mb-4 p-2 bg-green-500/20 border border-green-500 rounded text-center">
+            Wylosowano: <strong>{selectedCategory}</strong>
+          </div>
         )}
-        whileHover={!isSpinning && !disabled ? { scale: 1.1, rotate: 5 } : {}}
-        whileTap={!isSpinning && !disabled ? { scale: 0.95 } : {}}
-      >
-        {isSpinning ? 'KRĘCI...' : 'KRĘĆ'}
-      </motion.button>
-      
-      {/* Pointer */}
-      <motion.div 
-        className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8"
-        style={{
-          clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
-          backgroundColor: '#ff0066'
-        }}
-        animate={isSpinning ? { 
-          scale: [1, 1.2, 1],
-          rotate: [0, 5, -5, 0]
-        } : {}}
-        transition={{ duration: 0.5, repeat: isSpinning ? Infinity : 0 }}
-      />
-      
-      {/* Highlight ring when spinning */}
-      {isSpinning && (
-        <motion.div
-          className="absolute inset-0 rounded-full pointer-events-none"
-          style={{ 
-            boxShadow: '0 0 25px rgba(255, 255, 255, 0.5)',
-            border: '2px solid rgba(255, 255, 255, 0.3)',
-          }}
-          animate={{ 
-            boxShadow: [
-              '0 0 15px rgba(255, 255, 255, 0.3)',
-              '0 0 25px rgba(255, 255, 255, 0.6)',
-              '0 0 15px rgba(255, 255, 255, 0.3)'
-            ]
-          }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-        />
-      )}
-    </div>
+        
+        <Button
+          onClick={handleSpin}
+          disabled={spinning || disabled || categories.length === 0}
+          className="px-8 py-2"
+        >
+          {spinning ? 'Kręcenie...' : 'Zakręć kołem'}
+        </Button>
+      </CardContent>
+    </Card>
   );
 };
 

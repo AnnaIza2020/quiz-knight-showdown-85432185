@@ -5,10 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
 import { useGameContext } from '@/context/GameContext';
 import { Category, Question, GameRound } from '@/types/game-types';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Round1Questions = () => {
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -19,7 +19,6 @@ const Round1Questions = () => {
   const [newOptions, setNewOptions] = useState<string[]>([]);
   const [newOptionText, setNewOptionText] = useState('');
   const { categories, addCategory, removeCategory, setCategories, addQuestion } = useGameContext();
-  const { toast } = useToast();
   
   useEffect(() => {
     // Filter categories for ROUND_ONE when component mounts
@@ -92,10 +91,9 @@ const Round1Questions = () => {
       options: newOptions,
       question: newQuestionText, // For backward compatibility
       answer: newAnswerText, // For backward compatibility
-      // Add any additional fields required by Question type
     };
     
-    addQuestion(newQuestion);
+    addQuestion(selectedCategory, newQuestion);
     setNewQuestionText('');
     setNewAnswerText('');
     setNewOptions([]);

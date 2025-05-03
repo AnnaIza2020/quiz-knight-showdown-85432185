@@ -1,238 +1,182 @@
-
-import React, { useState } from 'react';
-import { Player, GameRound } from '@/types/game-types';
+import React from 'react';
+import { Button } from "@/components/ui/button";
 import { useGameContext } from '@/context/GameContext';
-import { Plus, Minus, Award, Trash, Heart, AlertOctagon } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Card } from '@/components/ui/card';
+import { Player, GameRound } from '@/types/game-types';
+import { Trophy, X, Heart, CircleMinus, CirclePlus } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface PlayerCardWithControlsProps {
   player: Player;
-  isCompact?: boolean;
-  showControls?: boolean;
+  round: GameRound;
+  onAssignPoints: (playerId: string, points: number) => void;
+  onRemoveLife: (playerId: string) => void;
+  onEliminate: (playerId: string) => void;
 }
 
-const PlayerCardWithControls: React.FC<PlayerCardWithControlsProps> = ({ 
+const PlayerCardWithControls: React.FC<PlayerCardWithControlsProps> = ({
   player,
-  isCompact = false,
-  showControls = true
+  round,
+  onAssignPoints,
+  onRemoveLife,
+  onEliminate
 }) => {
-  const { 
-    activePlayerId, 
-    setActivePlayer, 
-    awardPoints, 
-    deductHealth, 
-    eliminatePlayer,
-    round,
-    deductLife,
-    playSound
-  } = useGameContext();
-  
-  const [showAnimation, setShowAnimation] = useState<string | null>(null);
-  
-  const isActive = activePlayerId === player.id;
-  
-  const handleActivate = () => {
-    // Toggle active state
-    setActivePlayer(isActive ? null : player.id);
-    if (!isActive) {
-      playSound('click');
-    }
-  };
-  
-  const handleAwardPoints = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    awardPoints(player.id, 5); // Give 5 points by default with quick button
-    playSound('success');
-    
-    // Show animation
-    setShowAnimation('points');
-    setTimeout(() => setShowAnimation(null), 1000);
-  };
-  
-  const handleDeductHealth = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (round === GameRound.ROUND_ONE) {
-      deductHealth(player.id, 20);
-      playSound('damage');
-    } else {
-      deductLife(player.id);
-      playSound('damage');
-    }
-    
-    // Show animation
-    setShowAnimation('damage');
-    setTimeout(() => setShowAnimation(null), 1000);
-  };
-  
-  const handleEliminate = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    eliminatePlayer(player.id);
-    playSound('failure');
-    
-    // Show animation
-    setShowAnimation('eliminate');
-    setTimeout(() => setShowAnimation(null), 1000);
+  const { awardPoints, playSound } = useGameContext();
+
+  const getHealthColor = () => {
+    if (player.health > 70) return 'bg-green-500';
+    if (player.health > 30) return 'bg-yellow-500';
+    return 'bg-red-500';
   };
 
-  if (player.isEliminated) {
+  const getLivesDisplay = () => {
+    return Array(player.lives)
+      .fill(0)
+      .map((_, index) => (
+        <Heart key={index} className="h-4 w-4 fill-red-500 text-white" />
+      ));
+  };
+
+  // Quick points buttons based on round
+  const renderPointsButtons = () => {
+    // Tutaj zmieniamy porównania, aby były bezpieczne typowo
+    if (round === GameRound.ROUND_ONE) {
+      return (
+        <div className="flex flex-wrap gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 border-green-500 text-green-500 hover:bg-green-500/10"
+            onClick={() => handleAwardPoints(1)}
+          >
+            +1
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 border-green-500 text-green-500 hover:bg-green-500/10"
+            onClick={() => handleAwardPoints(2)}
+          >
+            +2
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 border-green-500 text-green-500 hover:bg-green-500/10"
+            onClick={() => handleAwardPoints(3)}
+          >
+            +3
+          </Button>
+        </div>
+      );
+    }
+
+    // Zmieniamy porównanie, aby było bezpieczne typowo
+    if (round === GameRound.ROUND_TWO || round === GameRound.ROUND_THREE) {
+      return (
+        <div className="flex flex-wrap gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 border-green-500 text-green-500 hover:bg-green-500/10"
+            onClick={() => handleAwardPoints(5)}
+          >
+            +5
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 border-green-500 text-green-500 hover:bg-green-500/10"
+            onClick={() => handleAwardPoints(10)}
+          >
+            +10
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 border-green-500 text-green-500 hover:bg-green-500/10"
+            onClick={() => handleAwardPoints(15)}
+          >
+            +15
+          </Button>
+        </div>
+      );
+    }
+
     return (
-      <div className="h-36 relative rounded-lg border border-red-900/50 bg-black/40 flex flex-col overflow-hidden opacity-60">
-        <div className="absolute inset-0 flex items-center justify-center text-red-500 font-bold text-lg">
-          WYELIMINOWANY
-        </div>
-        <div className="p-2 mt-auto bg-black/60">
-          <div className="text-white/40 font-bold truncate">{player.name}</div>
-        </div>
-      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        className="border-green-500 text-green-500 hover:bg-green-500/10"
+        onClick={() => handleAwardPoints(1)}
+      >
+        +1 Punkt
+      </Button>
     );
-  }
+  };
+
+  const handleAwardPoints = (points: number) => {
+    onAssignPoints(player.id, points);
+    toast.success(`Przyznano ${points} punktów dla ${player.name}`);
+    playSound('success');
+  };
+
+  const handleRemoveLife = () => {
+    onRemoveLife(player.id);
+    toast.warning(`Usunięto życie dla ${player.name}`);
+    playSound('fail');
+  };
+
+  const handleEliminate = () => {
+    onEliminate(player.id);
+    toast.error(`Gracz ${player.name} został wyeliminowany`);
+    playSound('eliminate');
+  };
 
   return (
-    <motion.div 
-      onClick={handleActivate}
-      className={`h-36 rounded-lg border overflow-hidden cursor-pointer transition-all ${
-        isActive 
-          ? 'border-neon-green shadow-[0_0_10px_rgba(74,222,128,0.5)]' 
-          : 'border-white/10 hover:border-white/30'
-      }`}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-    >
-      {/* Player video */}
-      <div className="relative h-[60%] bg-black">
-        {player.cameraUrl ? (
-          <iframe 
-            src={player.cameraUrl}
-            title={`Player ${player.name} camera`}
-            className="w-full h-full"
-            allowFullScreen
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-black/20">
-            <span className="text-white/50">Brak kamery</span>
-          </div>
-        )}
-        
-        {/* Player stats overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-1 flex justify-between items-center">
-          <div className="flex gap-1">
-            {/* Health or lives */}
-            {round === GameRound.ROUND_ONE ? (
-              <div className="bg-neon-green/70 text-black text-xs font-bold px-1 rounded">
-                {player.health}HP
-              </div>
-            ) : (
-              <div className="flex">
-                {Array.from({ length: player.lives }).map((_, i) => (
-                  <Heart key={i} size={12} className="text-red-500 fill-red-500" />
-                ))}
-              </div>
-            )}
-          </div>
-          
-          {/* Points */}
-          <div className="bg-yellow-500/70 text-black text-xs font-bold px-1 rounded">
-            {player.points}p
+    <Card className="bg-black/50 backdrop-blur-md p-4 rounded-lg border border-white/10">
+      <div className="flex items-center justify-between mb-4">
+        <div className="space-y-1">
+          <h3 className="text-xl font-semibold text-white">{player.name}</h3>
+          <div className="flex items-center gap-2 text-sm text-white/70">
+            <Trophy className="h-4 w-4" />
+            <span>{player.points} pkt</span>
           </div>
         </div>
-        
-        {/* Animations */}
-        <AnimatePresence>
-          {showAnimation && (
-            <motion.div 
-              className="absolute inset-0 flex items-center justify-center z-10"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              {showAnimation === 'points' && (
-                <motion.div 
-                  className="text-neon-green text-4xl font-bold"
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1.2, opacity: 1 }}
-                  exit={{ scale: 2, opacity: 0 }}
-                  transition={{ duration: 0.8 }}
-                >
-                  +5
-                </motion.div>
-              )}
-              
-              {showAnimation === 'damage' && (
-                <motion.div 
-                  className="bg-neon-red/30 absolute inset-0"
-                  animate={{ opacity: [0.8, 0.3, 0.8, 0] }}
-                  transition={{ duration: 0.8 }}
-                >
-                  <motion.div 
-                    className="text-neon-red text-4xl font-bold absolute inset-0 flex items-center justify-center"
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1.2, opacity: 1 }}
-                    exit={{ scale: 2, opacity: 0 }}
-                    transition={{ duration: 0.8 }}
-                  >
-                    {round === GameRound.ROUND_ONE ? '-20 HP' : '-1 ❤️'}
-                  </motion.div>
-                </motion.div>
-              )}
-              
-              {showAnimation === 'eliminate' && (
-                <motion.div 
-                  className="bg-neon-red/50 absolute inset-0 flex items-center justify-center"
-                  animate={{ opacity: [0.8, 0.3, 0.8, 0] }}
-                  transition={{ duration: 0.8 }}
-                >
-                  <AlertOctagon size={48} className="text-neon-red" />
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-      
-      {/* Player info & controls */}
-      <div className="h-[40%] bg-black/40 p-1 flex flex-col">
-        <div className="font-bold text-white truncate">{player.name}</div>
-        
-        {showControls && (
-          <div className="flex justify-between mt-auto">
-            <motion.button 
-              onClick={handleDeductHealth}
-              className="p-1 bg-black/40 rounded hover:bg-red-900/40 text-red-400"
-              title={round === GameRound.ROUND_ONE ? "Odejmij HP" : "Odejmij życie"}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <Minus size={16} />
-            </motion.button>
-            
-            <motion.button
-              onClick={handleAwardPoints}
-              className="p-1 bg-black/40 rounded hover:bg-yellow-900/40 text-yellow-400"
-              title="Dodaj punkty"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <Plus size={16} />
-            </motion.button>
-            
-            <motion.button
-              onClick={handleEliminate}
-              className="p-1 bg-black/40 rounded hover:bg-red-900/40 text-red-500"
-              title="Wyeliminuj gracza"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <Trash size={16} />
-            </motion.button>
+        <div className="text-right">
+          <div className="flex items-center justify-end gap-1">
+            {getLivesDisplay()}
           </div>
-        )}
+          <div className={`w-20 h-2 rounded-full mt-1 ${getHealthColor()}`} />
+        </div>
       </div>
-      
-      {/* Active indicator */}
-      {isActive && (
-        <div className="absolute inset-0 border-2 border-neon-green pointer-events-none" />
-      )}
-    </motion.div>
+
+      <div className="space-y-2">
+        {renderPointsButtons()}
+
+        <div className="flex gap-2">
+          <Button
+            variant="destructive"
+            size="sm"
+            className="flex-1"
+            onClick={handleRemoveLife}
+          >
+            <CircleMinus className="mr-2 h-4 w-4" />
+            Odejmij życie
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="flex-1"
+            onClick={handleEliminate}
+            disabled={player.isEliminated}
+          >
+            <X className="mr-2 h-4 w-4" />
+            Eliminuj
+          </Button>
+        </div>
+      </div>
+    </Card>
   );
 };
 

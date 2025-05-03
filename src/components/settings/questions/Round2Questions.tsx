@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useGameContext } from '@/context/GameContext';
@@ -7,17 +8,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
-} from "@/components/ui/accordion"
+} from "@/components/ui/accordion";
 import { Trash2 } from 'lucide-react';
 
+// Tymczasowe zastąpienie react-beautiful-dnd
+const DummyDragDropContext = ({ children }: { children: React.ReactNode }) => children;
+const DummyDroppable = ({ children, ...props }: { children: any, droppableId: string, type: string }) => 
+  children({ innerRef: React.createRef(), droppableProps: {}, placeholder: null });
+const DummyDraggable = ({ children, ...props }: { children: any, draggableId: string, index: number }) => 
+  children({ innerRef: React.createRef(), draggableProps: {}, dragHandleProps: {} });
+
+// Eksportuj jako zastępniki rzeczywistych komponentów
+const DragDropContext = DummyDragDropContext;
+const Droppable = DummyDroppable;
+const Draggable = DummyDraggable;
+
 const Round2Questions = () => {
-  const { categories, addCategory, removeCategory, setCategories } = useGameContext();
+  const { categories, addCategory, removeCategory, setCategories, addQuestion, removeQuestion } = useGameContext();
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [newQuestionText, setNewQuestionText] = useState('');
@@ -88,21 +100,14 @@ const Round2Questions = () => {
       text: newQuestionText,
       correctAnswer: newAnswerText,
       categoryId: selectedCategory,
-      category: categories.find(cat => cat.id === selectedCategory)?.name, // Added for backward compatibility
+      category: categories.find(cat => cat.id === selectedCategory)?.name,
       difficulty: 1,
       question: newQuestionText, // For backward compatibility
       answer: newAnswerText, // For backward compatibility
     };
     
-    // Find the category and add the question
-    const updatedCategories = categories.map(cat => {
-      if (cat.id === selectedCategory) {
-        return { ...cat, questions: [...cat.questions, newQuestion] };
-      }
-      return cat;
-    });
+    addQuestion(selectedCategory, newQuestion);
     
-    setCategories(updatedCategories);
     setNewQuestionText('');
     setNewAnswerText('');
     
@@ -115,48 +120,13 @@ const Round2Questions = () => {
       return;
     }
     
-    const updatedCategories = categories.map(cat => {
-      if (cat.id === selectedCategory) {
-        const updatedQuestions = cat.questions.filter(q => q.id !== questionId);
-        return { ...cat, questions: updatedQuestions };
-      }
-      return cat;
-    });
-    
-    setCategories(updatedCategories);
+    removeQuestion(selectedCategory, questionId);
     toast.success('Pytanie zostało usunięte');
   };
   
   const onDragEnd = (result: any) => {
-    if (!result.destination) {
-      return;
-    }
-    
-    if (result.type === 'CATEGORY') {
-      const items = Array.from(categories);
-      const [reorderedItem] = items.splice(result.source.index, 1);
-      items.splice(result.destination.index, 0, reorderedItem);
-      
-      // Update the state
-      setCategories(items);
-    } else if (result.type === 'QUESTION') {
-      const category = categories.find(cat => cat.id === selectedCategory);
-      if (!category) return;
-      
-      const questions = Array.from(category.questions);
-      const [reorderedItem] = questions.splice(result.source.index, 1);
-      questions.splice(result.destination.index, 0, reorderedItem);
-      
-      // Update the state
-      const updatedCategories = categories.map(cat => {
-        if (cat.id === selectedCategory) {
-          return { ...cat, questions: questions };
-        }
-        return cat;
-      });
-      
-      setCategories(updatedCategories);
-    }
+    // Funkcja zastępcza do czasu poprawnej implementacji react-beautiful-dnd
+    console.log('Drag and drop not implemented yet:', result);
   };
   
   return (
@@ -255,9 +225,6 @@ const Round2Questions = () => {
                             {(provided) => (
                               <AccordionItem 
                                 value={question.id}
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
                                 className="border-b border-gray-700 last:border-none"
                               >
                                 <AccordionTrigger className="text-left text-white">

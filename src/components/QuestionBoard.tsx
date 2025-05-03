@@ -1,201 +1,111 @@
 
-import React from 'react';
-import { cn } from "@/lib/utils";
+import React, { useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Question } from '@/types/game-types';
+import { Hourglass, Check, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { useGameContext } from '@/context/GameContext';
-import { Question, Category, GameRound } from '@/types/game-types';
 
 interface QuestionBoardProps {
-  className?: string;
+  question: Question | null;
+  timeRemaining?: number;
+  onCorrectAnswer?: () => void;
+  onIncorrectAnswer?: () => void;
+  onSkip?: () => void;
 }
 
-const QuestionBoard: React.FC<QuestionBoardProps> = ({ className }) => {
-  const { 
-    round, 
-    categories, 
-    currentQuestion, 
-    selectQuestion 
-  } = useGameContext();
+const QuestionBoard: React.FC<QuestionBoardProps> = ({
+  question,
+  timeRemaining,
+  onCorrectAnswer,
+  onIncorrectAnswer,
+  onSkip
+}) => {
+  const { playSound, timerRunning } = useGameContext();
+  
+  // Sound effect when time is running low
+  useEffect(() => {
+    if (timeRemaining && timeRemaining <= 5 && timeRemaining > 0 && timerRunning) {
+      playSound('wheel-tick', 0.3);
+    } else if (timeRemaining === 0 && timerRunning) {
+      playSound('timeout');
+      toast.error('Czas minął!');
+    }
+  }, [timeRemaining, timerRunning, playSound]);
 
-  if (!categories.length) {
+  if (!question) {
     return (
-      <div className={cn('neon-card flex flex-col items-center justify-center h-full', className)}>
-        <p className="text-xl text-white/80">Brak dostępnych pytań</p>
-        <p className="text-sm text-white/60 mt-2">Dodaj kategorie i pytania w panelu ustawień</p>
-      </div>
+      <Card className="w-full h-full flex items-center justify-center">
+        <CardContent className="text-center p-6">
+          <p className="text-muted-foreground">Wybierz pytanie z listy</p>
+        </CardContent>
+      </Card>
     );
   }
 
-  // Display currently selected question if one is active
-  if (currentQuestion) {
-    // Get category name from the category ID
-    const category = categories.find(cat => cat.questions.some(q => q.id === currentQuestion.id))?.name || 'Nieznana kategoria';
-    
-    return (
-      <div className={cn('neon-card flex flex-col h-full', className)}>
-        <div className="mb-4 flex justify-between items-center">
+  // Get category name (safely)
+  const categoryName = question.categoryId ? (question.category || 'Nieznana kategoria') : 'Nieznana kategoria';
+
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <div className="flex justify-between items-center">
           <div>
-            <span className="text-neon-blue font-semibold">{currentQuestion.category || category}</span>
-            <span className="ml-2 text-white/70">({currentQuestion.difficulty} pkt)</span>
+            <CardTitle className="text-xl">Pytanie</CardTitle>
+            <CardDescription>{categoryName} - Poziom {question.difficulty}</CardDescription>
           </div>
-          <button 
-            onClick={() => selectQuestion(null)} 
-            className="text-neon-red hover:text-neon-pink"
-          >
-            Zamknij
-          </button>
-        </div>
-
-        <div className="flex-grow flex flex-col items-center justify-center p-4">
-          {currentQuestion.imageUrl && (
-            <div className="mb-4 w-full max-h-48 overflow-hidden">
-              <img 
-                src={currentQuestion.imageUrl} 
-                alt="Question" 
-                className="w-full h-auto object-contain" 
-              />
+          {timeRemaining !== undefined && (
+            <div className="flex items-center gap-2 text-lg font-bold">
+              <Hourglass className="h-5 w-5" />
+              {timeRemaining}s
             </div>
           )}
-          
-          <div className="text-xl text-center font-bold my-4 text-white">
-            {currentQuestion.question || currentQuestion.text}
-          </div>
-          
-          {currentQuestion.options && (
-            <div className="grid grid-cols-2 gap-2 w-full mt-4">
-              {currentQuestion.options.map((option, index) => (
-                <div key={index} className="bg-black/30 border border-neon-blue/30 rounded p-2 text-center">
-                  {option}
-                </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="p-4 bg-black/30 rounded-lg border border-white/10">
+          <p className="text-lg">{question.text || question.question}</p> {/* Używamy question jako fallback */}
+        </div>
+        
+        {question.options && question.options.length > 0 && (
+          <div className="space-y-2">
+            <p className="font-semibold text-sm">Opcje:</p>
+            <ul className="list-disc pl-6">
+              {question.options.map((option, index) => (
+                <li key={index} className="text-sm">{option}</li>
               ))}
-            </div>
-          )}
-        </div>
-        
-        <div className="mt-2">
-          <div className="text-neon-green text-center p-1">
-            <span className="font-bold mr-2">Odpowiedź:</span>
-            <span>{currentQuestion.answer || currentQuestion.correctAnswer}</span>
+            </ul>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show categories for round 1
-  if (round === GameRound.ROUND_ONE) {
-    return (
-      <div className={cn('neon-card h-full', className)}>
-        <h2 className="text-center text-lg font-bold mb-4 neon-text">Runda 1: Zróżnicowana wiedza z Internetu</h2>
-        <div className="grid grid-cols-4 gap-3">
-          {categories.map((category) => (
-            <div key={category.id} className="flex flex-col">
-              <div className="text-center text-neon-blue font-semibold mb-2 truncate">
-                {category.name}
-              </div>
-              <div className="flex flex-col gap-2">
-                {[5, 10, 15, 20].map((difficulty) => {
-                  const questionsWithDifficulty = category.questions.filter(
-                    (q) => q.difficulty === difficulty
-                  );
-                  
-                  const isAvailable = questionsWithDifficulty.length > 0;
-                  
-                  return (
-                    <button
-                      key={`${category.id}-${difficulty}`}
-                      className={cn(
-                        'py-2 px-1 rounded-md font-bold text-center transition-all',
-                        isAvailable
-                          ? 'bg-black border border-neon-yellow/70 text-neon-yellow hover:bg-neon-yellow/20'
-                          : 'bg-black/30 border border-white/20 text-white/30 cursor-not-allowed'
-                      )}
-                      disabled={!isAvailable}
-                      onClick={() => {
-                        if (isAvailable) {
-                          // Randomly select a question with this difficulty
-                          const randomIndex = Math.floor(Math.random() * questionsWithDifficulty.length);
-                          selectQuestion(questionsWithDifficulty[randomIndex]);
-                        }
-                      }}
-                    >
-                      {difficulty}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-  
-  // Show categories for round 3 (koło fortuny)
-  if (round === GameRound.ROUND_THREE) {
-    return (
-      <div className={cn('neon-card h-full', className)}>
-        <h2 className="text-center text-lg font-bold mb-4 neon-text">Runda 3: Koło Fortuny</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              className="bg-black border border-neon-purple/70 text-neon-purple hover:bg-neon-purple/20 py-2 px-3 rounded-md font-bold"
-              onClick={() => {
-                if (category.questions.length > 0) {
-                  // Randomly select a question from this category
-                  const randomIndex = Math.floor(Math.random() * category.questions.length);
-                  selectQuestion(category.questions[randomIndex]);
-                }
-              }}
-              disabled={category.questions.length === 0}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-  
-  // Show 5-second round interface for round 2
-  if (round === GameRound.ROUND_TWO) {
-    return (
-      <div className={cn('neon-card h-full flex flex-col', className)}>
-        <h2 className="text-center text-lg font-bold mb-4 neon-text">Runda 2: 5 Sekund</h2>
+        )}
         
-        <div className="flex-grow flex flex-col gap-4 items-center justify-center">
-          <button
-            className="neon-button text-xl py-3 px-6"
-            onClick={() => {
-              // Randomly select a category
-              const randomCategoryIndex = Math.floor(Math.random() * categories.length);
-              const randomCategory = categories[randomCategoryIndex];
-              
-              // Randomly select a question from that category
-              if (randomCategory.questions.length > 0) {
-                const randomQuestionIndex = Math.floor(Math.random() * randomCategory.questions.length);
-                selectQuestion(randomCategory.questions[randomQuestionIndex]);
-              }
-            }}
-          >
-            Losowe Pytanie
-          </button>
-          
-          <p className="text-white/70 text-center">
-            Kliknij przycisk, aby wylosować pytanie dla aktywnego gracza
+        <div>
+          <p className="font-semibold text-sm mb-1">Poprawna odpowiedź:</p>
+          <p className="p-2 bg-green-500/20 rounded border border-green-500/40">
+            {question.correctAnswer || question.answer} {/* Używamy answer jako fallback */}
           </p>
         </div>
-      </div>
-    );
-  }
-  
-  // Default board for other rounds
-  return (
-    <div className={cn('neon-card h-full flex items-center justify-center', className)}>
-      <p className="text-xl text-white/80 text-center">
-        Przygotuj się do gry...
-      </p>
-    </div>
+      </CardContent>
+      <CardFooter className="flex justify-end gap-2">
+        {onSkip && (
+          <Button variant="outline" onClick={onSkip}>
+            Pomiń
+          </Button>
+        )}
+        {onIncorrectAnswer && (
+          <Button variant="destructive" onClick={onIncorrectAnswer}>
+            <X className="mr-1 h-4 w-4" />
+            Błędnie
+          </Button>
+        )}
+        {onCorrectAnswer && (
+          <Button variant="success" className="bg-green-600 hover:bg-green-700" onClick={onCorrectAnswer}>
+            <Check className="mr-1 h-4 w-4" />
+            Poprawnie
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
   );
 };
 
