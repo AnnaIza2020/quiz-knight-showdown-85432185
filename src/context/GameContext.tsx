@@ -76,7 +76,11 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     advanceToRoundThree,
     finishGame,
     checkRoundThreeEnd,
-    resetGame
+    resetGame,
+    markQuestionAsUsed,
+    resetUsedQuestions,
+    isQuestionUsed,
+    usedQuestionIds
   } = useGameLogic(players, setPlayers, setRound, setWinnerIds);
 
   // Initialize sound effects with options properly
@@ -91,7 +95,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     setVolume,
     soundsPreloaded,
     addCustomSound,
-    availableSounds
+    availableSounds,
+    soundStatus
   } = useSoundEffects({ 
     enabled: true,
     useLocalStorage: true
@@ -180,10 +185,26 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   }, [players, round, checkRoundThreeEnd]);
 
+  // Automatycznie ładujemy dane gry podczas uruchamiania
+  useEffect(() => {
+    loadGameData();
+  }, [loadGameData]);
+
   // Automatically save game data when important state changes
   useEffect(() => {
     saveGameData();
-  }, [players, round, activePlayerId, winnerIds, specialCards, specialCardRules, saveGameData]);
+  }, [
+    players, 
+    round, 
+    activePlayerId, 
+    winnerIds, 
+    specialCards, 
+    specialCardRules, 
+    gameLogo,
+    primaryColor,
+    secondaryColor,
+    saveGameData
+  ]);
 
   const value: GameContextType = {
     // State
@@ -201,11 +222,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     hostCameraUrl,
     specialCards,
     specialCardRules,
+    usedQuestionIds,
     
     // Sound-related properties
     volume,
     setVolume,
-    availableSounds: availableSounds as Record<string, string>,
+    availableSounds,
     addCustomSound,
     playSound,
     playSoundWithOptions,
@@ -213,6 +235,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     stopAllSounds,
     soundsEnabled,
     setSoundsEnabled,
+    soundStatus,
     
     // Methods
     setRound,
@@ -261,7 +284,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     // Questions methods
     addQuestion,
     removeQuestion,
-    updateQuestion
+    updateQuestion,
+    markQuestionAsUsed,
+    resetUsedQuestions,
+    isQuestionUsed
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

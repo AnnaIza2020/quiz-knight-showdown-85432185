@@ -1,547 +1,557 @@
 
-import React, { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import React, { useState, useRef, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
-import { supabase } from '@/lib/supabase';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import SettingsLayout from './SettingsLayout';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Download, Upload, Check, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface ThemeData {
+interface ThemeOption {
+  id: string;
+  name: string;
   primaryColor: string;
-  secondaryColor: string;
+  buttonColor: string;
   backgroundColor: string;
-  fontFamily: string;
-  buttonStyle: string;
-  logoUrl?: string;
+  textColor: string;
 }
 
-const DEFAULT_THEME: ThemeData = {
-  primaryColor: '#FF00FF',
-  secondaryColor: '#00FFFF',
-  backgroundColor: '#0F111A',
-  fontFamily: 'Inter, sans-serif',
-  buttonStyle: 'neon',
-  logoUrl: '/lovable-uploads/5d43e62b-61b1-4821-beff-4abb5eb500f5.png'
-};
-
 const ThemeSettings = () => {
-  const [theme, setTheme] = useState<ThemeData>(DEFAULT_THEME);
-  const [selectedFont, setSelectedFont] = useState<string>(DEFAULT_THEME.fontFamily);
-  const [selectedButtonStyle, setSelectedButtonStyle] = useState<string>(DEFAULT_THEME.buttonStyle);
+  const { 
+    primaryColor, 
+    secondaryColor, 
+    setPrimaryColor, 
+    setSecondaryColor, 
+    gameLogo,
+    setGameLogo,
+    saveGameData
+  } = useGameContext();
+  
+  const [selectedTheme, setSelectedTheme] = useState<string | null>("default");
+  const [customTheme, setCustomTheme] = useState({
+    name: "Custom Theme",
+    primaryColor: primaryColor || "#9b87f5",
+    backgroundColor: secondaryColor || "#1A1F2C",
+    cardColor: "#203748",
+    textColor: "#FFFFFF",
+  });
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  
-  const { setPrimaryColor, setSecondaryColor, setGameLogo } = useGameContext();
-  
-  // Load theme settings from Supabase
+  const [logoPreview, setLogoPreview] = useState<string | null>(gameLogo);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Synchronizacja kolorów z kontekstem gry
   useEffect(() => {
-    const loadThemeSettings = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('game_settings')
-          .select('value')
-          .eq('id', 'theme')
-          .single();
-          
-        if (error) {
-          console.error('Error fetching theme settings:', error);
-          return;
-        }
-        
-        if (data?.value) {
-          // Ensure data.value is treated as JSON and properly parsed
-          let themeData: Partial<ThemeData> = {};
-          
-          try {
-            // If data.value is already an object, use it directly
-            if (typeof data.value === 'object' && data.value !== null) {
-              themeData = data.value as Partial<ThemeData>;
-            } 
-            // If it's a string, try to parse it
-            else if (typeof data.value === 'string') {
-              themeData = JSON.parse(data.value) as Partial<ThemeData>;
-            }
-            
-            // Apply parsed values with defaults for any missing properties
-            setTheme({
-              primaryColor: themeData.primaryColor || DEFAULT_THEME.primaryColor,
-              secondaryColor: themeData.secondaryColor || DEFAULT_THEME.secondaryColor,
-              backgroundColor: themeData.backgroundColor || DEFAULT_THEME.backgroundColor,
-              fontFamily: themeData.fontFamily || DEFAULT_THEME.fontFamily,
-              buttonStyle: themeData.buttonStyle || DEFAULT_THEME.buttonStyle,
-              logoUrl: themeData.logoUrl || DEFAULT_THEME.logoUrl
-            });
-            
-            setSelectedFont(themeData.fontFamily || DEFAULT_THEME.fontFamily);
-            setSelectedButtonStyle(themeData.buttonStyle || DEFAULT_THEME.buttonStyle);
-            
-            // Apply loaded theme to context
-            if (themeData.primaryColor) setPrimaryColor(themeData.primaryColor);
-            if (themeData.secondaryColor) setSecondaryColor(themeData.secondaryColor);
-            if (themeData.logoUrl) setGameLogo(themeData.logoUrl);
-            
-            // Set logo preview if available
-            if (themeData.logoUrl) {
-              setLogoPreview(themeData.logoUrl);
-            }
-          } catch (parseError) {
-            console.error('Error parsing theme data:', parseError);
-            toast.error('Błąd wczytywania ustawień motywu', {
-              description: 'Format danych jest niepoprawny'
-            });
-          }
-        }
-      } catch (err) {
-        console.error('Unexpected error loading theme settings:', err);
-      }
-    };
+    setCustomTheme(prev => ({
+      ...prev,
+      primaryColor: primaryColor || prev.primaryColor,
+      backgroundColor: secondaryColor || prev.backgroundColor
+    }));
+  }, [primaryColor, secondaryColor]);
+
+  const themes: ThemeOption[] = [
+    {
+      id: "default",
+      name: "Default",
+      primaryColor: "#9b87f5",
+      buttonColor: "#9b87f5",
+      backgroundColor: "#1A1F2C",
+      textColor: "#FFFFFF",
+    },
+    {
+      id: "cyberpunk",
+      name: "Cyberpunk",
+      primaryColor: "#00FFF7",
+      buttonColor: "#00FFF7",
+      backgroundColor: "#141421",
+      textColor: "#00FFF7",
+    },
+    {
+      id: "retrowave",
+      name: "RetroWave",
+      primaryColor: "#FF00FF",
+      buttonColor: "#FF00FF",
+      backgroundColor: "#120634",
+      textColor: "#FF00FF",
+    },
+    {
+      id: "classicTV",
+      name: "Classic TV",
+      primaryColor: "#FFD700",
+      buttonColor: "#FFD700",
+      backgroundColor: "#191919",
+      textColor: "#FFFFFF",
+    },
+    {
+      id: "neon",
+      name: "Neon",
+      primaryColor: "#39FF14",
+      buttonColor: "#39FF14",
+      backgroundColor: "#0D0D0D",
+      textColor: "#FFFFFF",
+    },
+  ];
+
+  const handleThemeSelect = (themeId: string) => {
+    setSelectedTheme(themeId);
     
-    loadThemeSettings();
-  }, [setPrimaryColor, setSecondaryColor, setGameLogo]);
-  
-  // Handle color change
-  const handleColorChange = (color: string, type: keyof ThemeData) => {
-    setTheme({ ...theme, [type]: color });
-    
-    // Apply changes immediately to preview
-    if (type === 'primaryColor') {
-      setPrimaryColor(color);
-    } else if (type === 'secondaryColor') {
-      setSecondaryColor(color);
+    const theme = themes.find(t => t.id === themeId);
+    if (theme) {
+      setPrimaryColor(theme.primaryColor);
+      setSecondaryColor(theme.backgroundColor);
+      
+      // Zapisz zmiany w localStorage
+      saveGameData();
+      toast.success('Motyw został zastosowany', {
+        description: `Wybrano motyw: ${theme.name}`
+      });
     }
   };
-  
-  // Handle font change
-  const handleFontChange = (fontFamily: string) => {
-    setSelectedFont(fontFamily);
-    setTheme({ ...theme, fontFamily });
+
+  const handleCustomThemeChange = (field: string, value: string) => {
+    setCustomTheme(prev => ({ ...prev, [field]: value }));
+  };
+
+  const applyCustomTheme = () => {
+    setPrimaryColor(customTheme.primaryColor);
+    setSecondaryColor(customTheme.backgroundColor);
     
-    // Apply font to document for preview
-    document.documentElement.style.setProperty('--font-primary', fontFamily);
+    // Zapisz zmiany w localStorage
+    saveGameData();
+    toast.success('Własny motyw został zastosowany');
   };
   
-  // Handle button style change
-  const handleButtonStyleChange = (style: string) => {
-    setSelectedButtonStyle(style);
-    setTheme({ ...theme, buttonStyle: style });
-  };
-  
-  // Handle logo file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Obsługa uploadu logo
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      if (file.type.startsWith('image/')) {
-        setLogoFile(file);
-        
-        // Create preview
-        const reader = new FileReader();
-        reader.onload = () => {
-          setLogoPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        toast.error('Niepoprawny format pliku', {
-          description: 'Proszę wybrać plik graficzny (np. PNG, JPG)'
+      
+      // Walidacja typu pliku
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Nieprawidłowy format pliku', {
+          description: 'Dozwolone formaty: JPEG, PNG, GIF, SVG'
         });
+        return;
       }
+      
+      // Walidacja rozmiaru pliku (max 1MB)
+      if (file.size > 1024 * 1024) {
+        toast.error('Plik jest za duży', {
+          description: 'Maksymalny rozmiar pliku to 1MB'
+        });
+        return;
+      }
+      
+      setLogoFile(file);
+      
+      // Stwórz podgląd pliku
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setLogoPreview(e.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
   
-  // Save theme settings to Supabase
-  const handleSaveTheme = async () => {
-    setLoading(true);
-    let updatedTheme = { ...theme };
+  const handleSaveLogo = () => {
+    if (!logoFile) {
+      toast.error('Nie wybrano pliku');
+      return;
+    }
     
+    setIsUploading(true);
+    
+    // Symulacja uploadu dla demo
+    setTimeout(() => {
+      try {
+        // W prawdziwym scenariuszu, tutaj byłby kod do uploadu pliku na serwer
+        
+        // Zapisz URL logo w localStorage
+        if (logoPreview) {
+          setGameLogo(logoPreview);
+          saveGameData();
+          toast.success('Logo zostało zapisane');
+        }
+      } catch (error) {
+        console.error('Błąd podczas zapisywania logo:', error);
+        toast.error('Wystąpił błąd podczas zapisywania logo');
+      } finally {
+        setIsUploading(false);
+      }
+    }, 1000);
+  };
+  
+  const handleClearLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(null);
+    setGameLogo(null);
+    saveGameData();
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    
+    toast.success('Logo zostało usunięte');
+  };
+  
+  const handleExportTheme = () => {
     try {
-      // Handle logo upload if file is selected
-      if (logoFile) {
-        const fileName = `logo_${Date.now()}.${logoFile.name.split('.').pop()}`;
-        
-        // Create storage bucket if it doesn't exist
-        const { data: bucketExists } = await supabase
-          .storage
-          .getBucket('game_assets');
-          
-        if (!bucketExists) {
-          const { error: createBucketError } = await supabase
-            .storage
-            .createBucket('game_assets', {
-              public: true,
-              allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'],
-              fileSizeLimit: 1024 * 1024 * 2 // 2MB
-            });
-          
-          if (createBucketError) {
-            console.error('Error creating bucket:', createBucketError);
-            toast.error('Błąd tworzenia przestrzeni dla plików');
-            return;
-          }
-        }
-        
-        // Upload file
-        const { error: uploadError, data: uploadData } = await supabase
-          .storage
-          .from('game_assets')
-          .upload(fileName, logoFile, {
-            upsert: true
-          });
-        
-        if (uploadError) {
-          console.error('Error uploading logo:', uploadError);
-          toast.error('Błąd przesyłania logo', {
-            description: uploadError.message
-          });
-        } else if (uploadData) {
-          // Get public URL
-          const { data: publicUrlData } = supabase
-            .storage
-            .from('game_assets')
-            .getPublicUrl(fileName);
-          
-          if (publicUrlData) {
-            const logoUrl = publicUrlData.publicUrl;
-            updatedTheme.logoUrl = logoUrl;
-            setGameLogo(logoUrl);
-          }
-        }
-      }
+      const themeData = {
+        primaryColor: primaryColor,
+        secondaryColor: secondaryColor,
+        customTheme: customTheme,
+        exportDate: new Date().toISOString()
+      };
       
-      // Save theme settings
-      const { error } = await supabase
-        .from('game_settings')
-        .upsert(
-          { id: 'theme', value: updatedTheme },
-          { onConflict: 'id' }
-        );
+      const dataStr = JSON.stringify(themeData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
       
-      if (error) {
-        console.error('Error saving theme settings:', error);
-        toast.error('Błąd zapisywania ustawień motywu', {
-          description: error.message
-        });
-      } else {
-        toast.success('Ustawienia motywu zapisane', {
-          description: 'Wszystkie zmiany zostały zastosowane'
-        });
-      }
-    } catch (err) {
-      console.error('Unexpected error saving theme:', err);
-      toast.error('Wystąpił nieoczekiwany błąd');
-    } finally {
-      setLoading(false);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = url;
+      downloadLink.download = `gameshow_theme_${new Date().toLocaleDateString('pl-PL').replace(/\./g, '-')}.json`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      toast.success('Motyw został wyeksportowany');
+    } catch (error) {
+      console.error('Błąd podczas eksportu motywu:', error);
+      toast.error('Błąd podczas eksportu motywu');
     }
   };
   
-  // Reset theme to defaults
-  const handleResetTheme = () => {
-    setTheme(DEFAULT_THEME);
-    setSelectedFont(DEFAULT_THEME.fontFamily);
-    setSelectedButtonStyle(DEFAULT_THEME.buttonStyle);
-    setPrimaryColor(DEFAULT_THEME.primaryColor);
-    setSecondaryColor(DEFAULT_THEME.secondaryColor);
-    setGameLogo(DEFAULT_THEME.logoUrl || '');
+  const handleImportTheme = () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
     
-    toast.info('Ustawienia motywu zresetowane', {
-      description: 'Wszystkie ustawienia przywrócone do domyślnych wartości'
-    });
+    fileInput.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const importData = JSON.parse(event.target?.result as string);
+          
+          if (!importData.primaryColor || !importData.secondaryColor) {
+            throw new Error('Nieprawidłowy format pliku');
+          }
+          
+          setPrimaryColor(importData.primaryColor);
+          setSecondaryColor(importData.secondaryColor);
+          
+          if (importData.customTheme) {
+            setCustomTheme(importData.customTheme);
+          }
+          
+          saveGameData();
+          toast.success('Motyw został zaimportowany');
+        } catch (error) {
+          console.error('Błąd podczas importu motywu:', error);
+          toast.error('Nieprawidłowy format pliku');
+        }
+      };
+      reader.readAsText(file);
+    };
+    
+    fileInput.click();
   };
   
   return (
-    <SettingsLayout
-      title="Ustawienia Motywu"
-      description="Dostosuj wygląd aplikacji, kolory, czcionki i styl elementów interfejsu."
-    >
-      <div className="space-y-6">
-        {/* Color settings */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <Label htmlFor="primaryColor">Kolor główny</Label>
-            <div className="flex gap-2 mt-2 items-center">
-              <div 
-                className="w-8 h-8 rounded border border-white/30" 
-                style={{ backgroundColor: theme.primaryColor }}
-              />
-              <Input 
-                type="text" 
-                id="primaryColor" 
-                value={theme.primaryColor} 
-                onChange={(e) => handleColorChange(e.target.value, 'primaryColor')}
-                className="font-mono"
-              />
-              <Input 
-                type="color" 
-                value={theme.primaryColor} 
-                onChange={(e) => handleColorChange(e.target.value, 'primaryColor')}
-                className="w-10 h-10 p-1 rounded cursor-pointer"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="secondaryColor">Kolor akcenta</Label>
-            <div className="flex gap-2 mt-2 items-center">
-              <div 
-                className="w-8 h-8 rounded border border-white/30" 
-                style={{ backgroundColor: theme.secondaryColor }}
-              />
-              <Input 
-                type="text" 
-                id="secondaryColor" 
-                value={theme.secondaryColor} 
-                onChange={(e) => handleColorChange(e.target.value, 'secondaryColor')}
-                className="font-mono"
-              />
-              <Input 
-                type="color" 
-                value={theme.secondaryColor} 
-                onChange={(e) => handleColorChange(e.target.value, 'secondaryColor')}
-                className="w-10 h-10 p-1 rounded cursor-pointer"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="backgroundColor">Kolor tła</Label>
-            <div className="flex gap-2 mt-2 items-center">
-              <div 
-                className="w-8 h-8 rounded border border-white/30" 
+    <div className="bg-[#0c0e1a] rounded-lg p-6 shadow-lg border border-gray-800">
+      <h2 className="text-xl font-bold mb-2 text-white">Motywy i Style</h2>
+      <p className="text-white/60 text-sm mb-6">
+        Tu zmienisz wygląd sceny, motywy i efekty.
+      </p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Predefined themes */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Gotowe motywy</h3>
+          <div className="grid grid-cols-2 gap-4">
+            {themes.map((theme) => (
+              <div
+                key={theme.id}
+                className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                  selectedTheme === theme.id 
+                    ? 'border-2 border-white shadow-lg' 
+                    : 'border-gray-700 hover:border-gray-500'
+                }`}
                 style={{ backgroundColor: theme.backgroundColor }}
-              />
-              <Input 
-                type="text" 
-                id="backgroundColor" 
-                value={theme.backgroundColor} 
-                onChange={(e) => handleColorChange(e.target.value, 'backgroundColor')}
-                className="font-mono"
-              />
-              <Input 
-                type="color" 
-                value={theme.backgroundColor} 
-                onChange={(e) => handleColorChange(e.target.value, 'backgroundColor')}
-                className="w-10 h-10 p-1 rounded cursor-pointer"
-              />
-            </div>
-          </div>
-        </div>
-        
-        {/* Font settings */}
-        <div className="space-y-2">
-          <Label htmlFor="fontFamily">Czcionka aplikacji</Label>
-          <Select 
-            value={selectedFont} 
-            onValueChange={handleFontChange}
-          >
-            <SelectTrigger id="fontFamily" className="w-full">
-              <SelectValue placeholder="Wybierz czcionkę" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Inter, sans-serif">Inter (domyślna)</SelectItem>
-              <SelectItem value="Roboto, sans-serif">Roboto</SelectItem>
-              <SelectItem value="'Playfair Display', serif">Playfair Display</SelectItem>
-              <SelectItem value="'Press Start 2P', cursive">Press Start 2P</SelectItem>
-              <SelectItem value="'Orbitron', sans-serif">Orbitron</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          {/* Font preview */}
-          <div 
-            className="mt-2 p-3 border border-white/10 rounded bg-black/30"
-            style={{ fontFamily: selectedFont }}
-          >
-            <p className="text-lg mb-1">Przykładowy tekst w wybranej czcionce</p>
-            <p className="text-sm opacity-70">ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789</p>
-          </div>
-        </div>
-        
-        {/* Button style settings */}
-        <div className="space-y-2">
-          <Label>Styl przycisków</Label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-            <button
-              type="button"
-              onClick={() => handleButtonStyleChange('neon')}
-              className={`border-2 rounded-md p-3 h-20 flex items-center justify-center ${
-                selectedButtonStyle === 'neon' 
-                  ? 'border-neon-blue bg-black/40 shadow-[0_0_10px_rgba(0,255,255,0.5)]' 
-                  : 'border-white/20 bg-black/20'
-              }`}
-            >
-              <div className="neon-button text-white">
-                Styl Neonowy
-              </div>
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => handleButtonStyleChange('modern')}
-              className={`border-2 rounded-md p-3 h-20 flex items-center justify-center ${
-                selectedButtonStyle === 'modern' 
-                  ? 'border-neon-blue bg-black/40 shadow-[0_0_10px_rgba(0,255,255,0.5)]' 
-                  : 'border-white/20 bg-black/20'
-              }`}
-            >
-              <div className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium px-4 py-2 rounded-md">
-                Styl Nowoczesny
-              </div>
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => handleButtonStyleChange('retro')}
-              className={`border-2 rounded-md p-3 h-20 flex items-center justify-center ${
-                selectedButtonStyle === 'retro' 
-                  ? 'border-neon-blue bg-black/40 shadow-[0_0_10px_rgba(0,255,255,0.5)]' 
-                  : 'border-white/20 bg-black/20'
-              }`}
-            >
-              <div className="bg-gray-900 border-2 border-gray-700 font-pixel text-white px-4 py-2 rounded">
-                Styl Retro
-              </div>
-            </button>
-          </div>
-        </div>
-        
-        {/* Logo upload */}
-        <div className="space-y-2">
-          <Label htmlFor="logoUpload">Logo gry</Label>
-          <div className="flex flex-col gap-4">
-            <div className="flex gap-2">
-              <Input
-                id="logoUpload"
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="flex-grow"
-              />
-              {logoPreview && (
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    setLogoPreview(null);
-                    setLogoFile(null);
-                  }}
-                >
-                  Usuń
-                </Button>
-              )}
-            </div>
-            
-            {/* Logo preview */}
-            <div className="flex justify-center p-4 border border-white/10 rounded bg-black/30 min-h-32">
-              {logoPreview ? (
-                <img
-                  src={logoPreview}
-                  alt="Logo podgląd"
-                  className="max-h-32 object-contain"
-                />
-              ) : (
-                <div className="flex items-center justify-center text-white/50 h-32">
-                  Brak wybranego logo
-                </div>
-              )}
-            </div>
-            <p className="text-xs text-white/60">
-              Zalecany rozmiar: 400x200 pikseli, format PNG z przezroczystością
-            </p>
-          </div>
-        </div>
-        
-        {/* Preview section */}
-        <div className="mt-6">
-          <h3 className="text-lg font-medium mb-3">Podgląd motywu</h3>
-          <div 
-            className="rounded-lg p-6 border border-white/10 relative overflow-hidden"
-            style={{ 
-              background: `linear-gradient(135deg, ${theme.backgroundColor} 0%, rgba(0,0,0,0.9) 100%)`,
-              fontFamily: theme.fontFamily
-            }}
-          >
-            <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
-            
-            <div className="relative z-10">
-              <h2 
-                className="text-2xl font-bold mb-4 text-center"
-                style={{ color: theme.primaryColor, textShadow: `0 0 10px ${theme.primaryColor}` }}
+                onClick={() => handleThemeSelect(theme.id)}
               >
-                Discord Game Show
-              </h2>
-              
-              <div className="flex justify-center gap-4 mb-6">
-                <button 
-                  className={`px-4 py-2 rounded transition-all ${
-                    theme.buttonStyle === 'neon' ? 'neon-button' : 
-                    theme.buttonStyle === 'modern' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium' :
-                    'bg-gray-900 border-2 border-gray-700 font-pixel text-white'
-                  }`}
-                  style={{ 
-                    borderColor: theme.secondaryColor,
-                    color: theme.secondaryColor
-                  }}
-                >
-                  Przycisk 1
-                </button>
-                
-                <button 
-                  className={`px-4 py-2 rounded transition-all ${
-                    theme.buttonStyle === 'neon' ? 'neon-button' : 
-                    theme.buttonStyle === 'modern' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium' :
-                    'bg-gray-900 border-2 border-gray-700 font-pixel text-white'
-                  }`}
-                  style={{ 
-                    borderColor: theme.primaryColor,
-                    color: theme.primaryColor
-                  }}
-                >
-                  Przycisk 2
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
                 <div 
-                  className="bg-black/50 backdrop-blur-sm p-4 rounded-lg border text-sm"
-                  style={{ borderColor: `${theme.secondaryColor}40` }}
+                  className="absolute top-2 right-2 w-4 h-4 rounded-full"
+                  style={{ 
+                    backgroundColor: theme.primaryColor,
+                    boxShadow: selectedTheme === theme.id ? `0 0 8px 2px ${theme.primaryColor}` : 'none' 
+                  }}
+                />
+                <h4 
+                  className="font-medium mb-2" 
+                  style={{ color: theme.textColor }}
                 >
-                  <p style={{ color: theme.secondaryColor }}>
-                    Element interfejsu 1
-                  </p>
-                </div>
-                
+                  {theme.name}
+                </h4>
+                <p style={{ color: theme.textColor }}>Przykładowy tekst</p>
                 <div 
-                  className="bg-black/50 backdrop-blur-sm p-4 rounded-lg border text-sm"
-                  style={{ borderColor: `${theme.primaryColor}40` }}
+                  className="mt-2 text-center py-1 rounded-md text-sm"
+                  style={{ backgroundColor: theme.buttonColor, color: theme.backgroundColor }}
                 >
-                  <p style={{ color: theme.primaryColor }}>
-                    Element interfejsu 2
-                  </p>
+                  Przycisk
                 </div>
               </div>
+            ))}
+          </div>
+          
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-4">Logo gry</h3>
+            <div className="border border-gray-700 rounded-lg p-4 bg-black/30">
+              <div className="flex flex-col items-center space-y-4">
+                {/* Logo preview */}
+                <div className="w-full aspect-video flex items-center justify-center border border-dashed border-gray-600 rounded-lg overflow-hidden bg-black/50">
+                  {isUploading ? (
+                    <Skeleton className="w-3/4 h-1/2" />
+                  ) : logoPreview ? (
+                    <img 
+                      src={logoPreview} 
+                      alt="Game Logo" 
+                      className="max-h-full max-w-full object-contain" 
+                    />
+                  ) : (
+                    <p className="text-white/50">Brak logo</p>
+                  )}
+                </div>
+                
+                {/* Logo upload */}
+                <div className="w-full">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleLogoUpload}
+                    accept="image/jpeg,image/png,image/gif,image/svg+xml"
+                    className="hidden"
+                  />
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex-1"
+                    >
+                      <Upload size={16} className="mr-2" />
+                      Wybierz logo
+                    </Button>
+                    
+                    {logoPreview && (
+                      <>
+                        <Button
+                          variant="outline"
+                          onClick={handleSaveLogo}
+                          disabled={isUploading || !logoFile}
+                          className="px-3"
+                        >
+                          <Check size={16} className="mr-1" /> Zapisz
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={handleClearLogo}
+                          className="px-3"
+                        >
+                          <X size={16} className="mr-1" /> Usuń
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                
+                <p className="text-xs text-white/50 text-center">
+                  Zalecany format: PNG lub SVG z przezroczystym tłem<br />
+                  Maksymalny rozmiar: 1MB
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-between mt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="border-gray-700"
+                onClick={handleExportTheme}
+              >
+                <Download size={16} className="mr-1" /> Eksportuj motyw
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="border-gray-700"
+                onClick={handleImportTheme}
+              >
+                <Upload size={16} className="mr-1" /> Importuj motyw
+              </Button>
             </div>
           </div>
         </div>
         
-        {/* Action buttons */}
-        <div className="flex gap-3 justify-end pt-4 border-t border-white/10">
-          <Button 
-            variant="outline" 
-            onClick={handleResetTheme}
-          >
-            Przywróć domyślne
-          </Button>
-          
-          <Button 
-            onClick={handleSaveTheme} 
-            disabled={loading}
-            className="bg-neon-blue hover:bg-neon-blue/80 text-black"
-          >
-            {loading ? 'Zapisywanie...' : 'Zapisz zmiany'}
-          </Button>
+        {/* Custom theme settings */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Dostosuj motyw</h3>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="theme-name">Nazwa motywu</Label>
+              <Input
+                id="theme-name"
+                value={customTheme.name}
+                onChange={(e) => handleCustomThemeChange('name', e.target.value)}
+                className="bg-black/50 border border-gray-700 text-white"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="primary-color">Kolor główny (przyciski, akcenty)</Label>
+              <div className="flex gap-2 items-center">
+                <Input
+                  type="color"
+                  id="primary-color"
+                  value={customTheme.primaryColor}
+                  onChange={(e) => handleCustomThemeChange('primaryColor', e.target.value)}
+                  className="w-12 h-10 p-1 bg-transparent border-0"
+                />
+                <Input
+                  type="text"
+                  value={customTheme.primaryColor}
+                  onChange={(e) => handleCustomThemeChange('primaryColor', e.target.value)}
+                  className="bg-black/50 border border-gray-700 text-white"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="background-color">Kolor tła</Label>
+              <div className="flex gap-2 items-center">
+                <Input
+                  type="color"
+                  id="background-color"
+                  value={customTheme.backgroundColor}
+                  onChange={(e) => handleCustomThemeChange('backgroundColor', e.target.value)}
+                  className="w-12 h-10 p-1 bg-transparent border-0"
+                />
+                <Input
+                  type="text"
+                  value={customTheme.backgroundColor}
+                  onChange={(e) => handleCustomThemeChange('backgroundColor', e.target.value)}
+                  className="bg-black/50 border border-gray-700 text-white"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="card-color">Kolor kart</Label>
+              <div className="flex gap-2 items-center">
+                <Input
+                  type="color"
+                  id="card-color"
+                  value={customTheme.cardColor}
+                  onChange={(e) => handleCustomThemeChange('cardColor', e.target.value)}
+                  className="w-12 h-10 p-1 bg-transparent border-0"
+                />
+                <Input
+                  type="text"
+                  value={customTheme.cardColor}
+                  onChange={(e) => handleCustomThemeChange('cardColor', e.target.value)}
+                  className="bg-black/50 border border-gray-700 text-white"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="text-color">Kolor tekstu</Label>
+              <div className="flex gap-2 items-center">
+                <Input
+                  type="color"
+                  id="text-color"
+                  value={customTheme.textColor}
+                  onChange={(e) => handleCustomThemeChange('textColor', e.target.value)}
+                  className="w-12 h-10 p-1 bg-transparent border-0"
+                />
+                <Input
+                  type="text"
+                  value={customTheme.textColor}
+                  onChange={(e) => handleCustomThemeChange('textColor', e.target.value)}
+                  className="bg-black/50 border border-gray-700 text-white"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="font-family">Czcionka</Label>
+              <select
+                id="font-family"
+                className="w-full bg-black/50 border border-gray-700 text-white px-3 py-2 rounded-md"
+              >
+                <option value="sans">Sans Serif</option>
+                <option value="serif">Serif</option>
+                <option value="mono">Monospace</option>
+                <option value="display">Display</option>
+                <option value="handwriting">Handwriting</option>
+              </select>
+            </div>
+            
+            <Button 
+              onClick={applyCustomTheme} 
+              className="w-full bg-neon-green hover:bg-neon-green/80 mt-4 text-black"
+            >
+              Zastosuj motyw
+            </Button>
+            
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold mb-3">Przypisz motywy do rund</h3>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span>Runda 1: Internet</span>
+                  <select className="bg-black/50 border border-gray-700 text-white px-3 py-1 rounded-md">
+                    <option>Default</option>
+                    <option>Cyberpunk</option>
+                    <option>RetroWave</option>
+                    <option>Classic TV</option>
+                    <option>Neon</option>
+                  </select>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span>Runda 2: Szybkie pytania</span>
+                  <select className="bg-black/50 border border-gray-700 text-white px-3 py-1 rounded-md">
+                    <option>Default</option>
+                    <option>Cyberpunk</option>
+                    <option>RetroWave</option>
+                    <option>Classic TV</option>
+                    <option>Neon</option>
+                  </select>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span>Runda 3: Koło fortuny</span>
+                  <select className="bg-black/50 border border-gray-700 text-white px-3 py-1 rounded-md">
+                    <option>Default</option>
+                    <option>Cyberpunk</option>
+                    <option>RetroWave</option>
+                    <option>Classic TV</option>
+                    <option>Neon</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </SettingsLayout>
+    </div>
   );
 };
 

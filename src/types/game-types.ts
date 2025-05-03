@@ -1,4 +1,3 @@
-
 import { SoundEffectOptions } from '@/hooks/useSoundEffects';
 
 // Game rounds
@@ -77,7 +76,7 @@ export type SoundEffect = 'success' | 'fail' | 'timeout' | 'eliminate' | 'round-
 
 // Game context type
 export interface GameContextType {
-  // State
+  // Game state
   round: GameRound;
   players: Player[];
   categories: Category[];
@@ -86,32 +85,38 @@ export interface GameContextType {
   timerRunning: boolean;
   timerSeconds: number;
   winnerIds: string[];
+  usedQuestionIds?: string[];
+  
+  // UI settings
   gameLogo: string | null;
   primaryColor: string;
   secondaryColor: string;
   hostCameraUrl: string;
+  
+  // Special cards
   specialCards: SpecialCard[];
   specialCardRules: SpecialCardAwardRule[];
   
-  // Sound-related properties
-  volume: number;
-  setVolume: (volume: number) => void;
-  availableSounds: Record<string, string>;
-  addCustomSound: (name: string, url: string) => void;
-  playSound: (sound: SoundEffect, volume?: number) => void;
-  playSoundWithOptions: (sound: SoundEffect, options: SoundEffectOptions) => void;
-  stopSound: (sound: SoundEffect) => void;
-  stopAllSounds: () => void;
-  soundsEnabled: boolean;
-  setSoundsEnabled: (enabled: boolean) => void;
+  // Sound settings
+  volume?: number;
+  setVolume?: (volume: number) => void;
+  availableSounds?: Record<string, string>;
+  addCustomSound?: (name: string, url: string | File) => void;
+  playSound?: (sound: SoundEffect, volume?: number) => void;
+  playSoundWithOptions?: (sound: SoundEffect, options?: any) => void; 
+  stopSound?: (sound: SoundEffect) => void;
+  stopAllSounds?: () => void;
+  soundsEnabled?: boolean;
+  setSoundsEnabled?: (enabled: boolean) => void;
+  soundStatus?: Record<string, any>;
   
   // Methods
   setRound: (round: GameRound) => void;
   addPlayer: (player: Player) => void;
   updatePlayer: (player: Player) => void;
   removePlayer: (playerId: string) => void;
-  setPlayers: (players: Player[]) => void;
-  setCategories: (categories: Category[]) => void;
+  setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
+  setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
   addCategory: (category: Category) => void;
   removeCategory: (categoryId: string) => void;
   selectQuestion: (question: Question | null) => void;
@@ -125,22 +130,22 @@ export interface GameContextType {
   advanceToRoundTwo: () => void;
   advanceToRoundThree: () => void;
   finishGame: (winnerIds: string[]) => void;
-  checkRoundThreeEnd: () => boolean | void;
+  checkRoundThreeEnd: () => boolean;
   resetGame: () => void;
-  setWinnerIds: (ids: string[]) => void;
+  setWinnerIds: React.Dispatch<React.SetStateAction<string[]>>;
   
-  // Special cards methods
+  // Special card methods
   addSpecialCard: (card: SpecialCard) => void;
-  updateSpecialCard: (card: SpecialCard) => void;
+  updateSpecialCard: (cardId: string, updates: Partial<SpecialCard>) => void;
   removeSpecialCard: (cardId: string) => void;
   addSpecialCardRule: (rule: SpecialCardAwardRule) => void;
-  updateSpecialCardRule: (rule: SpecialCardAwardRule) => void;
+  updateSpecialCardRule: (ruleId: string, updates: Partial<SpecialCardAwardRule>) => void;
   removeSpecialCardRule: (ruleId: string) => void;
   giveCardToPlayer: (playerId: string, cardId: string) => void;
   usePlayerCard: (playerId: string, cardId: string) => void;
   
   // Settings methods
-  setGameLogo: (url: string | null) => void;
+  setGameLogo: (logo: string | null) => void;
   setPrimaryColor: (color: string) => void;
   setSecondaryColor: (color: string) => void;
   setHostCameraUrl: (url: string) => void;
@@ -149,8 +154,11 @@ export interface GameContextType {
   loadGameData: () => void;
   saveGameData: () => void;
   
-  // Question methods
+  // Questions methods
   addQuestion: (categoryId: string, question: Question) => void;
   removeQuestion: (categoryId: string, questionId: string) => void;
-  updateQuestion: (categoryId: string, question: Question) => void;
+  updateQuestion: (categoryId: string, updatedQuestion: Question) => void;
+  markQuestionAsUsed?: (questionId: string) => void;
+  resetUsedQuestions?: () => void;
+  isQuestionUsed?: (questionId: string) => boolean;
 }

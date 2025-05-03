@@ -1,4 +1,5 @@
 
+import { useState, useCallback } from 'react';
 import { Player, GameRound } from '@/types/game-types';
 import { toast } from 'sonner';
 
@@ -8,8 +9,30 @@ export const useGameLogic = (
   setRound: React.Dispatch<React.SetStateAction<GameRound>>,
   setWinnerIds: React.Dispatch<React.SetStateAction<string[]>>
 ) => {
+  // Śledź wykorzystane pytania
+  const [usedQuestionIds, setUsedQuestionIds] = useState<Set<string>>(new Set());
+  
+  // Funkcja do oznaczania pytania jako wykorzystanego
+  const markQuestionAsUsed = useCallback((questionId: string) => {
+    setUsedQuestionIds(prev => {
+      const newSet = new Set(prev);
+      newSet.add(questionId);
+      return newSet;
+    });
+  }, []);
+  
+  // Funkcja resetująca wykorzystane pytania (np. przy rozpoczęciu nowej gry)
+  const resetUsedQuestions = useCallback(() => {
+    setUsedQuestionIds(new Set());
+  }, []);
+  
+  // Funkcja sprawdzająca czy pytanie było już wykorzystane
+  const isQuestionUsed = useCallback((questionId: string) => {
+    return usedQuestionIds.has(questionId);
+  }, [usedQuestionIds]);
+
   // Game logic methods
-  const awardPoints = (playerId: string, points: number) => {
+  const awardPoints = useCallback((playerId: string, points: number) => {
     setPlayers((prev) =>
       prev.map((player) =>
         player.id === playerId
@@ -17,9 +40,9 @@ export const useGameLogic = (
           : player
       )
     );
-  };
+  }, [setPlayers]);
 
-  const deductHealth = (playerId: string, amount: number) => {
+  const deductHealth = useCallback((playerId: string, amount: number) => {
     setPlayers((prev) => {
       // Find the player
       const player = prev.find(p => p.id === playerId);
@@ -45,9 +68,9 @@ export const useGameLogic = (
       
       return updatedPlayers;
     });
-  };
+  }, [setPlayers]);
 
-  const deductLife = (playerId: string) => {
+  const deductLife = useCallback((playerId: string) => {
     setPlayers((prev) => {
       // Find the player
       const player = prev.find(p => p.id === playerId);
@@ -73,9 +96,9 @@ export const useGameLogic = (
       
       return updatedPlayers;
     });
-  };
+  }, [setPlayers]);
 
-  const eliminatePlayer = (playerId: string) => {
+  const eliminatePlayer = useCallback((playerId: string) => {
     setPlayers((prev) => {
       // Find the player
       const playerToEliminate = prev.find(p => p.id === playerId);
@@ -90,187 +113,226 @@ export const useGameLogic = (
           : player
       );
     });
-  };
+  }, [setPlayers]);
 
   // Round advancement
-  const advanceToRoundTwo = () => {
-    // Aktualizacja mechanizmu lucky loser zgodnie z nowymi zasadami:
-    // 1. Top 5 graczy z życiem przechodzi dalej
-    // 2. 1 gracz z najwyższą punktacją spośród tych, którzy stracili życie, też przechodzi (lucky loser)
-    
-    // Najpierw rozdzielamy graczy na tych z życiem i bez
-    const playersWithHealth = players.filter(player => player.health > 0 && !player.isEliminated);
-    const playersWithoutHealth = players.filter(player => (player.health === 0 || player.isEliminated) && !player.isEliminated);
-    
-    // Sortujemy graczy z życiem według punktów (od najwyższych)
-    const sortedPlayersWithHealth = [...playersWithHealth].sort((a, b) => b.points - a.points);
-    
-    // Bierzemy top 5 graczy z życiem
-    const topPlayers = sortedPlayersWithHealth.slice(0, 5);
-    
-    // Sortujemy graczy bez życia według punktów i bierzemy najlepszego jako lucky loser
-    const sortedPlayersWithoutHealth = [...playersWithoutHealth].sort((a, b) => b.points - a.points);
-    let luckyLoser: Player[] = [];
-    
-    if (sortedPlayersWithoutHealth.length > 0) {
-      luckyLoser = [sortedPlayersWithoutHealth[0]];
-      toast.success(`Lucky Loser: ${sortedPlayersWithoutHealth[0].name}`, {
-        description: "Gracz z najwyższym wynikiem mimo braku zdrowia przechodzi dalej!"
+  const advanceToRoundTwo = useCallback(() => {
+    try {
+      // Aktualizacja mechanizmu lucky loser zgodnie z nowymi zasadami:
+      // 1. Top 5 graczy z życiem przechodzi dalej
+      // 2. 1 gracz z najwyższą punktacją spośród tych, którzy stracili życie, też przechodzi (lucky loser)
+      
+      // Najpierw rozdzielamy graczy na tych z życiem i bez
+      const playersWithHealth = players.filter(player => player.health > 0 && !player.isEliminated);
+      const playersWithoutHealth = players.filter(player => (player.health === 0 || player.isEliminated) && !player.isEliminated);
+      
+      // Sortujemy graczy z życiem według punktów (od najwyższych)
+      const sortedPlayersWithHealth = [...playersWithHealth].sort((a, b) => b.points - a.points);
+      
+      // Bierzemy top 5 graczy z życiem
+      const topPlayers = sortedPlayersWithHealth.slice(0, 5);
+      
+      // Sortujemy graczy bez życia według punktów i bierzemy najlepszego jako lucky loser
+      const sortedPlayersWithoutHealth = [...playersWithoutHealth].sort((a, b) => b.points - a.points);
+      let luckyLoser: Player[] = [];
+      
+      if (sortedPlayersWithoutHealth.length > 0) {
+        luckyLoser = [sortedPlayersWithoutHealth[0]];
+        toast.success(`Lucky Loser: ${sortedPlayersWithoutHealth[0].name}`, {
+          description: "Gracz z najwyższym wynikiem mimo braku zdrowia przechodzi dalej!"
+        });
+      }
+      
+      // Jeśli mamy mniej niż 5 graczy z życiem, dodajemy więcej lucky loserów
+      if (topPlayers.length < 5 && sortedPlayersWithoutHealth.length > luckyLoser.length) {
+        const additionalLuckyLosers = sortedPlayersWithoutHealth
+          .slice(luckyLoser.length, 5 - topPlayers.length + luckyLoser.length);
+        
+        if (additionalLuckyLosers.length > 0) {
+          toast.success(`Dodatkowi Lucky Loserzy: ${additionalLuckyLosers.map(p => p.name).join(', ')}`, {
+            description: "Ze względu na małą liczbę graczy z życiem, dodajemy więcej graczy z rundy 1"
+          });
+          
+          luckyLoser = [...luckyLoser, ...additionalLuckyLosers];
+        }
+      }
+      
+      // Łączymy top graczy i lucky losera dla rundy 2
+      const round2Players = [...topPlayers, ...luckyLoser].map(player => ({
+        ...player,
+        lives: 3, // Reset do 3 żyć dla rundy 2
+        health: 100, // Reset zdrowia
+        isEliminated: false,
+        // Punktacja jest zachowywana
+      }));
+      
+      // Oznaczamy wyeliminowanych graczy
+      const advancingPlayerIds = round2Players.map(player => player.id);
+      
+      setPlayers(prev => 
+        prev.map(player => 
+          advancingPlayerIds.includes(player.id)
+            ? round2Players.find(p => p.id === player.id) || player
+            : { ...player, isEliminated: true }
+        )
+      );
+      
+      toast.success("Rozpoczynamy Rundę 2: 5 Sekund!", {
+        description: `${round2Players.length} graczy przechodzi do następnej rundy`
       });
-    }
-    
-    // Jeśli mamy mniej niż 5 graczy z życiem, dodajemy więcej lucky loserów
-    if (topPlayers.length < 5 && sortedPlayersWithoutHealth.length > luckyLoser.length) {
-      const additionalLuckyLosers = sortedPlayersWithoutHealth
-        .slice(luckyLoser.length, 5 - topPlayers.length + luckyLoser.length);
       
-      if (additionalLuckyLosers.length > 0) {
-        toast.success(`Dodatkowi Lucky Loserzy: ${additionalLuckyLosers.map(p => p.name).join(', ')}`, {
-          description: "Ze względu na małą liczbę graczy z życiem, dodajemy więcej graczy z rundy 1"
-        });
-        
-        luckyLoser = [...luckyLoser, ...additionalLuckyLosers];
-      }
+      // Reset wykorzystanych pytań dla nowej rundy
+      resetUsedQuestions();
+      
+      // Ustaw rundę
+      setRound(GameRound.ROUND_TWO);
+    } catch (error) {
+      console.error("Błąd podczas przejścia do rundy 2:", error);
+      toast.error("Wystąpił błąd podczas zmiany rundy");
     }
-    
-    // Łączymy top graczy i lucky losera dla rundy 2
-    const round2Players = [...topPlayers, ...luckyLoser].map(player => ({
-      ...player,
-      lives: 3, // Reset do 3 żyć dla rundy 2
-      health: 100, // Reset zdrowia
-      isEliminated: false
-    }));
-    
-    // Oznaczamy wyeliminowanych graczy
-    const advancingPlayerIds = round2Players.map(player => player.id);
-    
-    setPlayers(prev => 
-      prev.map(player => 
-        advancingPlayerIds.includes(player.id)
-          ? round2Players.find(p => p.id === player.id) || player
-          : { ...player, isEliminated: true }
-      )
-    );
-    
-    toast.success("Rozpoczynamy Rundę 2: 5 Sekund!", {
-      description: `${round2Players.length} graczy przechodzi do następnej rundy`
-    });
-    
-    setRound(GameRound.ROUND_TWO);
-  };
+  }, [players, resetUsedQuestions, setPlayers, setRound]);
 
-  const advanceToRoundThree = () => {
-    // Pobieramy graczy z rundy 2, którzy mają życia
-    const survivingPlayers = players
-      .filter(player => !player.isEliminated && player.lives > 0);
-    
-    // Sortujemy według życia (więcej = lepiej), a przy równej liczbie życia według punktów
-    const sortedSurvivors = [...survivingPlayers]
-      .sort((a, b) => b.lives - a.lives || b.points - a.points);
-    
-    // Bierzemy top 3 graczy lub wszystkich, jeśli jest ich mniej niż 3
-    const finalistsCount = Math.min(sortedSurvivors.length, 3);
-    const finalists = sortedSurvivors.slice(0, finalistsCount);
-    
-    // Jeśli mamy mniej niż 3 graczy, sprawdzamy czy możemy kogoś "ożywić"
-    if (finalists.length < 3) {
-      const eliminatedByLives = players
-        .filter(player => (player.lives === 0 || player.isEliminated) && !player.isEliminated)
-        .sort((a, b) => b.points - a.points);
+  const advanceToRoundThree = useCallback(() => {
+    try {
+      // Pobieramy graczy z rundy 2, którzy mają życia
+      const survivingPlayers = players
+        .filter(player => !player.isEliminated && player.lives > 0);
       
-      const neededPlayers = 3 - finalists.length;
-      const luckyPlayers = eliminatedByLives.slice(0, neededPlayers);
+      // Sortujemy według życia (więcej = lepiej), a przy równej liczbie życia według punktów
+      const sortedSurvivors = [...survivingPlayers]
+        .sort((a, b) => b.lives - a.lives || b.points - a.points);
       
-      if (luckyPlayers.length > 0) {
-        toast.success(`Lucky finaliści: ${luckyPlayers.map(p => p.name).join(', ')}`, {
-          description: "Ze względu na małą liczbę graczy, niektórzy wracają do gry!"
-        });
+      // Bierzemy top 3 graczy lub wszystkich, jeśli jest ich mniej niż 3
+      const finalistsCount = Math.min(sortedSurvivors.length, 3);
+      const finalists = sortedSurvivors.slice(0, finalistsCount);
+      
+      // Jeśli mamy mniej niż 3 graczy, sprawdzamy czy możemy kogoś "ożywić"
+      if (finalists.length < 3) {
+        const eliminatedByLives = players
+          .filter(player => (player.lives === 0 || player.isEliminated) && !player.isEliminated)
+          .sort((a, b) => b.points - a.points);
         
-        finalists.push(...luckyPlayers);
+        const neededPlayers = 3 - finalists.length;
+        const luckyPlayers = eliminatedByLives.slice(0, neededPlayers);
+        
+        if (luckyPlayers.length > 0) {
+          toast.success(`Lucky finaliści: ${luckyPlayers.map(p => p.name).join(', ')}`, {
+            description: "Ze względu na małą liczbę graczy, niektórzy wracają do gry!"
+          });
+          
+          finalists.push(...luckyPlayers);
+        }
       }
+      
+      // Przygotowanie graczy do rundy 3
+      const round3Players = finalists.map(player => ({
+        ...player,
+        lives: 3, // Reset do 3 żyć dla rundy 3
+        isEliminated: false
+        // Punktacja jest zachowywana
+      }));
+      
+      // Oznaczamy wyeliminowanych graczy
+      const advancingPlayerIds = round3Players.map(player => player.id);
+      
+      setPlayers(prev => 
+        prev.map(player => 
+          advancingPlayerIds.includes(player.id)
+            ? round3Players.find(p => p.id === player.id) || player
+            : { ...player, isEliminated: true }
+        )
+      );
+      
+      toast.success("Rozpoczynamy Rundę 3: Koło Fortuny!", {
+        description: `${round3Players.length} finalistów walczy o zwycięstwo`
+      });
+      
+      // Reset wykorzystanych pytań dla nowej rundy
+      resetUsedQuestions();
+      
+      // Ustaw rundę
+      setRound(GameRound.ROUND_THREE);
+    } catch (error) {
+      console.error("Błąd podczas przejścia do rundy 3:", error);
+      toast.error("Wystąpił błąd podczas zmiany rundy");
     }
-    
-    // Przygotowanie graczy do rundy 3
-    const round3Players = finalists.map(player => ({
-      ...player,
-      lives: 3, // Reset do 3 żyć dla rundy 3
-      isEliminated: false
-    }));
-    
-    // Oznaczamy wyeliminowanych graczy
-    const advancingPlayerIds = round3Players.map(player => player.id);
-    
-    setPlayers(prev => 
-      prev.map(player => 
-        advancingPlayerIds.includes(player.id)
-          ? round3Players.find(p => p.id === player.id) || player
-          : { ...player, isEliminated: true }
-      )
-    );
-    
-    toast.success("Rozpoczynamy Rundę 3: Koło Fortuny!", {
-      description: `${round3Players.length} finalistów walczy o zwycięstwo`
-    });
-    
-    setRound(GameRound.ROUND_THREE);
-  };
+  }, [players, resetUsedQuestions, setPlayers, setRound]);
 
-  const finishGame = (winnerIds: string[]) => {
-    const winners = players.filter(player => winnerIds.includes(player.id));
-    const winnerNames = winners.map(w => w.name).join(', ');
-    
-    toast.success(`Koniec gry! Zwycięzca: ${winnerNames}`, {
-      description: "Gratulacje dla zwycięzcy!"
-    });
-    
-    setWinnerIds(winnerIds);
-    setRound(GameRound.FINISHED);
-  };
+  const finishGame = useCallback((winnerIds: string[]) => {
+    try {
+      const winners = players.filter(player => winnerIds.includes(player.id));
+      const winnerNames = winners.map(w => w.name).join(', ');
+      
+      toast.success(`Koniec gry! Zwycięzca: ${winnerNames}`, {
+        description: "Gratulacje dla zwycięzcy!"
+      });
+      
+      setWinnerIds(winnerIds);
+      setRound(GameRound.FINISHED);
+    } catch (error) {
+      console.error("Błąd podczas kończenia gry:", error);
+      toast.error("Wystąpił błąd podczas kończenia gry");
+    }
+  }, [players, setRound, setWinnerIds]);
 
   // W rundzie 3 kończenie gry gdy wszyscy stracą życie
-  const checkRoundThreeEnd = () => {
-    // Sprawdzamy czy w rundzie 3 są jeszcze gracze z życiem
-    const activePlayers = players.filter(player => 
-      !player.isEliminated && player.lives > 0
-    );
-    
-    if (activePlayers.length === 0) {
-      // Jeśli wszyscy stracili życie, zakończ grę
-      // Znajdź gracza z największą liczbą punktów jako zwycięzcę
-      const sortedByPoints = [...players]
-        .filter(player => !player.isEliminated)
-        .sort((a, b) => b.points - a.points);
+  const checkRoundThreeEnd = useCallback(() => {
+    try {
+      // Sprawdzamy czy w rundzie 3 są jeszcze gracze z życiem
+      const activePlayers = players.filter(player => 
+        !player.isEliminated && player.lives > 0
+      );
       
-      if (sortedByPoints.length > 0) {
-        toast.success(`Wszyscy stracili życie! Zwycięża gracz z największą liczbą punktów: ${sortedByPoints[0].name}`);
-        finishGame([sortedByPoints[0].id]);
-      } else {
-        toast.error("Brak zwycięzcy - wszyscy gracze zostali wyeliminowani!");
-        finishGame([]); // Brak zwycięzcy
+      if (activePlayers.length === 0) {
+        // Jeśli wszyscy stracili życie, zakończ grę
+        // Znajdź gracza z największą liczbą punktów jako zwycięzcę
+        const sortedByPoints = [...players]
+          .filter(player => !player.isEliminated)
+          .sort((a, b) => b.points - a.points);
+        
+        if (sortedByPoints.length > 0) {
+          toast.success(`Wszyscy stracili życie! Zwycięża gracz z największą liczbą punktów: ${sortedByPoints[0].name}`);
+          finishGame([sortedByPoints[0].id]);
+        } else {
+          toast.error("Brak zwycięzcy - wszyscy gracze zostali wyeliminowani!");
+          finishGame([]); // Brak zwycięzcy
+        }
+        return true;
       }
-      return true;
+      return false;
+    } catch (error) {
+      console.error("Błąd podczas sprawdzania końca rundy 3:", error);
+      toast.error("Wystąpił błąd podczas sprawdzania statusu gry");
+      return false;
     }
-    return false;
-  };
+  }, [finishGame, players]);
 
-  const resetGame = () => {
-    toast.info("Resetowanie gry", {
-      description: "Wszystkie dane zostały zresetowane"
-    });
-    
-    setRound(GameRound.SETUP);
-    setWinnerIds([]);
-    
-    // Resetuj wszystkie statusy graczy, ale zachowaj ich informacje
-    setPlayers(prev => prev.map(player => ({
-      ...player,
-      points: 0,
-      health: 100,
-      lives: 3,
-      isActive: false,
-      isEliminated: false
-    })));
-  };
+  const resetGame = useCallback(() => {
+    try {
+      toast.info("Resetowanie gry", {
+        description: "Wszystkie dane zostały zresetowane"
+      });
+      
+      // Reset wykorzystanych pytań
+      resetUsedQuestions();
+      
+      setRound(GameRound.SETUP);
+      setWinnerIds([]);
+      
+      // Resetuj wszystkie statusy graczy, ale zachowaj ich informacje
+      setPlayers(prev => prev.map(player => ({
+        ...player,
+        points: 0,
+        health: 100,
+        lives: 3,
+        isActive: false,
+        isEliminated: false
+      })));
+    } catch (error) {
+      console.error("Błąd podczas resetowania gry:", error);
+      toast.error("Wystąpił błąd podczas resetowania gry");
+    }
+  }, [resetUsedQuestions, setPlayers, setRound, setWinnerIds]);
 
   return {
     awardPoints,
@@ -281,6 +343,11 @@ export const useGameLogic = (
     advanceToRoundThree,
     finishGame,
     checkRoundThreeEnd,
-    resetGame
+    resetGame,
+    // Zarządzanie pytaniami
+    markQuestionAsUsed,
+    resetUsedQuestions,
+    isQuestionUsed,
+    usedQuestionIds: Array.from(usedQuestionIds)
   };
 };

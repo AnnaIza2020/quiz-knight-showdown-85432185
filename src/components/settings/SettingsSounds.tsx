@@ -1,13 +1,15 @@
-import React, { useState, useRef } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Play, RefreshCcw, Download, Upload, X, Plus } from 'lucide-react';
+import { Play, RefreshCcw, Download, Upload, X, Plus, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSoundManagement } from '@/hooks/useSoundManagement';
 import SettingsLayout from './SettingsLayout';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const SettingsSounds = () => {
   const { 
@@ -17,12 +19,14 @@ const SettingsSounds = () => {
     setVolumeLevel, 
     availableSounds, 
     testSound, 
-    addSound 
+    addSound, 
+    playSound
   } = useSoundManagement({ initialEnabled: true });
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [customSoundName, setCustomSoundName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [soundLoadStatus, setSoundLoadStatus] = useState<{[key: string]: 'loading' | 'loaded' | 'error'}>({});
   
   // Sound type definitions - matching the ones provided in useSoundEffects
   const gameSounds = [
@@ -39,6 +43,36 @@ const SettingsSounds = () => {
     { id: 'powerup', name: 'Power-up', description: 'Dźwięk zdobycia wzmocnienia' },
     { id: 'bonus', name: 'Bonus', description: 'Dźwięk zdobycia bonusu' },
   ];
+  
+  // Sprawdź dostępność plików dźwiękowych
+  useEffect(() => {
+    const checkSoundAvailability = async (soundId: string) => {
+      setSoundLoadStatus(prev => ({ ...prev, [soundId]: 'loading' }));
+      
+      try {
+        const soundUrl = availableSounds[soundId];
+        if (!soundUrl) {
+          setSoundLoadStatus(prev => ({ ...prev, [soundId]: 'error' }));
+          return;
+        }
+        
+        // Sprawdź, czy plik istnieje
+        const response = await fetch(soundUrl, { method: 'HEAD' });
+        if (response.ok) {
+          setSoundLoadStatus(prev => ({ ...prev, [soundId]: 'loaded' }));
+        } else {
+          setSoundLoadStatus(prev => ({ ...prev, [soundId]: 'error' }));
+        }
+      } catch (error) {
+        setSoundLoadStatus(prev => ({ ...prev, [soundId]: 'error' }));
+      }
+    };
+    
+    // Sprawdź wszystkie dźwięki
+    gameSounds.forEach(sound => {
+      checkSoundAvailability(sound.id);
+    });
+  }, [availableSounds]);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -102,6 +136,29 @@ const SettingsSounds = () => {
     setCustomSoundName('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+  
+  const handleTestSound = (soundId: string) => {
+    // Sprawdź, czy dźwięk jest dostępny
+    const status = soundLoadStatus[soundId];
+    
+    if (status === 'error') {
+      // Użyj dźwięku zastępczego
+      toast.warning('Używam dźwięku zastępczego', { 
+        description: 'Oryginalny plik dźwiękowy jest niedostępny'
+      });
+      
+      // Znajdź pierwszy dostępny dźwięk jako fallback
+      const fallbackSoundId = Object.keys(soundLoadStatus).find(id => soundLoadStatus[id] === 'loaded');
+      if (fallbackSoundId) {
+        testSound(fallbackSoundId);
+      } else {
+        // Jeśli nie ma żadnego dostępnego dźwięku, pokaż błąd
+        toast.error('Brak dostępnych dźwięków');
+      }
+    } else {
+      testSound(soundId);
     }
   };
   
@@ -221,7 +278,14 @@ const SettingsSounds = () => {
               className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-black/30 border border-gray-800 rounded gap-3"
             >
               <div>
-                <h4 className="font-medium">{sound.name}</h4>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-medium">{sound.name}</h4>
+                  {soundLoadStatus[sound.id] === 'error' && (
+                    <span className="text-yellow-400 flex items-center">
+                      <AlertTriangle size={14} className="mr-1" /> Brak pliku
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-white/60">{sound.description}</p>
               </div>
               <div className="flex items-center gap-2 mt-2 md:mt-0">
@@ -229,15 +293,21 @@ const SettingsSounds = () => {
                   size="sm" 
                   variant="outline" 
                   className="h-9 px-3 border-gray-700"
-                  onClick={() => testSound(sound.id)}
+                  onClick={() => handleTestSound(sound.id)}
                   disabled={!soundsEnabled}
                 >
-                  <Play size={16} className="mr-1" /> Test
+                  {soundLoadStatus[sound.id] === 'loading' ? (
+                    <Skeleton className="h-4 w-4 rounded-full mr-1" />
+                  ) : (
+                    <Play size={16} className="mr-1" />
+                  )}
+                  Test
                 </Button>
                 <Button 
                   size="sm" 
                   variant="outline" 
                   className="h-9 px-3 border-gray-700"
+                  onClick={() => fileInputRef.current?.click()}
                 >
                   <Upload size={16} className="mr-1" /> Zmień
                 </Button>
@@ -265,6 +335,10 @@ const SettingsSounds = () => {
           <li className="flex items-start gap-2">
             <span className="text-neon-purple">•</span>
             <span>Dla najlepszej kompatybilności, używaj krótkich dźwięków (poniżej 5 sekund).</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-neon-purple">•</span>
+            <span>Jeśli plik dźwiękowy nie jest dostępny, zostanie użyty dźwięk zastępczy.</span>
           </li>
         </ul>
       </div>
