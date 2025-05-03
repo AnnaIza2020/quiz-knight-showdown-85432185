@@ -1,6 +1,6 @@
 
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import Home from '@/pages/Home';
 import Setup from '@/pages/Setup';
 import Host from '@/pages/Host';
@@ -8,11 +8,9 @@ import Settings from '@/pages/Settings';
 import About from '@/pages/About';
 import HostPanel from '@/pages/HostPanel';
 import PlayerView from '@/pages/PlayerView';
-import { GameProvider } from '@/context/GameContext';
-import ThemeProvider from '@/components/ThemeProvider';
-import { Toaster } from '@/components/ui/toaster';
+import NotFound from '@/pages/NotFound';
+import MainLayout from '@/components/MainLayout';
 import { Loader } from 'lucide-react';
-import { Toaster as SonnerToaster } from 'sonner';
 
 // Lazy-loaded components
 const Overlay = lazy(() => import('@/pages/Overlay'));
@@ -29,27 +27,22 @@ const LoadingFallback = () => (
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <GameProvider>
-        <BrowserRouter>
-          <Suspense fallback={<LoadingFallback />}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/setup" element={<Setup />} />
-              <Route path="/host" element={<Host />} />
-              <Route path="/settings/*" element={<Settings />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/hostpanel" element={<HostPanel />} />
-              <Route path="/host-panel" element={<UnifiedHostPanel />} />
-              <Route path="/overlay" element={<Overlay />} />
-              <Route path="/player/:playerToken" element={<PlayerView />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-        <Toaster />
-        <SonnerToaster position="top-right" closeButton richColors />
-      </GameProvider>
-    </ThemeProvider>
+    <Suspense fallback={<LoadingFallback />}>
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/setup" element={<Setup />} />
+          <Route path="/host" element={<Host />} />
+          <Route path="/settings/*" element={<Settings />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/hostpanel" element={<HostPanel />} />
+          <Route path="/host-panel" element={<UnifiedHostPanel />} />
+          <Route path="/overlay" element={<Overlay />} />
+          <Route path="/player/:playerToken" element={<PlayerView />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </Suspense>
   );
 }
 
