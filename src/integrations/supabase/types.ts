@@ -15,10 +15,91 @@ export type Database = {
         Update: {}
         Relationships: []
       }
+      booster_cards: {
+        Row: {
+          animation_style: string | null
+          created_at: string | null
+          description: string | null
+          icon_name: string | null
+          id: string
+          image_url: string | null
+          name: string
+          sound_effect: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          animation_style?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon_name?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          sound_effect?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          animation_style?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon_name?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          sound_effect?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          round: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          round?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          round?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       events: {
         Row: {}
         Insert: {}
         Update: {}
+        Relationships: []
+      }
+      game_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          value: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          updated_at?: string | null
+          value?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          value?: Json | null
+        }
         Relationships: []
       }
       game_state: {
@@ -115,6 +196,50 @@ export type Database = {
           unique_link_token?: string | null
         }
         Relationships: []
+      }
+      questions: {
+        Row: {
+          category_id: string | null
+          correct_answer: string
+          created_at: string | null
+          difficulty: number
+          id: string
+          image_url: string | null
+          options: Json | null
+          text: string
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          correct_answer: string
+          created_at?: string | null
+          difficulty: number
+          id?: string
+          image_url?: string | null
+          options?: Json | null
+          text: string
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          correct_answer?: string
+          created_at?: string | null
+          difficulty?: number
+          id?: string
+          image_url?: string | null
+          options?: Json | null
+          text?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

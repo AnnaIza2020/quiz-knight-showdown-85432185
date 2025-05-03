@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { Input } from '@/components/ui/input';
@@ -105,28 +104,32 @@ const ThemeSettings = () => {
       try {
         // Try to load from Supabase first if available
         if (supabase) {
-          const { data, error } = await supabase
-            .from('game_settings')
-            .select('*')
-            .eq('id', 'theme')
-            .single();
-            
-          if (data && !error) {
-            const themeData = JSON.parse(data.value);
-            setCustomTheme(themeData);
-            setPrimaryColor(themeData.primaryColor);
-            setSecondaryColor(themeData.backgroundColor);
-            
-            // Find matching predefined theme if any
-            const matchingTheme = defaultThemes.find(
-              t => t.primaryColor === themeData.primaryColor && t.backgroundColor === themeData.backgroundColor
-            );
-            if (matchingTheme) {
-              setSelectedTheme(matchingTheme.id);
-            } else {
-              setSelectedTheme(null);
+          try {
+            const { data, error } = await supabase
+              .from('game_settings')
+              .select('*')
+              .eq('id', 'theme')
+              .single();
+              
+            if (data && !error) {
+              const themeData = data.value;
+              setCustomTheme(themeData);
+              setPrimaryColor(themeData.primaryColor);
+              setSecondaryColor(themeData.backgroundColor);
+              
+              // Find matching predefined theme if any
+              const matchingTheme = defaultThemes.find(
+                t => t.primaryColor === themeData.primaryColor && t.backgroundColor === themeData.backgroundColor
+              );
+              if (matchingTheme) {
+                setSelectedTheme(matchingTheme.id);
+              } else {
+                setSelectedTheme(null);
+              }
+              return;
             }
-            return;
+          } catch (error) {
+            console.error('Error loading theme from Supabase:', error);
           }
         }
         
@@ -187,14 +190,19 @@ const ThemeSettings = () => {
       
       // Save to Supabase if available
       if (supabase) {
-        const { error } = await supabase
-          .from('game_settings')
-          .upsert({
-            id: 'theme',
-            value: JSON.stringify(customTheme)
-          });
-          
-        if (error) throw error;
+        try {
+          const { error } = await supabase
+            .from('game_settings')
+            .upsert({
+              id: 'theme',
+              value: customTheme
+            });
+            
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error saving to Supabase:', error);
+          throw error;
+        }
       }
       
       // Always save to localStorage as backup
