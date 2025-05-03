@@ -25,11 +25,24 @@ const PlayerView = () => {
         }
         
         // Use a link token to find the player
-        const { data, error } = await supabase
+        // First try with unique_link_token field
+        let { data, error } = await supabase
           .from('players')
           .select('*')
           .eq('unique_link_token', playerToken)
           .single();
+        
+        // If not found, try with regular token field
+        if (error || !data) {
+          const response = await supabase
+            .from('players')
+            .select('*')
+            .eq('token', playerToken)
+            .single();
+          
+          data = response.data;
+          error = response.error;
+        }
         
         if (error) {
           console.error('Error fetching player:', error);
@@ -67,7 +80,7 @@ const PlayerView = () => {
   // Try to reconnect if token is found in localStorage
   useEffect(() => {
     if (!playerToken) {
-      const storedToken = localStorage.getItem('player-link-token');
+      const storedToken = localStorage.getItem('player-link-token') || localStorage.getItem('player-token');
       if (storedToken) {
         navigate(`/player/${storedToken}`);
       }

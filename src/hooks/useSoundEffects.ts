@@ -1,5 +1,7 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { SoundEffect } from '@/types/game-types';
+import { toast } from 'sonner';
 
 interface SoundOptions {
   volume?: number;
@@ -16,6 +18,7 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
   const [enabled, setEnabled] = useState(options.enabled !== false);
   const [volume, setVolume] = useState(options.defaultVolume || 0.5);
   const audioElements = useRef<Record<string, HTMLAudioElement>>({});
+  const [soundsPreloaded, setSoundsPreloaded] = useState(false);
   
   // Load enabled state from localStorage if requested
   useEffect(() => {
@@ -60,11 +63,31 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
   
   // Preload sound effects
   useEffect(() => {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    
     // Create audio elements for each sound effect
-    Object.entries(soundEffects).forEach(([name, url]) => {
-      const audio = new Audio(url);
-      audio.preload = 'auto';
-      audioElements.current[name] = audio;
+    const preloadPromises = Object.entries(soundEffects).map(([name, url]) => {
+      return new Promise<void>((resolve, reject) => {
+        const audio = new Audio();
+        audio.preload = 'auto';
+        
+        audio.oncanplaythrough = () => {
+          audioElements.current[name] = audio;
+          resolve();
+        };
+        
+        audio.onerror = () => {
+          console.warn(`Failed to load sound effect "${name}" from ${url}`);
+          reject();
+        };
+        
+        audio.src = url;
+        audio.load();
+      });
+    });
+    
+    Promise.allSettled(preloadPromises).then(() => {
+      setSoundsPreloaded(true);
     });
     
     // Cleanup
@@ -75,6 +98,7 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
         audio.src = '';
       });
       audioElements.current = {};
+      audioContext.close().catch(console.error);
     };
   }, []);
   
@@ -89,6 +113,11 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
       // If not preloaded, create it
       if (!audio) {
         const url = soundEffects[sound] || '';
+        if (!url) {
+          console.warn(`Sound effect "${sound}" not found`);
+          return;
+        }
+        
         audio = new Audio(url);
         audioElements.current[sound] = audio;
       }
@@ -100,10 +129,26 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
       const effectiveVolume = customVolume !== undefined ? customVolume : volume;
       audio.volume = Math.min(1, Math.max(0, effectiveVolume));
       
-      // Play the sound
-      audio.play().catch(err => {
-        console.warn(`Failed to play sound effect "${sound}":`, err);
-      });
+      // Play the sound and handle autoplay restrictions
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn(`Failed to play sound effect "${sound}":`, err);
+          // Handle autoplay restrictions
+          if (err.name === 'NotAllowedError') {
+            toast.error('Twoja przeglądarka blokuje automatyczne odtwarzanie dźwięku', {
+              description: 'Kliknij gdziekolwiek na stronie, aby odblokować dźwięki'
+            });
+            
+            // Add one-time click listener to enable audio
+            const enableAudio = () => {
+              audio.play().catch(e => console.error('Still cannot play audio:', e));
+              document.removeEventListener('click', enableAudio);
+            };
+            document.addEventListener('click', enableAudio, { once: true });
+          }
+        });
+      }
     } catch (error) {
       console.error(`Error playing sound effect "${sound}":`, error);
     }
@@ -111,7 +156,7 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
   
   // Play a sound with options
   const playSoundWithOptions = (sound: SoundEffect, options: SoundOptions = {}) => {
-    if (!enabled) return;
+    if (!enabled) return null;
     
     try {
       // Get audio element for this sound
@@ -120,6 +165,11 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
       // If not preloaded, create it
       if (!audio) {
         const url = soundEffects[sound] || '';
+        if (!url) {
+          console.warn(`Sound effect "${sound}" not found`);
+          return null;
+        }
+        
         audio = new Audio(url);
         audioElements.current[sound] = audio;
       }
@@ -135,15 +185,49 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
       audio.loop = !!options.loop;
       
       // Play the sound
-      audio.play().catch(err => {
-        console.warn(`Failed to play sound effect "${sound}":`, err);
-      });
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn(`Failed to play sound effect "${sound}":`, err);
+          // Same autoplay handling as in playSound
+        });
+      }
       
       // Return the audio element for further control (e.g., stopping a looped sound)
       return audio;
     } catch (error) {
       console.error(`Error playing sound effect "${sound}":`, error);
       return null;
+    }
+  };
+  
+  // Add a custom sound effect
+  const addCustomSound = (name: string, soundUrl: string | File) => {
+    try {
+      if (soundEffects[name as SoundEffect]) {
+        console.warn(`Sound effect "${name}" already exists, overwriting`);
+      }
+      
+      let url = '';
+      if (typeof soundUrl === 'string') {
+        url = soundUrl;
+      } else {
+        // Create object URL for File
+        url = URL.createObjectURL(soundUrl);
+      }
+      
+      // Add to sound effects map
+      (soundEffects as any)[name] = url;
+      
+      // Preload the sound
+      const audio = new Audio(url);
+      audio.preload = 'auto';
+      audioElements.current[name] = audio;
+      
+      return true;
+    } catch (error) {
+      console.error(`Error adding custom sound "${name}":`, error);
+      return false;
     }
   };
   
@@ -169,6 +253,11 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
     const clampedVolume = Math.min(1, Math.max(0, newVolume));
     setVolume(clampedVolume);
     
+    // Update volume for all currently loaded audio elements
+    Object.values(audioElements.current).forEach(audio => {
+      audio.volume = clampedVolume;
+    });
+    
     if (options.useLocalStorage) {
       localStorage.setItem('soundEffectsVolume', clampedVolume.toString());
     }
@@ -182,6 +271,9 @@ export const useSoundEffects = (options: SoundEffectsOptions = {}) => {
     stopSound,
     stopAllSounds,
     volume,
-    setVolume: setGlobalVolume
+    setVolume: setGlobalVolume,
+    soundsPreloaded,
+    addCustomSound,
+    availableSounds: Object.keys(soundEffects)
   };
 };
