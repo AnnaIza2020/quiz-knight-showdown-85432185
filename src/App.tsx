@@ -1,50 +1,56 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { GameProvider } from "./context/GameContext";
-import HomePage from "./pages/HomePage";
-import Overlay from "./pages/Overlay";
-import UnifiedHostPanel from "./components/UnifiedHostPanel";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
-import PlayerView from "./pages/PlayerView";
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Home from '@/pages/Home';
+import Setup from '@/pages/Setup';
+import Host from '@/pages/Host';
+import Settings from '@/pages/Settings';
+import About from '@/pages/About';
+import HostPanel from '@/pages/HostPanel';
+import PlayerView from '@/pages/PlayerView';
+import { GameProvider } from '@/context/GameContext';
+import ThemeProvider from '@/components/ThemeProvider';
+import { Toaster } from '@/components/ui/toaster';
+import { Loader } from 'lucide-react';
+import { Toaster as SonnerToaster } from 'sonner';
 
-const queryClient = new QueryClient();
+// Lazy-loaded components
+const Overlay = lazy(() => import('@/pages/Overlay'));
+const UnifiedHostPanel = lazy(() => import('@/components/UnifiedHostPanel'));
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <GameProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/overlay" element={<Overlay />} />
-            <Route path="/unified-host" element={<UnifiedHostPanel />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/player/:playerToken" element={<PlayerView />} />
-            
-            {/* Redirect all deprecated routes */}
-            <Route path="/host" element={<Navigate to="/unified-host" replace />} />
-            <Route path="/hostpanel" element={<Navigate to="/unified-host" replace />} />
-            <Route path="/intro" element={<Navigate to="/" replace />} />
-            <Route path="/rules" element={<Navigate to="/settings?tab=rules" replace />} />
-            <Route path="/classic" element={<Navigate to="/unified-host" replace />} />
-            <Route path="/zasady" element={<Navigate to="/settings?tab=rules" replace />} />
-            <Route path="/klasyczny" element={<Navigate to="/unified-host" replace />} />
-            <Route path="/gracze" element={<Navigate to="/settings?tab=gracze" replace />} />
-            
-            {/* Redirect any other unknown paths to 404 page */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </GameProvider>
-  </QueryClientProvider>
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-screen bg-black">
+    <div className="flex flex-col items-center">
+      <Loader className="w-12 h-12 text-primary animate-spin mb-4" />
+      <div className="text-white text-xl">Ładowanie...</div>
+    </div>
+  </div>
 );
+
+function App() {
+  return (
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <GameProvider>
+        <BrowserRouter>
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/setup" element={<Setup />} />
+              <Route path="/host" element={<Host />} />
+              <Route path="/settings/*" element={<Settings />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/hostpanel" element={<HostPanel />} />
+              <Route path="/host-panel" element={<UnifiedHostPanel />} />
+              <Route path="/overlay" element={<Overlay />} />
+              <Route path="/player/:playerToken" element={<PlayerView />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+        <Toaster />
+        <SonnerToaster position="top-right" closeButton richColors />
+      </GameProvider>
+    </ThemeProvider>
+  );
+}
 
 export default App;

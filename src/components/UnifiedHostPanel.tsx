@@ -5,19 +5,17 @@ import { useGameContext } from '@/context/GameContext';
 import { GameRound } from '@/types/game-types';
 import { Users, FileQuestion, Timer } from 'lucide-react';
 import { toast } from 'sonner';
-import { saveGameEdition, loadGameEdition } from '@/lib/supabase';
+import { saveGameData, loadGameData } from '@/lib/supabase';
 import { useFullscreen } from '@/hooks/useFullscreen';
 import { useGamePersistence } from '@/hooks/useGamePersistence';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
-import { usePlayerManagement } from '@/hooks/usePlayerManagement';
 import EventsBar from './hostpanel/EventsBar';
 import SwitchableHostPanel from './SwitchableHostPanel';
 import TopBarControls from './hostpanel/TopBarControls';
 import PlayerManagement from './host/panels/PlayerManagement';
-import MenuPanel from './host/panels/MenuPanel';
 import EditionManager from './host/panels/EditionManager';
-import PreparationView from './hostpanel/PreparationView';
+import MenuPanel from './host/panels/MenuPanel';
 
 const UnifiedHostPanel = () => {
   // State variables
@@ -34,8 +32,8 @@ const UnifiedHostPanel = () => {
   
   // Context and hooks
   const { 
-    loadGameData, 
-    saveGameData, 
+    loadGameData: loadContextGameData, 
+    saveGameData: saveContextGameData, 
     resetGame,
     setRound,
     round,
@@ -65,7 +63,7 @@ const UnifiedHostPanel = () => {
 
   // Load game data on initial render
   useEffect(() => {
-    loadGameData();
+    loadContextGameData();
     
     // Show welcome toast just once per session
     if (!welcomeShown) {
@@ -75,35 +73,34 @@ const UnifiedHostPanel = () => {
       setWelcomeShown(true);
     }
     
-    // Load available editions from Supabase
-    const fetchEditions = async () => {
+    // Load available editions
+    const loadEditions = async () => {
       try {
-        const response = await fetch('/api/editions');
-        if (response.ok) {
-          const data = await response.json();
-          setAvailableEditions(data.editions || []);
+        const result = await loadGameData('availableEditions');
+        if (result.success && result.data) {
+          setAvailableEditions(result.data);
         }
       } catch (error) {
-        console.error('Failed to fetch editions:', error);
+        console.error('Failed to load editions:', error);
       }
     };
     
-    fetchEditions();
+    loadEditions();
     
     // Check sound mute status
     setSoundMuted(!soundsEnabled);
-  }, []); // Run only once on component mount
+  }, []); 
 
   // Save game data whenever important game state changes
   useEffect(() => {
     const saveInterval = setInterval(() => {
-      saveGameData();
+      saveContextGameData();
       addEvent('Stan gry zapisany automatycznie');
     }, 30000); // Save every 30 seconds
     
     // Cleanup
     return () => clearInterval(saveInterval);
-  }, [saveGameData]);
+  }, [saveContextGameData]);
   
   // Handle sound toggle
   const toggleSound = () => {
@@ -141,10 +138,19 @@ const UnifiedHostPanel = () => {
       savedAt: new Date().toISOString()
     };
     
-    // Save to Supabase
-    const result = await saveGameEdition(gameData, editionName);
+    // Save to local storage
+    const result = await saveGameData(gameData, editionName);
     
     if (result.success) {
+      // Update available editions
+      const currentEditions = [...availableEditions];
+      if (!currentEditions.find(e => e.name === editionName)) {
+        currentEditions.push({ name: editionName });
+        setAvailableEditions(currentEditions);
+        // Save updated editions list
+        await saveGameData(currentEditions, 'availableEditions');
+      }
+      
       toast.success(`Edycja "${editionName}" zapisana pomyślnie!`);
       addEvent(`Zapisano edycję "${editionName}"`);
       setSaveDialogOpen(false);
@@ -153,7 +159,7 @@ const UnifiedHostPanel = () => {
 
   // Handle load edition
   const handleLoadEdition = async (name: string) => {
-    const result = await loadGameEdition(name);
+    const result = await loadGameData(name);
     if (result.success) {
       // Update local storage with loaded data
       if (result.data.players) {
@@ -173,7 +179,7 @@ const UnifiedHostPanel = () => {
       }
       
       // Reload game data
-      loadGameData();
+      loadContextGameData();
       toast.success(`Edycja "${name}" wczytana pomyślnie!`);
       addEvent(`Wczytano edycję "${name}"`);
       setLoadDialogOpen(false);
@@ -248,12 +254,6 @@ const UnifiedHostPanel = () => {
       description: 'Wszystkie dane zostały zresetowane.'
     });
     addEvent('Utworzono nową grę - wszystkie dane zresetowane');
-  };
-
-  // Handle timer start
-  const handleTimerStart = (seconds: number) => {
-    startTimer(seconds);
-    addEvent(`Rozpoczęto odliczanie: ${seconds}s`);
   };
 
   return (

@@ -8,6 +8,7 @@ import { Copy, UserPlus, Trash2, Edit, Link as LinkIcon } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { generatePlayerLink } from '@/lib/supabase';
 
 interface PlayerManagementProps {
   players: Player[];
@@ -44,6 +45,13 @@ const PlayerManagement: React.FC<PlayerManagementProps> = ({ players, addEvent }
       // Generate a token for player access
       const playerToken = crypto.randomUUID();
       
+      // Generate a unique token for player links
+      const { data: uniqueToken } = await supabase.rpc('generate_unique_player_token');
+      
+      if (!uniqueToken) {
+        throw new Error('Failed to generate unique token');
+      }
+      
       // Store player in Supabase
       const { data: playerData, error } = await supabase
         .from('players')
@@ -52,7 +60,7 @@ const PlayerManagement: React.FC<PlayerManagementProps> = ({ players, addEvent }
           camera_url: newPlayerCamera,
           color: selectedColor,
           token: playerToken,
-          unique_link_token: await generateUniqueToken(),
+          unique_link_token: uniqueToken,
           is_active: true
         })
         .select('*')
@@ -95,22 +103,30 @@ const PlayerManagement: React.FC<PlayerManagementProps> = ({ players, addEvent }
     }
   };
   
-  // Generate a unique token using the Supabase function
-  const generateUniqueToken = async () => {
-    const { data, error } = await supabase.rpc('generate_unique_player_token');
-    
-    if (error) {
-      console.error('Error generating token:', error);
-      return crypto.randomUUID().replace(/-/g, '').substring(0, 16);
-    }
-    
-    return data;
-  };
-  
   // Copy player link to clipboard
-  const copyPlayerLink = (player: Player) => {
+  const copyPlayerLink = async (player: Player) => {
     if (!player.uniqueLinkToken) {
-      toast.error('Ten gracz nie ma jeszcze wygenerowanego linku');
+      try {
+        const result = await generatePlayerLink(player.id);
+        
+        if (!result.success) {
+          toast.error('Nie udało się wygenerować linku dla gracza');
+          return;
+        }
+        
+        const playerLink = result.data?.link;
+        
+        if (playerLink) {
+          await navigator.clipboard.writeText(playerLink);
+          toast.success('Link skopiowany do schowka', {
+            description: 'Możesz go teraz udostępnić graczowi'
+          });
+          addEvent(`Skopiowano link dla gracza: ${player.name}`);
+        }
+      } catch (err) {
+        console.error('Błąd generowania linku:', err);
+        toast.error('Nie udało się wygenerować linku dla gracza');
+      }
       return;
     }
     
@@ -119,7 +135,9 @@ const PlayerManagement: React.FC<PlayerManagementProps> = ({ players, addEvent }
     
     navigator.clipboard.writeText(playerLink)
       .then(() => {
-        toast.success('Link skopiowany do schowka');
+        toast.success('Link skopiowany do schowka', {
+          description: 'Możesz go teraz udostępnić graczowi'
+        });
         addEvent(`Skopiowano link do gracza: ${player.name}`);
       })
       .catch(err => {
@@ -239,6 +257,21 @@ const PlayerManagement: React.FC<PlayerManagementProps> = ({ players, addEvent }
                   <span>{player.isActive ? 'Aktywny' : 'Nieaktywny'}</span>
                   <span>{player.points} pkt</span>
                 </div>
+                
+                {player.uniqueLinkToken && (
+                  <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between">
+                    <span className="text-xs text-white/50">Link gracza:</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-xs text-neon-blue hover:text-white"
+                      onClick={() => copyPlayerLink(player)}
+                    >
+                      <Copy size={12} className="mr-1" />
+                      Kopiuj link
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -53,12 +53,30 @@ export const usePlayerManagement = (options?: UsePlayerManagementOptions) => {
     }
   };
   
+  // Generate a unique token using the Supabase function
+  const generateUniqueToken = async () => {
+    try {
+      const { data, error } = await supabase.rpc('generate_unique_player_token');
+      
+      if (error) throw error;
+      
+      return data;
+    } catch (err) {
+      console.error('Error generating token:', err);
+      // Fallback to client-side generation if RPC fails
+      return crypto.randomUUID().replace(/-/g, '').substring(0, 16);
+    }
+  };
+  
   // Add a new player
   const addPlayer = async (playerData: Partial<Player>) => {
     try {
       if (!playerData.name) {
         throw new Error('Player name is required');
       }
+      
+      // Generate a unique token for player links
+      const uniqueToken = await generateUniqueToken();
       
       // Prepare player data for Supabase
       const { data, error } = await supabase
@@ -68,6 +86,7 @@ export const usePlayerManagement = (options?: UsePlayerManagementOptions) => {
           camera_url: playerData.cameraUrl,
           color: playerData.color || '#ff00ff',
           token: crypto.randomUUID(),
+          unique_link_token: uniqueToken,
           life_percent: 100,
           points: 0,
           is_active: true,
@@ -90,7 +109,8 @@ export const usePlayerManagement = (options?: UsePlayerManagementOptions) => {
           isActive: data.is_active || true,
           isEliminated: false,
           avatar: data.avatar_url,
-          color: data.color
+          color: data.color,
+          uniqueLinkToken: data.unique_link_token
         };
         
         setPlayers(prev => [...prev, newPlayer]);
@@ -229,6 +249,7 @@ export const usePlayerManagement = (options?: UsePlayerManagementOptions) => {
     updatePlayer,
     removePlayer,
     loadPlayers,
-    getPlayerLink
+    getPlayerLink,
+    generateUniqueToken
   };
 };
