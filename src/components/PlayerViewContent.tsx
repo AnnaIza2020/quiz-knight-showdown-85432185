@@ -22,7 +22,7 @@ const PlayerViewContent: React.FC<PlayerViewContentProps> = ({ player }) => {
   });
   
   // Subscribe to game events
-  const { isSubscribed } = useSubscription<any>(
+  const { subscribe, broadcast } = useSubscription<any>(
     'game_events',
     'new_event',
     (payload) => {
@@ -167,7 +167,7 @@ const PlayerViewContent: React.FC<PlayerViewContentProps> = ({ player }) => {
           <CountdownTimer 
             initialSeconds={timerSeconds} 
             onComplete={() => setTimerRunning(false)}
-            size="xl"
+            size="lg"
           />
         </div>
       )}

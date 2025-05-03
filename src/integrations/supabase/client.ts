@@ -15,9 +15,11 @@ try {
 }
 
 // Create Supabase client with additional headers if player token exists
-const headers: Record<string, string> = {};
+const globalOptions: any = {};
 if (playerToken) {
-  headers['player-token'] = playerToken;
+  globalOptions.headers = {
+    'player-token': playerToken
+  };
 }
 
 export const supabase = createClient<Database>(
@@ -29,22 +31,17 @@ export const supabase = createClient<Database>(
       autoRefreshToken: true,
       storageKey: 'supabase-auth',
     },
-    global: {
-      headers
-    }
+    global: globalOptions
   }
 );
 
 // Add global event listener to update headers when player token changes in localStorage
 try {
   window.addEventListener('storage', (event) => {
-    if (event.key === 'player-token' && event.newValue) {
-      // Update headers by creating new headers object
-      const newHeaders = { ...supabase.headers };
-      newHeaders['player-token'] = event.newValue;
-      
-      // No direct access to supabase.rest.headers, so we update through functions
+    if (event.key === 'player-token') {
       if (event.newValue) {
+        // Update headers - we need to create a new client with the updated headers
+        // or use a method that doesn't rely on direct header modification
         supabase.functions.setAuth(event.newValue);
       }
     }
