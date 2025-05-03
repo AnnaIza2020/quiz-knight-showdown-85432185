@@ -23,20 +23,28 @@ const PlayerSelection: React.FC<PlayerSelectionProps> = ({
       </h2>
       
       <div className="grid grid-cols-2 gap-4 mb-6">
-        {activePlayers.map(player => (
-          <div
-            key={player.id} 
-            onClick={() => onSelectPlayer(player)}
-            className={`cursor-pointer transition-transform hover:scale-105 ${
-              activePlayerId === player.id ? 'scale-105' : ''
-            }`}
-          >
-            <PlayerCard 
-              player={{...player, isActive: activePlayerId === player.id}} 
-              size="sm"
-            />
-          </div>
-        ))}
+        {activePlayers.map(player => {
+          // Create a copy of the player with isActive property
+          const playerWithActive = {
+            ...player,
+            isActive: activePlayerId === player.id
+          };
+          
+          return (
+            <div
+              key={player.id} 
+              onClick={() => onSelectPlayer(player)}
+              className={`cursor-pointer transition-transform hover:scale-105 ${
+                activePlayerId === player.id ? 'scale-105' : ''
+              }`}
+            >
+              <PlayerCard 
+                player={playerWithActive}
+                size="sm"
+              />
+            </div>
+          );
+        })}
       </div>
       
       {eliminatedPlayers.length > 0 && (

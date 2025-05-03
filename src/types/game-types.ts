@@ -22,6 +22,8 @@ export interface Player {
   specialCards: string[];
   cameraUrl?: string;
   color?: string;
+  isActive?: boolean; // Added property
+  uniqueLinkToken?: string; // Added property
 }
 
 // Category interface
@@ -39,9 +41,12 @@ export interface Question {
   options?: string[];
   correctAnswer: string;
   categoryId: string;
+  category?: string; // Added property
   difficulty: number;
   imageUrl?: string;
   used?: boolean;
+  question?: string; // Added property for backward compatibility
+  answer?: string; // Added property for backward compatibility
 }
 
 // Special Card interface
@@ -59,13 +64,16 @@ export interface SpecialCard {
 export interface SpecialCardAwardRule {
   id: string;
   cardId: string;
-  condition: 'correct_answer' | 'incorrect_answer' | 'round_start' | 'round_end' | 'random';
-  probability: number; // 0-100
-  roundApplicable: GameRound[];
+  condition: 'correct_answer' | 'incorrect_answer' | 'round_start' | 'round_end' | 'random' | string; // Extended to accept string values
+  probability?: number; // 0-100
+  roundApplicable?: GameRound[];
+  roundType?: GameRound; // Added property
+  description?: string; // Added property
+  isEnabled?: boolean; // Added property
 }
 
 // Sound effects
-export type SoundEffect = 'success' | 'fail' | 'timeout' | 'eliminate' | 'round-start' | 'victory' | 'card-reveal' | 'wheel-tick' | 'bonus' | 'narrator' | 'intro-music' | string;
+export type SoundEffect = 'success' | 'fail' | 'timeout' | 'eliminate' | 'round-start' | 'victory' | 'card-reveal' | 'wheel-spin' | 'wheel-tick' | 'bonus' | 'narrator' | 'intro-music' | string;
 
 // Game context type
 export interface GameContextType {
@@ -90,7 +98,7 @@ export interface GameContextType {
   setVolume: (volume: number) => void;
   availableSounds: Record<string, string>;
   addCustomSound: (name: string, url: string) => void;
-  playSound: (sound: SoundEffect) => void;
+  playSound: (sound: SoundEffect, volume?: number) => void; // Updated to accept optional volume
   playSoundWithOptions: (sound: SoundEffect, options: SoundEffectOptions) => void;
   stopSound: (sound: SoundEffect) => void;
   stopAllSounds: () => void;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { GameRound } from '@/types/game-types';
 import { useGameContext } from '@/context/GameContext';
@@ -48,6 +47,9 @@ const MiddleSection: React.FC<MiddleSectionProps> = ({ round, hostCameraUrl }) =
     }
     
     if (currentQuestion) {
+      // Find category name based on the question
+      const categoryName = currentQuestion.category || 'Kategoria';
+
       return (
         <motion.div 
           key="question"
@@ -58,7 +60,7 @@ const MiddleSection: React.FC<MiddleSectionProps> = ({ round, hostCameraUrl }) =
           className="flex-grow flex flex-col items-center justify-center p-4"
         >
           <div className="text-neon-blue text-center mb-2">
-            {currentQuestion.category} - {currentQuestion.difficulty} pkt
+            {categoryName} - {currentQuestion.difficulty} pkt
           </div>
           
           {currentQuestion.imageUrl && (
@@ -72,7 +74,7 @@ const MiddleSection: React.FC<MiddleSectionProps> = ({ round, hostCameraUrl }) =
           )}
           
           <div className="text-white text-xl md:text-2xl text-center font-bold">
-            {currentQuestion.question}
+            {currentQuestion.question || currentQuestion.text}
           </div>
           
           {/* Only show options in round 1 */}

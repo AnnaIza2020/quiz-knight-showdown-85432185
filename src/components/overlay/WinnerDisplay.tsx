@@ -23,7 +23,7 @@ const WinnerDisplay: React.FC<WinnerDisplayProps> = ({
   useEffect(() => {
     if (show) {
       setIsVisible(true);
-      playSound('victory', 1.0);
+      playSound('victory');
     } else {
       const timer = setTimeout(() => setIsVisible(false), 500);
       return () => clearTimeout(timer);

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Player } from '@/types/game-types';
+import { Player, GameRound } from '@/types/game-types';
 import { useGameContext } from '@/context/GameContext';
 import { Plus, Minus, Award, Trash, Heart, AlertOctagon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -51,7 +51,7 @@ const PlayerCardWithControls: React.FC<PlayerCardWithControlsProps> = ({
   
   const handleDeductHealth = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (round === 'round_one') {
+    if (round === GameRound.ROUND_ONE) {
       deductHealth(player.id, 20);
       playSound('damage');
     } else {
@@ -117,7 +117,7 @@ const PlayerCardWithControls: React.FC<PlayerCardWithControlsProps> = ({
         <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-1 flex justify-between items-center">
           <div className="flex gap-1">
             {/* Health or lives */}
-            {round === 'round_one' ? (
+            {round === GameRound.ROUND_ONE ? (
               <div className="bg-neon-green/70 text-black text-xs font-bold px-1 rounded">
                 {player.health}HP
               </div>
@@ -170,7 +170,7 @@ const PlayerCardWithControls: React.FC<PlayerCardWithControlsProps> = ({
                     exit={{ scale: 2, opacity: 0 }}
                     transition={{ duration: 0.8 }}
                   >
-                    {round === 'round_one' ? '-20 HP' : '-1 ❤️'}
+                    {round === GameRound.ROUND_ONE ? '-20 HP' : '-1 ❤️'}
                   </motion.div>
                 </motion.div>
               )}
@@ -198,7 +198,7 @@ const PlayerCardWithControls: React.FC<PlayerCardWithControlsProps> = ({
             <motion.button 
               onClick={handleDeductHealth}
               className="p-1 bg-black/40 rounded hover:bg-red-900/40 text-red-400"
-              title={round === 'round_one' ? "Odejmij HP" : "Odejmij życie"}
+              title={round === GameRound.ROUND_ONE ? "Odejmij HP" : "Odejmij życie"}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >

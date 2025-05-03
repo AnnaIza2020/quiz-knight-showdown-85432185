@@ -47,8 +47,8 @@ const PreparationView: React.FC<PreparationViewProps> = ({
       health: 100,
       lives: 3,
       points: 0,
-      isActive: false,
-      isEliminated: false
+      isEliminated: false,
+      specialCards: []
     };
     
     addPlayer(newPlayer);

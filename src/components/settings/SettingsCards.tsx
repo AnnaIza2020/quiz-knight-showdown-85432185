@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useToast } from '@/hooks/use-toast';
 import { Lightbulb, SkipForward, Zap, Clock, ArrowDown, Repeat, Target, Copy, Shield, RotateCcw, Plus, Pencil, Trash2, Check, X, Upload, ImageIcon } from 'lucide-react';
 import { SpecialCard, SpecialCardAwardRule, GameRound } from '@/types/game-types';
 import { toast } from 'sonner';
@@ -59,13 +58,14 @@ const SettingsCards = () => {
     name: '',
     description: '',
     iconName: 'SkipForward',
-    imageUrl: '' // Dodane pole na adres URL obrazu karty
+    imageUrl: ''
   });
   
   const [newRule, setNewRule] = useState<SpecialCardAwardRule>({
     id: '',
-    condition: '',
+    condition: 'correct_answer',
     cardId: '',
+    probability: 100,
     description: '',
     isEnabled: true
   });
@@ -147,40 +147,45 @@ const SettingsCards = () => {
       const defaultRules: SpecialCardAwardRule[] = [
         {
           id: 'seria-poprawne',
-          condition: '3 poprawne odpowiedzi z rzędu',
+          condition: 'correct_answer',
           cardId: 'dejavu',
           description: 'Otrzymujesz kartę za 3 poprawne odpowiedzi z rzędu',
+          probability: 100,
           isEnabled: true
         },
         {
           id: 'punkty-r1',
-          condition: '50+ punktów w Rundzie 1',
+          condition: 'round_end',
           cardId: 'turbo',
           roundType: GameRound.ROUND_ONE,
           description: 'Otrzymujesz kartę za zdobycie 50 punktów w Rundzie 1',
+          probability: 100,
           isEnabled: true
         },
         {
           id: 'bez-utraty-zycia',
-          condition: 'Runda bez utraty życia',
+          condition: 'round_end',
           cardId: 'refleks2',
           description: 'Otrzymujesz kartę za ukończenie rundy bez utraty życia',
+          probability: 100,
           isEnabled: true
         },
         {
           id: 'najwiecej-pkt-r1',
-          condition: 'Najwięcej punktów w Rundzie 1',
+          condition: 'round_end',
           cardId: 'refleks3',
           roundType: GameRound.ROUND_ONE,
           description: 'Otrzymujesz kartę za zdobycie największej liczby punktów w Rundzie 1',
+          probability: 100,
           isEnabled: true
         },
         {
           id: 'ratunek-r1',
-          condition: 'Po R1 - gracz z najmniejszą liczbą punktów',
+          condition: 'round_end',
           cardId: 'reanimacja',
           roundType: GameRound.ROUND_ONE,
           description: 'Karta ratunkowa dla gracza z najmniejszą liczbą punktów po Rundzie 1',
+          probability: 100,
           isEnabled: true
         }
       ];
@@ -527,11 +532,13 @@ const SettingsCards = () => {
                   setEditingRule(null);
                   setNewRule({
                     id: '',
-                    condition: '',
+                    condition: 'correct_answer',
                     cardId: '',
                     description: '',
-                    isEnabled: true
+                    isEnabled: true,
+                    probability: 100
                   });
+                  setIsRuleDialogOpen(true);
                 }}>
                   <Plus size={16} /> Nowa zasada
                 </Button>
@@ -553,8 +560,8 @@ const SettingsCards = () => {
                     <Input
                       id="rule-condition"
                       className="col-span-3 bg-black/50 border-gray-700"
-                      value={newRule.condition}
-                      onChange={(e) => setNewRule({...newRule, condition: e.target.value})}
+                      value={typeof newRule.condition === 'string' ? newRule.condition : 'correct_answer'}
+                      onChange={(e) => setNewRule({...newRule, condition: e.target.value as 'correct_answer' | 'incorrect_answer' | 'round_start' | 'round_end' | 'random' | string})}
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
@@ -567,28 +574,34 @@ const SettingsCards = () => {
                         <SelectValue placeholder="Wybierz kartę" />
                       </SelectTrigger>
                       <SelectContent className="bg-[#0c0e1a] border-gray-800">
-                        {specialCards.map((card) => (
+                        {specialCards.map(card => (
                           <SelectItem key={card.id} value={card.id}>
-                            {card.name}
+                            <div className="flex items-center gap-2">
+                              {card.iconName && iconMap[card.iconName] && React.createElement(iconMap[card.iconName], { size: 16 })}
+                              <span>{card.name}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="rule-round" className="text-right">Runda (opcjonalnie)</Label>
+                    <Label htmlFor="rule-round" className="text-right">Runda</Label>
                     <Select
-                      value={newRule.roundType || ''}
-                      onValueChange={(value) => setNewRule({...newRule, roundType: value ? value as GameRound : undefined})}
+                      value={newRule.roundType?.toString() || ''}
+                      onValueChange={(value) => setNewRule({
+                        ...newRule, 
+                        roundType: value ? Number(value) as GameRound : undefined
+                      })}
                     >
                       <SelectTrigger className="col-span-3 bg-black/50 border-gray-700">
-                        <SelectValue placeholder="Dowolna runda" />
+                        <SelectValue placeholder="Wszystkie rundy" />
                       </SelectTrigger>
                       <SelectContent className="bg-[#0c0e1a] border-gray-800">
-                        <SelectItem value="">Dowolna runda</SelectItem>
-                        <SelectItem value={GameRound.ROUND_ONE}>Runda 1</SelectItem>
-                        <SelectItem value={GameRound.ROUND_TWO}>Runda 2</SelectItem>
-                        <SelectItem value={GameRound.ROUND_THREE}>Runda 3</SelectItem>
+                        <SelectItem value="">Wszystkie rundy</SelectItem>
+                        <SelectItem value={GameRound.ROUND_ONE.toString()}>Runda 1</SelectItem>
+                        <SelectItem value={GameRound.ROUND_TWO.toString()}>Runda 2</SelectItem>
+                        <SelectItem value={GameRound.ROUND_THREE.toString()}>Runda 3</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -597,17 +610,19 @@ const SettingsCards = () => {
                     <Input
                       id="rule-description"
                       className="col-span-3 bg-black/50 border-gray-700"
-                      value={newRule.description}
+                      value={newRule.description || ''}
                       onChange={(e) => setNewRule({...newRule, description: e.target.value})}
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="rule-enabled" className="text-right">Aktywna</Label>
-                    <Switch
-                      id="rule-enabled"
-                      checked={newRule.isEnabled}
-                      onCheckedChange={(checked) => setNewRule({...newRule, isEnabled: checked})}
-                    />
+                    <div className="col-span-3 flex items-center">
+                      <Switch 
+                        id="rule-enabled" 
+                        checked={newRule.isEnabled} 
+                        onCheckedChange={(checked) => setNewRule({...newRule, isEnabled: checked})}
+                      />
+                    </div>
                   </div>
                 </div>
                 
@@ -621,64 +636,72 @@ const SettingsCards = () => {
             </Dialog>
           </div>
           
-          <div className="space-y-4 mb-8">
-            {specialCardRules.map((rule) => {
-              const card = specialCards.find(c => c.id === rule.cardId);
-              return (
-                <div 
-                  key={rule.id}
-                  className={`bg-black/30 border ${rule.isEnabled ? 'border-gray-800' : 'border-gray-800/50'} p-4 rounded-lg flex justify-between items-center ${rule.isEnabled ? '' : 'opacity-50'}`}
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-white">{rule.condition}</span>
-                      {rule.roundType && (
-                        <Badge variant="outline" className="bg-black/50 border-gray-700 text-gray-400">
-                          {rule.roundType === GameRound.ROUND_ONE ? 'Runda 1' : 
-                          rule.roundType === GameRound.ROUND_TWO ? 'Runda 2' :
-                          'Runda 3'}
-                        </Badge>
-                      )}
-                      {!rule.isEnabled && (
-                        <Badge variant="outline" className="bg-black/50 border-gray-700 text-gray-400">
-                          Nieaktywna
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="font-semibold text-neon-green mt-1 flex items-center gap-1">
-                      Karta: {card?.name || 'Nieznana karta'}
-                      {card && iconMap[card.iconName] ? React.createElement(iconMap[card.iconName], { size: 16 }) : null}
-                    </p>
-                    {rule.description && (
-                      <p className="text-sm text-gray-400 mt-1">{rule.description}</p>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline"
-                      size="sm"
-                      className="border-gray-700 text-white"
-                      onClick={() => handleEditRule(rule)}
-                    >
-                      <Pencil size={14} className="mr-1" /> Edytuj
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      size="sm"
-                      className="border-gray-700 text-red-400 hover:text-red-300"
-                      onClick={() => {
-                        if (window.confirm(`Czy na pewno chcesz usunąć zasadę "${rule.condition}"?`)) {
-                          removeSpecialCardRule(rule.id);
-                          toast.success(`Zasada "${rule.condition}" została usunięta`);
-                        }
-                      }}
-                    >
-                      <Trash2 size={14} className="mr-1" /> Usuń
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px]">Status</TableHead>
+                  <TableHead>Warunek</TableHead>
+                  <TableHead>Karta</TableHead>
+                  <TableHead>Runda</TableHead>
+                  <TableHead>Opis</TableHead>
+                  <TableHead className="text-right">Akcje</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {specialCardRules.map((rule) => {
+                  const card = specialCards.find(c => c.id === rule.cardId);
+                  return (
+                    <TableRow key={rule.id}>
+                      <TableCell>
+                        {rule.isEnabled ? (
+                          <Badge variant="outline" className="bg-green-900/20 text-green-500 border-green-500">
+                            Aktywna
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-gray-900/20 text-gray-500 border-gray-500">
+                            Nieaktywna
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>{rule.condition}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {card && card.iconName && iconMap[card.iconName] && React.createElement(iconMap[card.iconName], { size: 16 })}
+                          <span>{card?.name || 'Nieznana karta'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {rule.roundType !== undefined
+                          ? `Runda ${rule.roundType}`
+                          : "Wszystkie rundy"}
+                      </TableCell>
+                      <TableCell>{rule.description}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-gray-400 hover:text-neon-yellow hover:bg-black/50"
+                            title="Edytuj zasadę"
+                          >
+                            <Pencil size={16} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-gray-400 hover:text-neon-red hover:bg-black/50"
+                            title="Usuń zasadę"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
           
           {specialCardRules.length === 0 && (
@@ -915,7 +938,7 @@ const SettingsCards = () => {
         </TabsContent>
       </Tabs>
       
-      {/* Dialog dla przesyłania obrazów */}
+      {/* Dialog dla przesy��ania obrazów */}
       <Dialog open={isImageUploadDialogOpen} onOpenChange={setIsImageUploadDialogOpen}>
         <DialogContent className="bg-[#0c0e1a] border-gray-800">
           <DialogHeader>
@@ -1055,8 +1078,8 @@ const SettingsCards = () => {
               <Input
                 id="rule-condition"
                 className="col-span-3 bg-black/50 border-gray-700"
-                value={newRule.condition}
-                onChange={(e) => setNewRule({...newRule, condition: e.target.value})}
+                value={typeof newRule.condition === 'string' ? newRule.condition : 'correct_answer'}
+                onChange={(e) => setNewRule({...newRule, condition: e.target.value as 'correct_answer' | 'incorrect_answer' | 'round_start' | 'round_end' | 'random' | string})}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -1069,28 +1092,34 @@ const SettingsCards = () => {
                   <SelectValue placeholder="Wybierz kartę" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0c0e1a] border-gray-800">
-                  {specialCards.map((card) => (
+                  {specialCards.map(card => (
                     <SelectItem key={card.id} value={card.id}>
-                      {card.name}
+                      <div className="flex items-center gap-2">
+                        {card.iconName && iconMap[card.iconName] && React.createElement(iconMap[card.iconName], { size: 16 })}
+                        <span>{card.name}</span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="rule-round" className="text-right">Runda (opcjonalnie)</Label>
+              <Label htmlFor="rule-round" className="text-right">Runda</Label>
               <Select
-                value={newRule.roundType || ''}
-                onValueChange={(value) => setNewRule({...newRule, roundType: value ? value as GameRound : undefined})}
+                value={newRule.roundType?.toString() || ''}
+                onValueChange={(value) => setNewRule({
+                  ...newRule, 
+                  roundType: value ? Number(value) as GameRound : undefined
+                })}
               >
                 <SelectTrigger className="col-span-3 bg-black/50 border-gray-700">
-                  <SelectValue placeholder="Dowolna runda" />
+                  <SelectValue placeholder="Wszystkie rundy" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0c0e1a] border-gray-800">
-                  <SelectItem value="">Dowolna runda</SelectItem>
-                  <SelectItem value={GameRound.ROUND_ONE}>Runda 1</SelectItem>
-                  <SelectItem value={GameRound.ROUND_TWO}>Runda 2</SelectItem>
-                  <SelectItem value={GameRound.ROUND_THREE}>Runda 3</SelectItem>
+                  <SelectItem value="">Wszystkie rundy</SelectItem>
+                  <SelectItem value={GameRound.ROUND_ONE.toString()}>Runda 1</SelectItem>
+                  <SelectItem value={GameRound.ROUND_TWO.toString()}>Runda 2</SelectItem>
+                  <SelectItem value={GameRound.ROUND_THREE.toString()}>Runda 3</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1099,17 +1128,19 @@ const SettingsCards = () => {
               <Input
                 id="rule-description"
                 className="col-span-3 bg-black/50 border-gray-700"
-                value={newRule.description}
+                value={newRule.description || ''}
                 onChange={(e) => setNewRule({...newRule, description: e.target.value})}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="rule-enabled" className="text-right">Aktywna</Label>
-              <Switch
-                id="rule-enabled"
-                checked={newRule.isEnabled}
-                onCheckedChange={(checked) => setNewRule({...newRule, isEnabled: checked})}
-              />
+              <div className="col-span-3 flex items-center">
+                <Switch 
+                  id="rule-enabled" 
+                  checked={newRule.isEnabled} 
+                  onCheckedChange={(checked) => setNewRule({...newRule, isEnabled: checked})}
+                />
+              </div>
             </div>
           </div>
           

@@ -27,11 +27,14 @@ const QuestionBoard: React.FC<QuestionBoardProps> = ({ className }) => {
 
   // Display currently selected question if one is active
   if (currentQuestion) {
+    // Get category name from the category ID
+    const category = categories.find(cat => cat.questions.some(q => q.id === currentQuestion.id))?.name || 'Nieznana kategoria';
+    
     return (
       <div className={cn('neon-card flex flex-col h-full', className)}>
         <div className="mb-4 flex justify-between items-center">
           <div>
-            <span className="text-neon-blue font-semibold">{currentQuestion.category}</span>
+            <span className="text-neon-blue font-semibold">{currentQuestion.category || category}</span>
             <span className="ml-2 text-white/70">({currentQuestion.difficulty} pkt)</span>
           </div>
           <button 
@@ -54,7 +57,7 @@ const QuestionBoard: React.FC<QuestionBoardProps> = ({ className }) => {
           )}
           
           <div className="text-xl text-center font-bold my-4 text-white">
-            {currentQuestion.question}
+            {currentQuestion.question || currentQuestion.text}
           </div>
           
           {currentQuestion.options && (
@@ -71,7 +74,7 @@ const QuestionBoard: React.FC<QuestionBoardProps> = ({ className }) => {
         <div className="mt-2">
           <div className="text-neon-green text-center p-1">
             <span className="font-bold mr-2">Odpowiedź:</span>
-            <span>{currentQuestion.answer}</span>
+            <span>{currentQuestion.answer || currentQuestion.correctAnswer}</span>
           </div>
         </div>
       </div>

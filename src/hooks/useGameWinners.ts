@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Player } from '@/types/game-types';
 import { toast } from 'sonner';
+import { ExtendedDatabase } from '@/types/supabase-custom-types';
 
 export interface GameWinner {
   id: string;
@@ -22,24 +23,35 @@ export const useGameWinners = () => {
     
     setLoading(true);
     try {
-      // Since we can't directly insert into game_winners, we'll create a custom endpoint or function
-      // For now, we'll use localStorage as a fallback
-      const winner = {
+      // Create winner record
+      const winner: Omit<GameWinner, 'id'> = {
         player_name: player.name,
         player_id: player.id,
         round: round,
         score: player.points,
-        created_at: new Date().toISOString(),
-        id: crypto.randomUUID()
+        created_at: new Date().toISOString()
       };
-      
-      // Try to store in localStorage
-      try {
-        const existingWinners = JSON.parse(localStorage.getItem('gameWinners') || '[]');
-        existingWinners.push(winner);
-        localStorage.setItem('gameWinners', JSON.stringify(existingWinners));
-      } catch (err) {
-        console.error('Error storing winner in localStorage:', err);
+
+      // Try to insert into Supabase
+      const { error } = await supabase
+        .from('game_winners')
+        .insert(winner);
+
+      if (error) {
+        console.error('Error storing winner in Supabase:', error);
+        
+        // Fallback to localStorage
+        try {
+          const existingWinners = JSON.parse(localStorage.getItem('gameWinners') || '[]');
+          const localWinner = {
+            ...winner,
+            id: crypto.randomUUID()
+          };
+          existingWinners.push(localWinner);
+          localStorage.setItem('gameWinners', JSON.stringify(existingWinners));
+        } catch (err) {
+          console.error('Error storing winner in localStorage:', err);
+        }
       }
       
       toast.success(`${player.name} został zapisany jako zwycięzca!`);
@@ -56,9 +68,21 @@ export const useGameWinners = () => {
   // Get recent winners
   const getRecentWinners = async (limit = 5): Promise<GameWinner[]> => {
     try {
-      // For now, we'll use localStorage as a fallback
-      const localWinners = JSON.parse(localStorage.getItem('gameWinners') || '[]');
-      return localWinners.slice(0, limit);
+      // Try to get from Supabase first
+      const { data, error } = await supabase
+        .from('game_winners')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      
+      if (error) {
+        console.error('Error fetching winners from Supabase:', error);
+        // Fallback to localStorage
+        const localWinners = JSON.parse(localStorage.getItem('gameWinners') || '[]');
+        return localWinners.slice(0, limit);
+      }
+      
+      return data || [];
     } catch (err) {
       console.error('Unexpected error fetching winners:', err);
       return [];

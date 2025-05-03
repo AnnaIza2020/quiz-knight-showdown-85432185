@@ -33,21 +33,23 @@ const PlayersGrid: React.FC<PlayersGridProps> = ({
   
   return (
     <div className={`grid ${getGridColsClass()} gap-4`}>
-      {activePlayers.map((player) => (
-        <div
-          key={player.id}
-          className="cursor-pointer transform transition-transform hover:scale-105"
-          onClick={() => handlePlayerClick(player.id)}
-        >
-          <PlayerCard 
-            player={{
-              ...player,
-              isActive: player.id === activePlayerId
-            }}
-            size="sm"
-          />
-        </div>
-      ))}
+      {activePlayers.map((player) => {
+        // Create a new player object with isActive property
+        const playerWithActive = {
+          ...player,
+          isActive: player.id === activePlayerId
+        };
+        
+        return (
+          <div
+            key={player.id}
+            className="cursor-pointer transform transition-transform hover:scale-105"
+            onClick={() => handlePlayerClick(player.id)}
+          >
+            <PlayerCard player={playerWithActive} size="sm" />
+          </div>
+        );
+      })}
       
       {/* Empty slots for visually maintaining grid */}
       {activePlayers.length < gridSize && (

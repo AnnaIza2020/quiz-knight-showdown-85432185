@@ -6,7 +6,7 @@ import { Player } from '@/types/game-types';
 import { useGameContext } from '@/context/GameContext';
 import { Copy, UserPlus, Trash2, Edit, Link as LinkIcon } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { generatePlayerLink } from '@/lib/supabase';
 
@@ -77,8 +77,8 @@ const PlayerManagement: React.FC<PlayerManagementProps> = ({ players, addEvent }
           points: playerData.points || 0,
           health: playerData.life_percent || 100,
           lives: 3,
-          isActive: playerData.is_active || true,
           isEliminated: false,
+          specialCards: [],
           avatar: playerData.avatar_url || undefined,
           // Map the color from database
           color: playerData.color || '#ff00ff',
@@ -254,7 +254,7 @@ const PlayerManagement: React.FC<PlayerManagementProps> = ({ players, addEvent }
                 </div>
                 
                 <div className="flex justify-between text-xs text-white/50">
-                  <span>{player.isActive ? 'Aktywny' : 'Nieaktywny'}</span>
+                  <span>{player.isEliminated ? 'Wyeliminowany' : 'Aktywny'}</span>
                   <span>{player.points} pkt</span>
                 </div>
                 

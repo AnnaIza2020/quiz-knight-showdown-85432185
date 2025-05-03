@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from "@/lib/utils";
 import { useGameContext } from '@/context/GameContext';
@@ -69,7 +68,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
     if (isSpinning || segments.length === 0 || disabled) return;
     
     // Play spin sound
-    playSound('wheel-spin', 0.5);
+    playSound('wheel-spin');
     
     setIsSpinning(true);
     
@@ -108,7 +107,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
       spinHistory.current = [...spinHistory.current, selected.id].slice(-5); // Keep last 5
       
       // Play success sound
-      playSound('success', 0.5);
+      playSound('success');
       
       if (onSelectCategory && !selected.id.startsWith('dummy-')) {
         onSelectCategory(selected.id, selected.name);
