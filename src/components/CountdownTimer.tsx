@@ -1,7 +1,8 @@
 
 import React from 'react';
-import { useGameContext } from '@/context/GameContext';
+import { useTimerContext } from '@/context/TimerContext';
 import { cn } from "@/lib/utils";
+import { useGameContext } from '@/context/GameContext';
 
 interface CountdownTimerProps {
   size?: 'sm' | 'md' | 'lg';
@@ -12,7 +13,21 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
   size = 'md',
   className
 }) => {
-  const { timerSeconds, timerRunning } = useGameContext();
+  // First try to get timer from TimerContext (for PlayerViewContent)
+  let timerSeconds = 0;
+  let timerRunning = false;
+  
+  try {
+    // Try to use TimerContext if available
+    const timerContext = useTimerContext();
+    timerSeconds = timerContext.timerSeconds;
+    timerRunning = timerContext.timerRunning;
+  } catch (e) {
+    // Fall back to GameContext if TimerContext is not available
+    const { timerSeconds: gameTimerSeconds, timerRunning: gameTimerRunning } = useGameContext();
+    timerSeconds = gameTimerSeconds;
+    timerRunning = gameTimerRunning;
+  }
   
   // Determine timer color based on remaining seconds
   const getTimerColor = () => {
