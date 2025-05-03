@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useCallback, useMemo } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { GameRound, Player } from '@/types/game-types';
 import GameHeader from '@/components/host/GameHeader';
@@ -46,12 +47,19 @@ const Host = () => {
         await recordWinner(player, getRoundNumber(round));
       });
     }
-  }, [round, winnerIds, players]);
+  }, [round, winnerIds, players, recordWinner]);
   
-  const activePlayers = players.filter(p => !p.isEliminated);
-  const eliminatedPlayers = players.filter(p => p.isEliminated);
+  // Memo-izujemy listy graczy aby uniknąć niepotrzebnych renderów
+  const activePlayers = useMemo(() => {
+    return players.filter(p => !p.isEliminated);
+  }, [players]);
   
-  const handleSelectPlayer = (player: Player) => {
+  const eliminatedPlayers = useMemo(() => {
+    return players.filter(p => p.isEliminated);
+  }, [players]);
+  
+  // Callback zamiast zwykłej funkcji dla optymalizacji
+  const handleSelectPlayer = useCallback((player: Player) => {
     if (player.isEliminated) return;
     
     // Toggle active player
@@ -60,18 +68,18 @@ const Host = () => {
     } else {
       setActivePlayer(player.id);
     }
-  };
+  }, [activePlayerId, setActivePlayer]);
   
-  const handleAwardPoints = () => {
+  const handleAwardPoints = useCallback(() => {
     if (!activePlayerId || !currentQuestion) return;
     
     awardPoints(activePlayerId, currentQuestion.difficulty);
     
     // Play success sound using the new hook
     playSound('success');
-  };
+  }, [activePlayerId, currentQuestion, awardPoints, playSound]);
   
-  const handleDeductHealth = () => {
+  const handleDeductHealth = useCallback(() => {
     if (!activePlayerId) return;
     
     // W zależności od rundy, różne zachowanie
@@ -100,9 +108,9 @@ const Host = () => {
     
     // Play fail sound using the new hook
     playSound('fail');
-  };
+  }, [activePlayerId, round, players, deductHealth, deductLife, eliminatePlayer, checkRoundThreeEnd, playSound]);
   
-  const handleBonusPoints = () => {
+  const handleBonusPoints = useCallback(() => {
     if (!activePlayerId) return;
     
     // Add 5 bonus points
@@ -110,9 +118,9 @@ const Host = () => {
     
     // Play bonus sound using the new hook
     playSound('bonus');
-  };
+  }, [activePlayerId, awardPoints, playSound]);
   
-  const handleEliminatePlayer = () => {
+  const handleEliminatePlayer = useCallback(() => {
     if (!activePlayerId) return;
     
     eliminatePlayer(activePlayerId);
@@ -124,9 +132,9 @@ const Host = () => {
     
     // Play eliminate sound using the new hook
     playSound('eliminate');
-  };
+  }, [activePlayerId, eliminatePlayer, round, checkRoundThreeEnd, playSound]);
   
-  const handleFinishGame = () => {
+  const handleFinishGame = useCallback(() => {
     // Sprawdź czy runda 3 się zakończyła (wszyscy stracili życie)
     if (round === GameRound.ROUND_THREE) {
       // Zmieniamy porównanie, żeby uniknąć problemu z typami
@@ -151,7 +159,7 @@ const Host = () => {
         description: `z wynikiem ${sortedPlayers[0].points} punktów`
       });
     }
-  };
+  }, [round, activePlayers, checkRoundThreeEnd, finishGame, playSound]);
   
   // Helper to get numerical round for recording winners
   const getRoundNumber = (round: GameRound): number => {
@@ -163,10 +171,18 @@ const Host = () => {
     }
   };
   
-  // Calculate if we can advance to the next round
-  const canAdvanceToRoundTwo = round === GameRound.ROUND_ONE && players.length >= 6;
-  const canAdvanceToRoundThree = round === GameRound.ROUND_TWO && activePlayers.length >= 3;
-  const canFinishGame = round === GameRound.ROUND_THREE && activePlayers.length > 0;
+  // Obliczamy te flagi tylko gdy zmieniają się odpowiednie zależności
+  const canAdvanceToRoundTwo = useMemo(() => {
+    return round === GameRound.ROUND_ONE && players.length >= 6;
+  }, [round, players.length]);
+  
+  const canAdvanceToRoundThree = useMemo(() => {
+    return round === GameRound.ROUND_TWO && activePlayers.length >= 3;
+  }, [round, activePlayers.length]);
+  
+  const canFinishGame = useMemo(() => {
+    return round === GameRound.ROUND_THREE && activePlayers.length > 0;
+  }, [round, activePlayers.length]);
   
   return (
     <div className="min-h-screen bg-neon-background p-4">
@@ -181,7 +197,7 @@ const Host = () => {
         resetGame={resetGame}
       />
       
-      <div className="grid grid-cols-[1fr_2fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6">
         {/* Left column - Players */}
         <div className="space-y-6">
           <PlayerSelection 

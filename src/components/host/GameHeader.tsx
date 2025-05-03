@@ -1,9 +1,9 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useMemo } from 'react';
 import { GameRound } from '@/types/game-types';
-import NeonLogo from '@/components/NeonLogo';
-import GameSaveManager from './GameSaveManager';
+import { Button } from '@/components/ui/button';
+import { Sparkles, SkipForward, Timer, ChevronRight, History, RotateCw } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface GameHeaderProps {
   round: GameRound;
@@ -16,7 +16,8 @@ interface GameHeaderProps {
   resetGame: () => void;
 }
 
-const GameHeader: React.FC<GameHeaderProps> = ({
+// Używamy memo do optymalizacji renderowania komponentu
+const GameHeader: React.FC<GameHeaderProps> = React.memo(({
   round,
   canAdvanceToRoundTwo,
   canAdvanceToRoundThree,
@@ -24,82 +25,127 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   advanceToRoundTwo,
   advanceToRoundThree,
   handleFinishGame,
-  resetGame,
+  resetGame
 }) => {
+  // Memo-izacja tytułu rundy - unikamy recalculate przy renderach
+  const roundTitle = useMemo(() => {
+    switch (round) {
+      case GameRound.SETUP:
+        return "Przygotowanie do Gry";
+      case GameRound.ROUND_ONE:
+        return "Runda 1: Zróżnicowana Wiedza";
+      case GameRound.ROUND_TWO:
+        return "Runda 2: 5 Sekund";
+      case GameRound.ROUND_THREE:
+        return "Runda 3: Koło Chaosu";
+      case GameRound.FINISHED:
+        return "Gra Zakończona";
+      default:
+        return "Nieznana Runda";
+    }
+  }, [round]);
+  
+  // Memo-izowany kolor rundy
+  const roundColor = useMemo(() => {
+    switch (round) {
+      case GameRound.SETUP:
+        return "text-white";
+      case GameRound.ROUND_ONE:
+        return "text-blue-400";
+      case GameRound.ROUND_TWO:
+        return "text-yellow-400";
+      case GameRound.ROUND_THREE:
+        return "text-purple-400";
+      case GameRound.FINISHED:
+        return "text-green-400";
+      default:
+        return "text-white";
+    }
+  }, [round]);
+  
   return (
-    <>
-      <div className="flex justify-between items-center mb-6">
-        <NeonLogo />
-        
-        <div className="flex items-center gap-4">
-          <Link to="/" className="text-white hover:text-neon-blue">
-            Strona główna
-          </Link>
-          <Link to="/overlay" className="text-white hover:text-neon-blue">
-            Nakładka OBS
-          </Link>
-          <Link to="/settings" className="text-white hover:text-neon-blue">
-            Ustawienia
-          </Link>
-        </div>
-      </div>
-      
-      <div className="mb-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">
-            {round === GameRound.SETUP && <span className="text-white">Panel Hosta - Przygotowanie</span>}
-            {round === GameRound.ROUND_ONE && <span className="text-neon-pink">Panel Hosta - Runda 1</span>}
-            {round === GameRound.ROUND_TWO && <span className="text-neon-blue">Panel Hosta - Runda 2</span>}
-            {round === GameRound.ROUND_THREE && <span className="text-neon-purple">Panel Hosta - Runda 3</span>}
-            {round === GameRound.FINISHED && <span className="text-neon-yellow">Panel Hosta - Koniec gry</span>}
+    <header className="bg-black/50 backdrop-blur-md p-4 rounded-lg border border-white/10 mb-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            Discord Game Show
+            <span className="text-sm px-2 py-1 rounded bg-black/40 border border-white/10">Host Panel</span>
           </h1>
           
-          <div className="flex gap-2">
-            {canAdvanceToRoundTwo && (
-              <button 
-                className="neon-button bg-gradient-to-r from-neon-pink to-neon-purple"
-                onClick={advanceToRoundTwo}
-              >
-                Przejdź do Rundy 2
-              </button>
-            )}
-            
-            {canAdvanceToRoundThree && (
-              <button 
-                className="neon-button bg-gradient-to-r from-neon-blue to-neon-purple"
-                onClick={advanceToRoundThree}
-              >
-                Przejdź do Rundy 3
-              </button>
-            )}
-            
-            {canFinishGame && (
-              <button 
-                className="neon-button bg-gradient-to-r from-neon-yellow to-neon-purple"
-                onClick={handleFinishGame}
-              >
-                Zakończ grę
-              </button>
-            )}
-            
-            {round === GameRound.FINISHED && (
-              <button 
-                className="neon-button bg-gradient-to-r from-neon-green to-neon-blue"
-                onClick={resetGame}
-              >
-                Nowa gra
-              </button>
-            )}
-          </div>
+          <motion.h2 
+            className={`text-xl font-semibold ${roundColor} mt-1`}
+            key={round} // Key zmienia się gdy zmienia się runda
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {roundTitle}
+          </motion.h2>
         </div>
         
-        {/* Add GameSaveManager component */}
-        <div className="mt-2">
-          <GameSaveManager />
+        <div className="flex gap-2">
+          {round === GameRound.ROUND_ONE && canAdvanceToRoundTwo && (
+            <Button
+              variant="outline"
+              className="border-yellow-400 text-yellow-400 hover:bg-yellow-400/20 flex gap-2"
+              onClick={advanceToRoundTwo}
+            >
+              <Timer className="h-4 w-4" />
+              <span className="hidden sm:inline">Przejdź do</span> Rundy 2
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+          
+          {round === GameRound.ROUND_TWO && canAdvanceToRoundThree && (
+            <Button
+              variant="outline"
+              className="border-purple-400 text-purple-400 hover:bg-purple-400/20 flex gap-2"
+              onClick={advanceToRoundThree}
+            >
+              <SkipForward className="h-4 w-4" />
+              <span className="hidden sm:inline">Przejdź do</span> Rundy 3
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+          
+          {round === GameRound.ROUND_THREE && canFinishGame && (
+            <Button
+              variant="outline"
+              className="border-green-400 text-green-400 hover:bg-green-400/20 flex gap-2"
+              onClick={handleFinishGame}
+            >
+              <Sparkles className="h-4 w-4" />
+              Zakończ Grę
+            </Button>
+          )}
+          
+          {round === GameRound.FINISHED && (
+            <Button
+              variant="outline"
+              className="border-cyan-400 text-cyan-400 hover:bg-cyan-400/20 flex gap-2"
+              onClick={() => window.open('/winners', '_blank')}
+            >
+              <History className="h-4 w-4" />
+              Historia zwycięzców
+            </Button>
+          )}
+          
+          {round === GameRound.FINISHED && (
+            <Button
+              variant="outline"
+              className="border-blue-400 text-blue-400 hover:bg-blue-400/20 flex gap-2"
+              onClick={resetGame}
+            >
+              <RotateCw className="h-4 w-4" />
+              Nowa Gra
+            </Button>
+          )}
         </div>
       </div>
-    </>
+    </header>
   );
-};
+});
+
+GameHeader.displayName = 'GameHeader';
 
 export default GameHeader;

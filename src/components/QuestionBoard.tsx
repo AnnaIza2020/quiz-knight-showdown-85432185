@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Question } from '@/types/game-types';
@@ -16,7 +16,8 @@ export interface QuestionBoardProps {
   className?: string;
 }
 
-const QuestionBoard: React.FC<QuestionBoardProps> = ({
+// Używamy memo do optymalizacji renderowania komponentu
+const QuestionBoard: React.FC<QuestionBoardProps> = React.memo(({
   question,
   timeRemaining,
   onCorrectAnswer,
@@ -26,16 +27,35 @@ const QuestionBoard: React.FC<QuestionBoardProps> = ({
 }) => {
   const { playSound, timerRunning } = useGameContext();
   
-  // Sound effect when time is running low
+  // Memo-izowane obliczanie kategorii
+  const categoryName = useMemo(() => {
+    if (!question) return '';
+    return question.categoryId ? (question.category || 'Nieznana kategoria') : 'Nieznana kategoria';
+  }, [question]);
+  
+  // Efekt dźwiękowy dla timera
   useEffect(() => {
-    if (timeRemaining && timeRemaining <= 5 && timeRemaining > 0 && timerRunning) {
+    // Okienka czasowe dla efektu dźwiękowego
+    const shouldPlayTickSound = 
+      timeRemaining !== undefined && 
+      timeRemaining <= 5 && 
+      timeRemaining > 0 && 
+      timerRunning;
+      
+    const shouldPlayTimeoutSound = 
+      timeRemaining === 0 && 
+      timerRunning;
+    
+    if (shouldPlayTickSound) {
+      // Throttling efektu dźwiękowego (tylko co sekundę)
       playSound('wheel-tick', 0.3);
-    } else if (timeRemaining === 0 && timerRunning) {
+    } else if (shouldPlayTimeoutSound) {
       playSound('timeout');
       toast.error('Czas minął!');
     }
   }, [timeRemaining, timerRunning, playSound]);
 
+  // Jeśli nie ma pytania, wyświetl placeholder
   if (!question) {
     return (
       <Card className={`w-full h-full flex items-center justify-center ${className || ''}`}>
@@ -45,9 +65,6 @@ const QuestionBoard: React.FC<QuestionBoardProps> = ({
       </Card>
     );
   }
-
-  // Get category name (safely)
-  const categoryName = question.categoryId ? (question.category || 'Nieznana kategoria') : 'Nieznana kategoria';
 
   return (
     <Card className={`w-full ${className || ''}`}>
@@ -59,8 +76,8 @@ const QuestionBoard: React.FC<QuestionBoardProps> = ({
           </div>
           {timeRemaining !== undefined && (
             <div className="flex items-center gap-2 text-lg font-bold">
-              <Hourglass className="h-5 w-5" />
-              {timeRemaining}s
+              <Hourglass className={`h-5 w-5 ${timeRemaining <= 5 && timeRemaining > 0 ? 'animate-pulse text-orange-400' : ''}`} />
+              <span className={timeRemaining <= 5 && timeRemaining > 0 ? 'text-orange-400' : ''}>{timeRemaining}s</span>
             </div>
           )}
         </div>
@@ -109,6 +126,8 @@ const QuestionBoard: React.FC<QuestionBoardProps> = ({
       </CardFooter>
     </Card>
   );
-};
+});
+
+QuestionBoard.displayName = 'QuestionBoard';
 
 export default QuestionBoard;

@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, memo } from 'react';
 import { Player } from '@/types/game-types';
 import { Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,7 +14,8 @@ interface PlayerCardProps {
   className?: string;
 }
 
-const PlayerCard: React.FC<PlayerCardProps> = ({
+// Używamy memo do optymalizacji renderowania komponentu
+const PlayerCard: React.FC<PlayerCardProps> = memo(({
   player,
   size = 'md',
   showHealthBar = true,
@@ -93,12 +94,14 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
             title={`Player ${player.name}`} 
             className="w-full h-full"
             allowFullScreen
+            loading="lazy" // Dodajemy lazy loading dla iframes
           />
         ) : player.avatar ? (
           <img 
             src={player.avatar} 
             alt={player.name} 
             className="w-full h-full object-cover"
+            loading="lazy" // Dodajemy lazy loading dla obrazów
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-black/20">
@@ -175,6 +178,20 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
       )}
     </motion.div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Optymalizacja renderowania - porównanie istotnych właściwości
+  return (
+    prevProps.player.id === nextProps.player.id &&
+    prevProps.player.name === nextProps.player.name &&
+    prevProps.player.points === nextProps.player.points &&
+    prevProps.player.health === nextProps.player.health &&
+    prevProps.player.lives === nextProps.player.lives &&
+    prevProps.player.isActive === nextProps.player.isActive &&
+    prevProps.player.isEliminated === nextProps.player.isEliminated &&
+    prevProps.size === nextProps.size &&
+    prevProps.showHealthBar === nextProps.showHealthBar &&
+    prevProps.showLives === nextProps.showLives
+  );
+});
 
 export default PlayerCard;

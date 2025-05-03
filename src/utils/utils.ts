@@ -1,97 +1,114 @@
 
-/**
- * Utility functions for Discord Game Show
- */
-
-/**
- * Generate a random neon color
- * @returns RGB color string
- */
-export function getRandomNeonColor(): string {
-  const neonColors = [
-    "#ff00ff", // Neon pink
-    "#00ffff", // Neon cyan
-    "#ff0099", // Neon magenta
-    "#00ff99", // Neon green
-    "#ff3300", // Neon orange
-    "#ffff00", // Neon yellow
-    "#9900ff", // Neon purple
-    "#00ff00", // Neon lime
-    "#ff66ff", // Light neon pink
-    "#66ffff", // Light neon cyan
+// Istniejący kod
+export const getRandomNeonColor = () => {
+  const colors = [
+    '#00ff00', // Zielony
+    '#ff00ff', // Różowy
+    '#00ffff', // Cyjanowy
+    '#ff0000', // Czerwony
+    '#ffff00', // Żółty
+    '#0000ff', // Niebieski
+    '#ff8800', // Pomarańczowy
   ];
-
-  return neonColors[Math.floor(Math.random() * neonColors.length)];
-}
-
-/**
- * Generate a unique token
- * @returns Random token string
- */
-export function generateToken(): string {
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15);
-}
-
-/**
- * Generate a unique token (alias of generateToken for backward compatibility)
- * @returns Random token string
- */
-export function generateUniqueToken(): string {
-  return generateToken();
-}
-
-/**
- * Format time in seconds to mm:ss format
- * @param seconds Time in seconds
- * @returns Formatted time string
- */
-export function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
-
-/**
- * Truncate text if it's too long
- * @param text Text to truncate
- * @param maxLength Maximum length before truncating
- * @returns Truncated text with ellipsis if needed
- */
-export function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
-}
-
-/**
- * Shuffle an array using Fisher-Yates algorithm
- * @param array Array to shuffle
- * @returns Shuffled array
- */
-export function shuffleArray<T>(array: T[]): T[] {
-  const newArray = [...array];
-  for (let i = newArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-  }
-  return newArray;
-}
-
-/**
- * Calculate points based on difficulty and time remaining
- * @param difficulty Question difficulty level
- * @param timeRemaining Time remaining in seconds
- * @returns Points to award
- */
-export function calculatePoints(difficulty: number, timeRemaining?: number): number {
-  // Base points by difficulty
-  const basePoints = difficulty * 100;
   
-  // Bonus for answering quickly
-  if (timeRemaining !== undefined) {
-    const timeBonus = Math.floor((timeRemaining / 30) * 50);
-    return basePoints + timeBonus;
+  return colors[Math.floor(Math.random() * colors.length)];
+};
+
+// Nowe funkcje pomocnicze
+
+/**
+ * Głębokie porównanie obiektów
+ */
+export const deepEqual = (obj1: any, obj2: any): boolean => {
+  if (obj1 === obj2) return true;
+  
+  if (
+    typeof obj1 !== 'object' || 
+    typeof obj2 !== 'object' || 
+    obj1 === null || 
+    obj2 === null
+  ) {
+    return obj1 === obj2;
   }
   
-  return basePoints;
-}
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+  
+  if (keys1.length !== keys2.length) return false;
+  
+  return keys1.every(key => 
+    keys2.includes(key) && deepEqual(obj1[key], obj2[key])
+  );
+};
+
+/**
+ * Funkcja do throttling
+ */
+export const throttle = <T extends (...args: any[]) => any>(
+  func: T,
+  limit: number
+): ((...args: Parameters<T>) => ReturnType<T> | undefined) => {
+  let lastCall = 0;
+  return function(...args: Parameters<T>): ReturnType<T> | undefined {
+    const now = Date.now();
+    if (now - lastCall >= limit) {
+      lastCall = now;
+      return func(...args);
+    }
+    return undefined;
+  };
+};
+
+/**
+ * Funkcja do debounce
+ */
+export const debounce = <T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): ((...args: Parameters<T>) => void) => {
+  let timeout: NodeJS.Timeout | null = null;
+  
+  return function(...args: Parameters<T>): void {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+    
+    timeout = setTimeout(() => {
+      func(...args);
+    }, wait);
+  };
+};
+
+/**
+ * Funkcja do sprawdzania czy urządzenie jest mobilne
+ */
+export const isMobile = (): boolean => {
+  return window.matchMedia('(max-width: 768px)').matches;
+};
+
+/**
+ * Generowanie unikalnego ID
+ */
+export const generateUniqueId = (): string => {
+  return Math.random().toString(36).substring(2, 9);
+};
+
+/**
+ * Formatowanie daty do przyjaznego formatu
+ */
+export const formatDate = (date: Date): string => {
+  return new Intl.DateTimeFormat('pl-PL', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+};
+
+/**
+ * Asynchroniczne opóźnienie (sleep)
+ */
+export const sleep = (ms: number): Promise<void> => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
