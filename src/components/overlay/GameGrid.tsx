@@ -3,8 +3,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import PlayerGrid from '@/components/overlay/PlayerGrid';
 import MiddleSection from '@/components/overlay/MiddleSection';
-import { GameRound } from '@/types/game-types';
+import { GameRound, Question } from '@/types/game-types';
 import { Player } from '@/types/game-types';
+import { useGameContext } from '@/context/GameContext';
 
 interface GameGridProps {
   activePlayers: Player[];
@@ -25,6 +26,9 @@ const GameGrid: React.FC<GameGridProps> = ({
   lastActivePlayer,
   latestPoints
 }) => {
+  // Get context values for required props
+  const { currentQuestion, timerRunning, timerSeconds } = useGameContext();
+  
   return (
     <motion.div 
       className="w-full h-full grid grid-rows-[1fr_auto_1fr] p-4 gap-4"
@@ -44,7 +48,13 @@ const GameGrid: React.FC<GameGridProps> = ({
       />
       
       {/* Middle row with host camera and question board */}
-      <MiddleSection round={round} hostCameraUrl={hostCameraUrl} />
+      <MiddleSection 
+        round={round} 
+        hostCameraUrl={hostCameraUrl}
+        currentQuestion={currentQuestion}
+        timerRunning={timerRunning}
+        timerSeconds={timerSeconds}
+      />
       
       {/* Bottom row with remaining 5 players */}
       <PlayerGrid 

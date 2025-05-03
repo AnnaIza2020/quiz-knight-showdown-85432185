@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Player } from '@/types/game-types';
 import { toast } from 'sonner';
-import { ExtendedDatabase } from '@/types/supabase-custom-types';
 
 export interface GameWinner {
   id: string;
@@ -32,10 +31,10 @@ export const useGameWinners = () => {
         created_at: new Date().toISOString()
       };
 
-      // Try to insert into Supabase using customized database typing
+      // Try to insert into Supabase using a direct insert with typed data
       const { error } = await supabase
         .from('game_winners')
-        .insert(winner as any);
+        .insert(winner);
 
       if (error) {
         console.error('Error storing winner in Supabase:', error);
@@ -68,7 +67,7 @@ export const useGameWinners = () => {
   // Get recent winners
   const getRecentWinners = async (limit = 5): Promise<GameWinner[]> => {
     try {
-      // Try to get from Supabase first using customized database typing
+      // Try to get from Supabase first with direct query
       const { data, error } = await supabase
         .from('game_winners')
         .select('*')

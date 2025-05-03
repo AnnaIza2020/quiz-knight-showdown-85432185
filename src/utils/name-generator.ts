@@ -1,23 +1,41 @@
 
-// Prosty generator losowych imion dla graczy
-const prefixes = [
-  "Gracz", "Player", "Gamer", "Pro", "Super", "Ultra", "Mega", "Epic",
-  "Legend", "Master", "King", "Queen", "Lord", "Champion", "Hero"
+/**
+ * Utility to generate random player names for testing
+ */
+
+const firstNames = [
+  "Krzysiek", "Tomek", "Ania", "Mateusz", "Wojtek", 
+  "Kasia", "Piotr", "Magda", "Michał", "Zosia",
+  "Bartek", "Julka", "Adam", "Ola", "Jakub",
+  "Kamil", "Agata", "Marcin", "Natalia", "Filip"
 ];
 
-const suffixes = [
-  "123", "XYZ", "Prime", "Boss", "Star", "Guru", "Ninja", "Wizard",
-  "Phoenix", "Dragon", "Tiger", "Eagle", "Wolf", "Lion", "Bear"
+const lastNames = [
+  "Streamer", "Gamer", "Pro", "Fan", "Creator",
+  "Player", "Master", "Legend", "Champion", "Warrior",
+  "Phoenix", "Dragon", "Knight", "Wizard", "Hunter",
+  "Star", "Hero", "Shark", "Tiger", "Eagle"
 ];
 
 /**
- * Generuje losowe imię gracza
- * @returns Losowo wygenerowane imię gracza
+ * Generate a random name for a player
+ * @returns Random name string
  */
 export function getRandomName(): string {
-  const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-  const randomSuffix = suffixes[Math.floor(Math.random() * suffixes.length)];
-  const randomNumber = Math.floor(Math.random() * 100);
-  
-  return `${randomPrefix}${randomSuffix}${randomNumber}`;
+  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+  const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+  return `${firstName}${lastName}`;
+}
+
+/**
+ * Generate multiple random names
+ * @param count Number of names to generate
+ * @returns Array of random names
+ */
+export function getRandomNames(count: number): string[] {
+  const names: string[] = [];
+  for (let i = 0; i < count; i++) {
+    names.push(getRandomName());
+  }
+  return names;
 }

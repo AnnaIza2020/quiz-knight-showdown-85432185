@@ -72,6 +72,11 @@ const PreparationView: React.FC<PreparationViewProps> = ({ onStartGameClicked })
     }
   };
 
+  // Fix: Create a wrapper function that takes a Player and extracts the ID
+  const handleRemovePlayer = (player: Player) => {
+    removePlayer(player.id);
+  };
+
   return (
     <>
       <div className="flex gap-4 mb-6">
@@ -125,7 +130,7 @@ const PreparationView: React.FC<PreparationViewProps> = ({ onStartGameClicked })
               <PlayerCardWithControls
                 key={player.id}
                 player={player}
-                onEliminate={removePlayer}
+                onEliminate={handleRemovePlayer} // Fixed: Pass the wrapper function
               />
             ))}
             
