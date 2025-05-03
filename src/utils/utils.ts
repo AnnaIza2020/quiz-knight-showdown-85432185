@@ -34,6 +34,14 @@ export function generateToken(): string {
 }
 
 /**
+ * Generate a unique token (alias of generateToken for backward compatibility)
+ * @returns Random token string
+ */
+export function generateUniqueToken(): string {
+  return generateToken();
+}
+
+/**
  * Format time in seconds to mm:ss format
  * @param seconds Time in seconds
  * @returns Formatted time string
