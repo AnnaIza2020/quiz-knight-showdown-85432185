@@ -35,11 +35,11 @@ const GamePasswordSettings = () => {
     defaultValues: defaultPasswordSettings,
   });
 
-  // Load settings from Supabase
   useEffect(() => {
-    const loadPasswordSettings = async () => {
+    const loadSettings = async () => {
+      setIsLoading(true);
       try {
-        setIsLoading(true);
+        // Try to load from Supabase first
         const { data, error } = await supabase
           .from('game_settings')
           .select('*')
@@ -48,54 +48,59 @@ const GamePasswordSettings = () => {
 
         if (error) {
           console.error('Error loading password settings:', error);
-          return;
-        }
-
-        if (data?.value) {
-          // Safely parse JSON data with fallback to defaults
-          const settings = safeJsonParse<PasswordSettings>(data.value, defaultPasswordSettings);
-          form.reset(settings);
+          
+          // Fallback to localStorage
+          const localSettings = safeJsonParse<PasswordSettings>(
+            localStorage.getItem('gamePasswordSettings'),
+            defaultPasswordSettings
+          );
+          
+          form.reset(localSettings);
+        } else if (data?.value) {
+          form.reset(data.value as PasswordSettings);
         }
       } catch (err) {
-        console.error('Unexpected error loading password settings:', err);
+        console.error('Unexpected error loading settings:', err);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadPasswordSettings();
+    loadSettings();
   }, [form]);
 
-  const onSubmit = async (data: PasswordSettings) => {
+  const onSubmit = async (values: PasswordSettings) => {
     setIsSaving(true);
     try {
+      // Save to Supabase
       const { error } = await supabase
         .from('game_settings')
-        .upsert({
-          id: 'password_settings',
-          value: data as any, // Type assertion needed due to Json type constraints
-        });
+        .upsert(
+          { id: 'password_settings', value: values },
+          { onConflict: 'id' }
+        );
 
       if (error) {
-        console.error('Error saving password settings:', error);
-        toast.error('Błąd podczas zapisywania ustawień hasła');
-        return;
+        console.error('Error saving password settings to Supabase:', error);
+        
+        // Fallback to localStorage
+        localStorage.setItem('gamePasswordSettings', JSON.stringify(values));
       }
 
       toast.success('Ustawienia hasła zapisane');
     } catch (err) {
-      console.error('Unexpected error saving password settings:', err);
-      toast.error('Nieoczekiwany błąd');
+      console.error('Unexpected error saving settings:', err);
+      toast.error('Błąd podczas zapisywania ustawień hasła');
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <div className="p-6 rounded-lg bg-black/20 backdrop-blur-sm border border-white/10">
-      <h2 className="text-xl font-bold mb-4">Hasło dostępu</h2>
-      <p className="text-white/70 mb-6">
-        Ustaw hasło dostępu dla graczy, którzy chcą dołączyć do gry.
+    <div className="bg-[#0c0e1a] rounded-lg p-6 shadow-lg border border-gray-800">
+      <h2 className="text-xl font-bold mb-2 text-white">Hasło dostępu do gry</h2>
+      <p className="text-white/60 text-sm mb-6">
+        Ustaw hasło dostępu dla graczy, aby zapewnić bezpieczne dołączanie do gry
       </p>
 
       <Form {...form}>
@@ -104,15 +109,19 @@ const GamePasswordSettings = () => {
             control={form.control}
             name="enabled"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-white/10 p-4">
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-700 p-4 bg-black/30">
                 <div className="space-y-0.5">
-                  <FormLabel className="text-base">Włącz hasło dostępu</FormLabel>
-                  <FormDescription>
-                    Wymagaj hasła od graczy dołączających do gry
+                  <FormLabel className="text-base">Wymagaj hasła</FormLabel>
+                  <FormDescription className="text-sm text-white/60">
+                    Gracze będą musieli podać hasło, aby dołączyć do gry
                   </FormDescription>
                 </div>
                 <FormControl>
-                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    disabled={isLoading || isSaving}
+                  />
                 </FormControl>
               </FormItem>
             )}
@@ -127,8 +136,16 @@ const GamePasswordSettings = () => {
                   <FormItem>
                     <FormLabel>Hasło</FormLabel>
                     <FormControl>
-                      <Input placeholder="Wpisz hasło" {...field} />
+                      <Input
+                        {...field}
+                        placeholder="Wpisz hasło dla graczy"
+                        disabled={isLoading || isSaving}
+                        className="bg-black/40 border-gray-700 text-white"
+                      />
                     </FormControl>
+                    <FormDescription>
+                      Hasło, które gracze będą musieli wpisać, aby dołączyć
+                    </FormDescription>
                   </FormItem>
                 )}
               />
@@ -138,18 +155,20 @@ const GamePasswordSettings = () => {
                 name="attempts"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Liczba prób: {field.value}</FormLabel>
+                    <FormLabel>Liczba dozwolonych prób ({field.value})</FormLabel>
                     <FormControl>
                       <Slider
+                        value={[field.value]}
                         min={1}
                         max={10}
                         step={1}
-                        value={[field.value]}
                         onValueChange={(value) => field.onChange(value[0])}
+                        disabled={isLoading || isSaving}
+                        className="py-4"
                       />
                     </FormControl>
                     <FormDescription>
-                      Ilość prób przed zablokowaniem dostępu graczowi
+                      Ile prób będzie miał gracz na wprowadzenie poprawnego hasła
                     </FormDescription>
                   </FormItem>
                 )}
@@ -160,18 +179,20 @@ const GamePasswordSettings = () => {
                 name="expiresAfter"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Wygasa po: {field.value} godzinach</FormLabel>
+                    <FormLabel>Czas ważności hasła ({field.value} godz.)</FormLabel>
                     <FormControl>
                       <Slider
+                        value={[field.value]}
                         min={1}
                         max={24}
                         step={1}
-                        value={[field.value]}
                         onValueChange={(value) => field.onChange(value[0])}
+                        disabled={isLoading || isSaving}
+                        className="py-4"
                       />
                     </FormControl>
                     <FormDescription>
-                      Czas ważności dostępu po zalogowaniu
+                      Po ilu godzinach gracz będzie musiał ponownie wprowadzić hasło
                     </FormDescription>
                   </FormItem>
                 )}
@@ -179,7 +200,11 @@ const GamePasswordSettings = () => {
             </>
           )}
 
-          <Button type="submit" disabled={isSaving || isLoading} className="w-full">
+          <Button
+            type="submit"
+            className="bg-neon-green hover:bg-neon-green/80 text-black px-8 py-2"
+            disabled={isLoading || isSaving || !form.formState.isDirty}
+          >
             {isSaving ? 'Zapisywanie...' : 'Zapisz ustawienia'}
           </Button>
         </form>

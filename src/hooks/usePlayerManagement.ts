@@ -1,255 +1,125 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Player } from '@/types/game-types';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface UsePlayerManagementOptions {
-  onPlayerAdd?: (player: Player) => void;
-  onPlayerUpdate?: (player: Player) => void;
-  onPlayerRemove?: (playerId: string) => void;
+interface PlayerManagementOptions {
+  initialPlayers?: Player[];
 }
 
-export const usePlayerManagement = (options?: UsePlayerManagementOptions) => {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+// Helper function to generate a unique token
+const generateUniqueToken = (): string => {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
+
+// Helper function to generate a random neon color
+const getRandomNeonColor = (): string => {
+  const neonColors = ['#00FFFF', '#ADFF2F', '#FF69B4', '#FFD700', '#7FFFD4'];
+  return neonColors[Math.floor(Math.random() * neonColors.length)];
+};
+
+// Helper function to generate a random name
+const getRandomName = (): string => {
+  const names = ['Neo', 'Trinity', 'Morpheus', 'Agent Smith', 'Oracle'];
+  return names[Math.floor(Math.random() * names.length)];
+};
+
+export const usePlayerManagement = (options?: PlayerManagementOptions) => {
+  const [players, setPlayers] = useState<Player[]>(options?.initialPlayers || []);
   
-  // Load players from Supabase
-  const loadPlayers = async () => {
-    try {
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .order('nickname');
-      
-      if (error) throw new Error(error.message);
-      
-      if (data) {
-        // Map database players to our Player type
-        const mappedPlayers = data.map(item => ({
-          id: item.id,
-          name: item.nickname,
-          cameraUrl: item.camera_url || '',
-          points: item.points || 0,
-          health: item.life_percent || 100,
-          lives: 3,
-          isActive: item.is_active || true,
-          isEliminated: item.status === 'eliminated',
-          avatar: item.avatar_url,
-          color: item.color,
-          uniqueLinkToken: item.unique_link_token
-        }));
-        
-        setPlayers(mappedPlayers);
-      }
-    } catch (err) {
-      console.error('Error loading players:', err);
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Generate a unique token using the Supabase function
-  const generateUniqueToken = async () => {
-    try {
-      const { data, error } = await supabase.rpc('generate_unique_player_token');
-      
-      if (error) throw error;
-      
-      return data;
-    } catch (err) {
-      console.error('Error generating token:', err);
-      // Fallback to client-side generation if RPC fails
-      return crypto.randomUUID().replace(/-/g, '').substring(0, 16);
-    }
-  };
-  
-  // Add a new player
-  const addPlayer = async (playerData: Partial<Player>) => {
-    try {
-      if (!playerData.name) {
-        throw new Error('Player name is required');
-      }
-      
-      // Generate a unique token for player links
-      const uniqueToken = await generateUniqueToken();
-      
-      // Prepare player data for Supabase
-      const { data, error } = await supabase
-        .from('players')
-        .insert({
-          nickname: playerData.name,
-          camera_url: playerData.cameraUrl,
-          color: playerData.color || '#ff00ff',
-          token: crypto.randomUUID(),
-          unique_link_token: uniqueToken,
-          life_percent: 100,
-          points: 0,
-          is_active: true,
-          status: 'active'
-        })
-        .select()
-        .single();
-      
-      if (error) throw new Error(error.message);
-      
-      if (data) {
-        // Map the returned data to our Player type
-        const newPlayer: Player = {
-          id: data.id,
-          name: data.nickname,
-          cameraUrl: data.camera_url || '',
-          points: data.points || 0,
-          health: data.life_percent || 100,
-          lives: 3,
-          isActive: data.is_active || true,
-          isEliminated: false,
-          avatar: data.avatar_url,
-          color: data.color,
-          uniqueLinkToken: data.unique_link_token
-        };
-        
-        setPlayers(prev => [...prev, newPlayer]);
-        
-        if (options?.onPlayerAdd) {
-          options.onPlayerAdd(newPlayer);
-        }
-        
-        return newPlayer;
-      }
-    } catch (err) {
-      console.error('Error adding player:', err);
-      toast.error(`Failed to add player: ${err instanceof Error ? err.message : String(err)}`);
-      throw err;
-    }
-  };
-  
-  // Update a player
-  const updatePlayer = async (playerData: Partial<Player> & { id: string }) => {
-    try {
-      const { id, ...updateData } = playerData;
-      
-      // Map our Player type to Supabase schema
-      const dbUpdateData: any = {};
-      
-      if ('name' in updateData) dbUpdateData.nickname = updateData.name;
-      if ('cameraUrl' in updateData) dbUpdateData.camera_url = updateData.cameraUrl;
-      if ('points' in updateData) dbUpdateData.points = updateData.points;
-      if ('health' in updateData) dbUpdateData.life_percent = updateData.health;
-      if ('isActive' in updateData) dbUpdateData.is_active = updateData.isActive;
-      if ('isEliminated' in updateData) dbUpdateData.status = updateData.isEliminated ? 'eliminated' : 'active';
-      if ('color' in updateData) dbUpdateData.color = updateData.color;
-      
-      const { data, error } = await supabase
-        .from('players')
-        .update(dbUpdateData)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw new Error(error.message);
-      
-      if (data) {
-        // Map the returned data to our Player type
-        const updatedPlayer: Player = {
-          id: data.id,
-          name: data.nickname,
-          cameraUrl: data.camera_url || '',
-          points: data.points || 0,
-          health: data.life_percent || 100,
-          lives: 3,
-          isActive: data.is_active || true,
-          isEliminated: data.status === 'eliminated',
-          avatar: data.avatar_url,
-          color: data.color,
-          uniqueLinkToken: data.unique_link_token
-        };
-        
-        setPlayers(prev => 
-          prev.map(p => p.id === id ? updatedPlayer : p)
-        );
-        
-        if (options?.onPlayerUpdate) {
-          options.onPlayerUpdate(updatedPlayer);
-        }
-        
-        return updatedPlayer;
-      }
-    } catch (err) {
-      console.error('Error updating player:', err);
-      toast.error(`Failed to update player: ${err instanceof Error ? err.message : String(err)}`);
-      throw err;
-    }
-  };
-  
-  // Remove a player
-  const removePlayer = async (playerId: string) => {
-    try {
-      const { error } = await supabase
-        .from('players')
-        .delete()
-        .eq('id', playerId);
-      
-      if (error) throw new Error(error.message);
-      
-      setPlayers(prev => prev.filter(p => p.id !== playerId));
-      
-      if (options?.onPlayerRemove) {
-        options.onPlayerRemove(playerId);
-      }
-      
-      return true;
-    } catch (err) {
-      console.error('Error removing player:', err);
-      toast.error(`Failed to remove player: ${err instanceof Error ? err.message : String(err)}`);
-      throw err;
-    }
-  };
-  
-  // Generate player link
-  const getPlayerLink = (player: Player) => {
-    if (!player.uniqueLinkToken) return null;
-    
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/player/${player.uniqueLinkToken}`;
-  };
-  
-  // Load players on component mount
-  useEffect(() => {
-    loadPlayers();
-  }, []);
-  
-  // Subscribe to player updates from Supabase
-  useEffect(() => {
-    const channel = supabase
-      .channel('public:players')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'players' }, 
-        (payload) => {
-          // Reload players when anything changes
-          loadPlayers();
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
+  // Function to create a player with default values
+  const createPlayer = (data: Partial<Player>): Player => {
+    return {
+      id: data.id || crypto.randomUUID(),
+      name: data.name || 'Player',
+      avatar: data.avatar || '',
+      points: data.points || 0,
+      health: data.health || 100,
+      lives: data.lives || 3,
+      isEliminated: data.isEliminated || false,
+      specialCards: data.specialCards || [],
+      cameraUrl: data.cameraUrl || '',
+      color: data.color || getRandomNeonColor(),
+      isActive: data.isActive || false,
+      uniqueLinkToken: data.uniqueLinkToken || generateUniqueToken()
     };
-  }, []);
+  };
+
+  // Function to add a new player
+  const addPlayer = (player: Player) => {
+    setPlayers((prevPlayers) => [...prevPlayers, player]);
+  };
+
+  // Function to update an existing player
+  const updatePlayer = (playerId: string, updates: Partial<Player>) => {
+    setPlayers((prevPlayers) =>
+      prevPlayers.map((player) =>
+        player.id === playerId ? { ...player, ...updates } : player
+      )
+    );
+  };
+
+  // Function to remove a player
+  const removePlayer = (playerId: string) => {
+    setPlayers((prevPlayers) => prevPlayers.filter((player) => player.id !== playerId));
+  };
   
+  // Function to add a random player
+  const addRandomPlayer = () => {
+    const randomName = getRandomName();
+    const newPlayer: Player = {
+      id: crypto.randomUUID(),
+      name: randomName,
+      cameraUrl: '',
+      points: 0,
+      health: 100,
+      lives: 3,
+      isActive: true,
+      isEliminated: false,
+      avatar: '',
+      color: getRandomNeonColor(),
+      uniqueLinkToken: generateUniqueToken(),
+      specialCards: []
+    };
+
+    setPlayers(prevPlayers => [...prevPlayers, newPlayer]);
+    
+    toast.success(`Dodano gracza ${randomName}`);
+  };
+  
+  // Function to bulk add players
+  const bulkAddPlayers = (count: number) => {
+    const newPlayers: Player[] = [];
+    
+    for (let i = 0; i < count; i++) {
+      const randomName = getRandomName();
+      newPlayers.push({
+        id: crypto.randomUUID(),
+        name: randomName,
+        cameraUrl: '',
+        points: 0,
+        health: 100,
+        lives: 3,
+        isActive: true,
+        isEliminated: false,
+        avatar: '',
+        color: getRandomNeonColor(),
+        uniqueLinkToken: generateUniqueToken(),
+        specialCards: []
+      });
+    }
+    
+    setPlayers(prevPlayers => [...prevPlayers, ...newPlayers]);
+    
+    toast.success(`Dodano ${count} graczy`);
+  };
+
   return {
     players,
-    loading,
-    error,
     addPlayer,
     updatePlayer,
     removePlayer,
-    loadPlayers,
-    getPlayerLink,
-    generateUniqueToken
+    createPlayer,
+    addRandomPlayer,
+    bulkAddPlayers
   };
 };

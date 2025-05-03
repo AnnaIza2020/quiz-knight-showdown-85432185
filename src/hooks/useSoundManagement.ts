@@ -12,14 +12,14 @@ interface SoundManagementOptions {
 export const useSoundManagement = (options?: SoundManagementOptions) => {
   const {
     playSound,
-    setEnabled,
+    setSoundsEnabled,
     volume = 0.5,
     setVolume,
     availableSounds = {},
     addCustomSound
   } = useGameContext();
   
-  const [soundsEnabled, setSoundsEnabled] = useState(options?.initialEnabled ?? true);
+  const [soundsEnabled, setSoundsEnabledState] = useState(options?.initialEnabled ?? true);
   const [volumeLevel, setVolumeLevel] = useState(Math.round((options?.initialVolume || volume) * 100));
   
   // Sync with context
@@ -34,11 +34,11 @@ export const useSoundManagement = (options?: SoundManagementOptions) => {
   
   // Update enabled state in context
   useEffect(() => {
-    setEnabled?.(soundsEnabled);
-  }, [soundsEnabled, setEnabled]);
+    setSoundsEnabled?.(soundsEnabled);
+  }, [soundsEnabled, setSoundsEnabled]);
   
   const handleSoundsToggle = (enabled: boolean) => {
-    setSoundsEnabled(enabled);
+    setSoundsEnabledState(enabled);
     toast.info(enabled ? 'Dźwięki włączone' : 'Dźwięki wyciszone');
   };
   
@@ -52,7 +52,7 @@ export const useSoundManagement = (options?: SoundManagementOptions) => {
     }
   };
   
-  const addSound = (name: string, file: File): boolean => {
+  const addSound = (name: string, fileOrUrl: string | File): boolean => {
     if (!addCustomSound) {
       toast.error('Nie można dodać dźwięku', {
         description: 'Funkcja dodawania dźwięków nie jest dostępna'
@@ -60,7 +60,15 @@ export const useSoundManagement = (options?: SoundManagementOptions) => {
       return false;
     }
     
-    return addCustomSound(name, file);
+    // Convert File to URL if needed
+    if (fileOrUrl instanceof File) {
+      const url = URL.createObjectURL(fileOrUrl);
+      addCustomSound(name, url);
+      return true;
+    }
+    
+    addCustomSound(name, fileOrUrl);
+    return true;
   };
   
   return {

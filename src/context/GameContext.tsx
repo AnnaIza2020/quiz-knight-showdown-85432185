@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
 import { GameContextType, GameRound, SpecialCard, SpecialCardAwardRule, SoundEffect } from '@/types/game-types';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
@@ -160,7 +159,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     // Sound-related properties
     volume,
     setVolume,
-    availableSounds,
+    availableSounds: availableSounds as Record<string, string>, // Cast to the correct type
     addCustomSound,
     playSound,
     playSoundWithOptions,

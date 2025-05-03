@@ -69,7 +69,9 @@ export const useGameWinners = () => {
   const getRecentWinners = async (limit = 5): Promise<GameWinner[]> => {
     try {
       // Try to get from Supabase first
-      const { data, error } = await supabase
+      // Use the "any" type temporarily to work around the type issue
+      // until the database schema is properly synchronized
+      const { data, error } = await (supabase as any)
         .from('game_winners')
         .select('*')
         .order('created_at', { ascending: false })
@@ -82,7 +84,7 @@ export const useGameWinners = () => {
         return localWinners.slice(0, limit);
       }
       
-      return data || [];
+      return data as GameWinner[] || [];
     } catch (err) {
       console.error('Unexpected error fetching winners:', err);
       return [];

@@ -1,345 +1,259 @@
-
-import React, { useState } from 'react';
-import { useGameContext } from '@/context/GameContext';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage
-} from '@/components/ui/form';
-import { Plus, Star, Edit, Trash2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import QuestionDifficultyBadge from './QuestionDifficultyBadge';
-import { useForm } from 'react-hook-form';
-import { GameRound, Question } from '@/types/game-types';
-import { v4 as uuidv4 } from 'uuid';
-
-type FormValues = {
-  category: string;
-  difficulty: number;
-  question: string;
-  options: string[];
-  correctAnswerIndex: number;
-};
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/components/ui/use-toast';
+import { useGameContext } from '@/context/GameContext';
+import { Category, Question, GameRound } from '@/types/game-types';
+import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 
 const Round1Questions = () => {
-  const { categories, addCategory, removeCategory } = useGameContext();
-  const [newCategory, setNewCategory] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [filterCategory, setFilterCategory] = useState('wszystkie');
-  const [options, setOptions] = useState<string[]>(['', '', '', '']);
-  const [correctAnswerIndex, setCorrectAnswerIndex] = useState(0);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
+  const [newQuestionText, setNewQuestionText] = useState('');
+  const [newAnswerText, setNewAnswerText] = useState('');
+  const [difficulty, setDifficulty] = useState('1');
+  const [newOptions, setNewOptions] = useState<string[]>([]);
+  const [newOptionText, setNewOptionText] = useState('');
+  const { categories, addCategory, removeCategory, setCategories, addQuestion } = useGameContext();
+  const { toast } = useToast();
   
-  // Filtrowanie kategorii tylko dla Rundy 1
-  const round1Categories = categories.filter(cat => !cat.name.startsWith('R2_') && !cat.name.startsWith('R3_'));
-  
-  const form = useForm<FormValues>({
-    defaultValues: {
-      category: '',
-      difficulty: 5,
-      question: '',
-      options: ['', '', '', ''],
-      correctAnswerIndex: 0
-    }
-  });
-  
+  useEffect(() => {
+    // Filter categories for ROUND_ONE when component mounts
+    const roundOneCategories = categories.filter(cat => cat.round === GameRound.ROUND_ONE);
+    setCategories(roundOneCategories);
+  }, []);
+
   const handleAddCategory = () => {
-    if (!newCategory.trim()) {
-      toast.error('Nazwa kategorii nie może być pusta');
+    if (newCategoryName.trim() === '') {
+      toast.error('Podaj nazwę kategorii');
       return;
     }
     
-    const categoryExists = categories.some(cat => cat.name.toLowerCase() === newCategory.trim().toLowerCase());
-    if (categoryExists) {
-      toast.error('Kategoria o takiej nazwie już istnieje');
-      return;
-    }
-    
-    addCategory({
-      id: uuidv4(),
-      name: newCategory.toUpperCase(),
+    const newCategory: Category = {
+      id: crypto.randomUUID(),
+      name: newCategoryName,
+      round: GameRound.ROUND_ONE, // Set the round explicitly
       questions: []
-    });
+    };
     
-    setNewCategory('');
-    toast.success(`Dodano kategorię: ${newCategory.toUpperCase()}`);
+    addCategory(newCategory);
+    setNewCategoryName('');
+    toast({
+      title: 'Kategoria dodana!',
+      description: `Kategoria "${newCategory.name}" została dodana.`,
+    });
   };
-  
-  const handleSubmit = (values: FormValues) => {
-    // Tutaj można dodać walidację i zapisywanie pytania
-    console.log('Submitted question:', values);
-    toast.success('Pytanie zostało dodane');
-    setShowAddForm(false);
-    form.reset();
+
+  const handleRemoveCategory = (categoryId: string) => {
+    removeCategory(categoryId);
+    toast({
+      title: 'Kategoria usunięta!',
+      description: 'Kategoria została usunięta.',
+    });
   };
-  
-  const handleOptionChange = (index: number, value: string) => {
-    const newOptions = [...options];
-    newOptions[index] = value;
-    setOptions(newOptions);
+
+  const handleAddOption = () => {
+    if (newOptionText.trim() === '') return;
+    setNewOptions([...newOptions, newOptionText]);
+    setNewOptionText('');
   };
-  
-  // Testowe pytania dla prezentacji
-  const mockQuestions: Question[] = [
-    {
-      id: "q1",
-      category: "MEMY",
-      difficulty: 5,
-      question: "Z jakiego kraju pochodzi mem \"Stonoga\"?",
-      answer: "Polska",
-      options: ["Polska", "Czechy", "Niemcy", "USA"],
-    },
-    {
-      id: "q2",
-      category: "TWITCH",
-      difficulty: 10,
-      question: "Kto jest najbardziej popularnym polskim streamerem na Twitchu?",
-      answer: "xQc",
-      options: ["Xayoo", "xQc", "Pago", "Rybson"],
-    },
-  ];
-  
+
+  const handleRemoveOption = (index: number) => {
+    const updatedOptions = [...newOptions];
+    updatedOptions.splice(index, 1);
+    setNewOptions(updatedOptions);
+  };
+
+  const handleAddQuestion = () => {
+    if (!selectedCategory) {
+      toast.error('Wybierz kategorię');
+      return;
+    }
+    if (newQuestionText.trim() === '') {
+      toast.error('Podaj treść pytania');
+      return;
+    }
+    if (newAnswerText.trim() === '') {
+      toast.error('Podaj poprawną odpowiedź');
+      return;
+    }
+    
+    const newQuestion: Question = {
+      id: crypto.randomUUID(),
+      text: newQuestionText,
+      correctAnswer: newAnswerText,
+      categoryId: selectedCategory,
+      category: categories.find(cat => cat.id === selectedCategory)?.name, // Added for backward compatibility
+      difficulty: parseInt(difficulty),
+      options: newOptions,
+      question: newQuestionText, // For backward compatibility
+      answer: newAnswerText, // For backward compatibility
+      // Add any additional fields required by Question type
+    };
+    
+    addQuestion(newQuestion);
+    setNewQuestionText('');
+    setNewAnswerText('');
+    setNewOptions([]);
+    toast({
+      title: 'Pytanie dodane!',
+      description: 'Pytanie zostało dodane do kategorii.',
+    });
+  };
+
   return (
-    <div>
-      {/* Zarządzanie kategoriami */}
-      <div className="mb-6">
-        <h3 className="font-medium text-lg mb-3">Zarządzanie kategoriami - Runda 1</h3>
-        
-        <div className="flex flex-wrap gap-2 mb-4">
-          {round1Categories.map((category) => (
-            <div key={category.id} className="flex items-center">
-              <Badge className={`bg-purple-600 text-white flex items-center gap-1 pl-2 pr-1 py-1`}>
-                {category.name}
-                <button 
-                  className="hover:bg-black/20 rounded-full p-0.5"
-                  onClick={() => removeCategory(category.id)}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </Badge>
-            </div>
-          ))}
-          
-          {round1Categories.length === 0 && (
-            <p className="text-gray-400 text-sm">Brak kategorii. Dodaj pierwszą kategorię poniżej.</p>
-          )}
-        </div>
-        
-        <div className="flex gap-2">
-          <Input
-            placeholder="Nazwa nowej kategorii"
-            value={newCategory}
-            onChange={(e) => setNewCategory(e.target.value)}
-            className="bg-black/50 border border-gray-700 text-white"
-          />
-          <Button onClick={handleAddCategory} size="icon" className="bg-neon-pink hover:bg-neon-pink/80">
-            <Plus size={18} />
-          </Button>
-        </div>
-      </div>
-      
-      {/* Dodawanie nowego pytania */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-medium text-lg">Pytania - Runda 1</h3>
-          <Button 
-            onClick={() => setShowAddForm(!showAddForm)} 
-            className={`${showAddForm ? 'bg-gray-600' : 'bg-neon-pink'} gap-2`}
-          >
-            <Plus size={16} /> {showAddForm ? 'Anuluj' : 'Dodaj pytanie'}
-          </Button>
-        </div>
-        
-        {showAddForm && (
-          <div className="bg-black/30 border border-gray-700 rounded-md p-4 mb-6">
-            <h4 className="text-base font-medium mb-4">Nowe pytanie - Runda 1</h4>
-            
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Kategoria</FormLabel>
-                        <FormControl>
-                          <select 
-                            {...field}
-                            className="w-full bg-black/50 border border-gray-700 text-white rounded-md px-3 py-2"
-                          >
-                            <option value="" disabled>Wybierz kategorię</option>
-                            {round1Categories.map(cat => (
-                              <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="difficulty"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Trudność (punkty)</FormLabel>
-                        <div className="flex gap-2">
-                          {[5, 10, 15, 20].map(value => (
-                            <Button
-                              key={value}
-                              type="button"
-                              variant={field.value === value ? "default" : "outline"}
-                              className={field.value === value ? "bg-neon-pink" : "border-gray-700 text-white"}
-                              onClick={() => field.onChange(value)}
-                            >
-                              {value}
-                            </Button>
-                          ))}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="question"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Treść pytania</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          {...field} 
-                          placeholder="Wpisz treść pytania..."
-                          className="bg-black/50 border border-gray-700 text-white resize-none min-h-[80px]"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div>
-                  <FormLabel>Warianty odpowiedzi</FormLabel>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                    {options.map((option, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="correctAnswer"
-                          checked={correctAnswerIndex === index}
-                          onChange={() => setCorrectAnswerIndex(index)}
-                          className="w-4 h-4"
-                        />
-                        <Input
-                          value={option}
-                          onChange={(e) => handleOptionChange(index, e.target.value)}
-                          placeholder={`Odpowiedź ${index + 1}`}
-                          className="bg-black/50 border border-gray-700 text-white flex-1"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Zaznacz przycisk radio przy poprawnej odpowiedzi
-                  </p>
-                </div>
-                
-                <div className="flex justify-end gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setShowAddForm(false)}
-                    className="border-gray-700 text-white"
-                  >
-                    Anuluj
-                  </Button>
-                  <Button type="submit" className="bg-neon-pink hover:bg-neon-pink/80">
-                    Zapisz pytanie
-                  </Button>
-                </div>
-              </form>
-            </Form>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Dodawanie kategorii */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Dodaj kategorię</CardTitle>
+          <CardDescription>Dodaj nową kategorię do rundy 1</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="grid gap-2">
+            <Label htmlFor="category">Nazwa kategorii</Label>
+            <Input
+              id="category"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="Nazwa kategorii"
+            />
           </div>
-        )}
-        
-        {/* Lista pytań */}
-        <div>
-          <div className="flex justify-between items-center mb-3">
-            <h4 className="text-base font-medium">Lista pytań Rundy 1</h4>
-            <select 
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="bg-black/50 border border-gray-700 text-white rounded-md px-3 py-1 text-sm"
-            >
-              <option value="wszystkie">Wszystkie kategorie</option>
-              {round1Categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={handleAddCategory} className="w-full">
+            <PlusCircle size={16} className="mr-2" />
+            Dodaj kategorię
+          </Button>
+        </CardFooter>
+      </Card>
+
+      {/* Lista kategorii */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Lista kategorii</CardTitle>
+          <CardDescription>Lista kategorii dla rundy 1</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {categories.length > 0 ? (
+            <ul className="list-none pl-0">
+              {categories.map((category) => (
+                <li key={category.id} className="flex items-center justify-between py-2 border-b border-gray-200">
+                  <span>{category.name}</span>
+                  <Button variant="ghost" size="icon" onClick={() => handleRemoveCategory(category.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </li>
               ))}
-            </select>
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-500">Brak kategorii. Dodaj kategorię powyżej.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dodawanie pytania */}
+      <Card className="md:col-span-2">
+        <CardHeader>
+          <CardTitle>Dodaj pytanie</CardTitle>
+          <CardDescription>Dodaj nowe pytanie do wybranej kategorii</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Wybór kategorii */}
+            <div className="grid gap-2">
+              <Label htmlFor="select">Wybierz kategorię</Label>
+              <Select onValueChange={(value) => setSelectedCategory(value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Wybierz kategorię" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Poziom trudności */}
+            <div className="grid gap-2">
+              <Label htmlFor="difficulty">Poziom trudności</Label>
+              <Select onValueChange={(value) => setDifficulty(value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Wybierz poziom" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Łatwy</SelectItem>
+                  <SelectItem value="2">Średni</SelectItem>
+                  <SelectItem value="3">Trudny</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          
-          <div className="space-y-4">
-            {mockQuestions.map((question) => (
-              <div 
-                key={question.id}
-                className="bg-black/40 border border-gray-800 rounded-lg overflow-hidden"
-              >
-                <div className="flex justify-between items-center px-4 py-2">
-                  <div className="flex gap-2">
-                    <QuestionDifficultyBadge difficulty={question.difficulty} />
-                    <Badge className="bg-purple-600 text-white">
-                      {question.category}
-                    </Badge>
-                  </div>
-                  <Button size="icon" variant="ghost">
-                    <Star size={18} className="text-gray-400" />
-                  </Button>
-                </div>
-                
-                <div className="px-4 py-3">
-                  <h4 className="text-white font-medium mb-2">{question.question}</h4>
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    {question.options?.map((option, index) => (
-                      <div 
-                        key={index}
-                        className={`p-2 rounded ${option === question.answer ? 'bg-green-900/30 border border-green-600/50' : 'bg-black/50 border border-gray-700'}`}
-                      >
-                        {option}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="flex justify-end gap-2 p-2 bg-black/30">
-                  <Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300 hover:bg-blue-950/30">
-                    <Edit size={16} />
-                  </Button>
-                  <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-950/30">
-                    <Trash2 size={16} />
-                  </Button>
-                </div>
-              </div>
-            ))}
-            
-            {mockQuestions.length === 0 && (
-              <p className="text-gray-400 text-center py-6">
-                Brak pytań w tej rundzie. Dodaj pierwsze pytanie używając przycisku "Dodaj pytanie".
-              </p>
+
+          {/* Treść pytania */}
+          <div className="grid gap-2">
+            <Label htmlFor="question">Treść pytania</Label>
+            <Textarea
+              id="question"
+              value={newQuestionText}
+              onChange={(e) => setNewQuestionText(e.target.value)}
+              placeholder="Treść pytania"
+            />
+          </div>
+
+          {/* Poprawna odpowiedź */}
+          <div className="grid gap-2">
+            <Label htmlFor="answer">Poprawna odpowiedź</Label>
+            <Input
+              id="answer"
+              value={newAnswerText}
+              onChange={(e) => setNewAnswerText(e.target.value)}
+              placeholder="Poprawna odpowiedź"
+            />
+          </div>
+
+          {/* Opcje odpowiedzi */}
+          <div className="grid gap-2">
+            <Label>Opcje odpowiedzi</Label>
+            <div className="flex items-center space-x-2">
+              <Input
+                type="text"
+                placeholder="Dodaj opcję"
+                value={newOptionText}
+                onChange={(e) => setNewOptionText(e.target.value)}
+              />
+              <Button type="button" size="sm" onClick={handleAddOption}>
+                Dodaj
+              </Button>
+            </div>
+            {newOptions.length > 0 && (
+              <ul className="list-none pl-0">
+                {newOptions.map((option, index) => (
+                  <li key={index} className="flex items-center justify-between py-1 border-b border-gray-200">
+                    <span>{option}</span>
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveOption(index)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
-        </div>
-      </div>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={handleAddQuestion} className="w-full">
+            <PlusCircle size={16} className="mr-2" />
+            Dodaj pytanie
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 };

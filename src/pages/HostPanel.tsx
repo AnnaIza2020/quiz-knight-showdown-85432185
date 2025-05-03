@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { GameRound } from '@/types/game-types';
@@ -72,7 +71,8 @@ const HostPanel = () => {
     // Sprawdzamy koniec rundy 3
     if (round === GameRound.ROUND_THREE) {
       const isEnded = checkRoundThreeEnd();
-      if (isEnded) {
+      // Only return if the function returns true explicitly
+      if (isEnded === true) {
         addEvent("Runda 3 zakończona - wszyscy stracili życie");
         return;
       }

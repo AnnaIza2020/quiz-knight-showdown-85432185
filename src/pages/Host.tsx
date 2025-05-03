@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { GameRound, Player } from '@/types/game-types';
@@ -130,8 +129,9 @@ const Host = () => {
   const handleFinishGame = () => {
     // Sprawdź czy runda 3 się zakończyła (wszyscy stracili życie)
     if (round === GameRound.ROUND_THREE) {
-      const isEnded = checkRoundThreeEnd();
-      if (isEnded) return;
+      const isRoundEnded = checkRoundThreeEnd();
+      // Only return if the round has ended automatically
+      if (isRoundEnded === true) return;
     }
     
     // Sort players by points to determine the winner

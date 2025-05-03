@@ -1,235 +1,295 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { useGameContext } from '@/context/GameContext';
+import { Category, Question, GameRound } from '@/types/game-types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage
-} from '@/components/ui/form';
-import { Plus, Star, Edit, Trash2, Upload } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { GameRound } from '@/types/game-types';
 import { toast } from 'sonner';
-import { v4 as uuidv4 } from 'uuid';
-
-interface Round2Question {
-  id: string;
-  question: string;
-  answer: string;
-}
-
-type FormValues = {
-  question: string;
-  answer: string;
-};
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion"
+import { Trash2 } from 'lucide-react';
 
 const Round2Questions = () => {
-  const { categories, addCategory } = useGameContext();
-  const [showAddForm, setShowAddForm] = useState(false);
+  const { categories, addCategory, removeCategory, setCategories } = useGameContext();
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [newQuestionText, setNewQuestionText] = useState('');
+  const [newAnswerText, setNewAnswerText] = useState('');
   
-  const form = useForm<FormValues>({
-    defaultValues: {
-      question: '',
-      answer: '',
-    }
-  });
+  // Load categories for this round
+  useEffect(() => {
+    loadCategories();
+  }, []);
   
-  const handleImportQuestions = () => {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.json,.csv';
+  const loadCategories = () => {
+    // Filter categories for the current round
+    const roundCategories = categories.filter(cat => cat.round === GameRound.ROUND_TWO);
     
-    fileInput.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          // Tutaj logika importu pytań z pliku
-          toast.success('Import pytań rozpoczęty');
-          // Dodać faktyczną logikę importu
-        } catch (error) {
-          console.error('Błąd podczas importu pytań:', error);
-          toast.error('Nieprawidłowy format pliku');
-        }
-      };
-      reader.readAsText(file);
-    };
-    
-    fileInput.click();
-  };
-  
-  const handleSubmit = (values: FormValues) => {
-    // Sprawdź czy runda 2 ma już swoją kategorię
-    let round2Category = categories.find(cat => cat.name === 'R2_5SECONDS');
-    
-    if (!round2Category) {
-      // Jeśli nie istnieje, utwórz nową kategorię dla rundy 2
-      const newCategory = {
+    // If there are no categories, create a default one
+    if (roundCategories.length === 0) {
+      const defaultCategory: Category = {
         id: uuidv4(),
-        name: 'R2_5SECONDS',
+        name: 'Pytania 5 sekund',
+        round: GameRound.ROUND_TWO,
         questions: []
       };
-      addCategory(newCategory);
-      round2Category = newCategory;
+      addCategory(defaultCategory);
+      setSelectedCategory(defaultCategory.id);
+    } else {
+      setSelectedCategory(roundCategories[0].id);
     }
-    
-    // Tu dodać logikę dodawania pytania do kategorii
-    
-    console.log('Dodaję pytanie do rundy 2:', values);
-    toast.success('Pytanie zostało dodane');
-    setShowAddForm(false);
-    form.reset();
   };
   
-  // Testowe pytania dla prezentacji
-  const mockQuestions: Round2Question[] = [
-    {
-      id: "r2q1",
-      question: "Wymień 3 europejskie stolice",
-      answer: "np. Paryż, Berlin, Madryt, Londyn, Rzym, Warszawa"
-    },
-    {
-      id: "r2q2",
-      question: "Wymień 3 kolory podstawowe",
-      answer: "Czerwony, niebieski, żółty"
-    },
-    {
-      id: "r2q3",
-      question: "Wymień 3 planety Układu Słonecznego",
-      answer: "np. Merkury, Wenus, Ziemia, Mars, Jowisz, Saturn, Uran, Neptun"
+  const handleAddCategory = () => {
+    if (newCategoryName.trim() === '') {
+      toast.error('Podaj nazwę kategorii');
+      return;
     }
-  ];
+    
+    const newCategory: Category = {
+      id: uuidv4(),
+      name: newCategoryName,
+      round: GameRound.ROUND_TWO, // Set the round explicitly
+      questions: []
+    };
+    
+    addCategory(newCategory);
+    setNewCategoryName('');
+    setSelectedCategory(newCategory.id);
+    
+    toast.success(`Kategoria "${newCategory.name}" została dodana`);
+  };
+  
+  const handleRemoveCategory = (categoryId: string) => {
+    removeCategory(categoryId);
+    setSelectedCategory(null);
+    toast.success('Kategoria została usunięta');
+  };
+  
+  const handleAddQuestion = () => {
+    if (!selectedCategory) {
+      toast.error('Wybierz kategorię');
+      return;
+    }
+    if (!newQuestionText.trim() || !newAnswerText.trim()) {
+      toast.error('Wypełnij treść pytania i odpowiedź');
+      return;
+    }
+    
+    const newQuestion: Question = {
+      id: uuidv4(),
+      text: newQuestionText,
+      correctAnswer: newAnswerText,
+      categoryId: selectedCategory,
+      category: categories.find(cat => cat.id === selectedCategory)?.name, // Added for backward compatibility
+      difficulty: 1,
+      question: newQuestionText, // For backward compatibility
+      answer: newAnswerText, // For backward compatibility
+    };
+    
+    // Find the category and add the question
+    const updatedCategories = categories.map(cat => {
+      if (cat.id === selectedCategory) {
+        return { ...cat, questions: [...cat.questions, newQuestion] };
+      }
+      return cat;
+    });
+    
+    setCategories(updatedCategories);
+    setNewQuestionText('');
+    setNewAnswerText('');
+    
+    toast.success('Pytanie zostało dodane');
+  };
+  
+  const handleRemoveQuestion = (questionId: string) => {
+    if (!selectedCategory) {
+      toast.error('Wybierz kategorię');
+      return;
+    }
+    
+    const updatedCategories = categories.map(cat => {
+      if (cat.id === selectedCategory) {
+        const updatedQuestions = cat.questions.filter(q => q.id !== questionId);
+        return { ...cat, questions: updatedQuestions };
+      }
+      return cat;
+    });
+    
+    setCategories(updatedCategories);
+    toast.success('Pytanie zostało usunięte');
+  };
+  
+  const onDragEnd = (result: any) => {
+    if (!result.destination) {
+      return;
+    }
+    
+    if (result.type === 'CATEGORY') {
+      const items = Array.from(categories);
+      const [reorderedItem] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, reorderedItem);
+      
+      // Update the state
+      setCategories(items);
+    } else if (result.type === 'QUESTION') {
+      const category = categories.find(cat => cat.id === selectedCategory);
+      if (!category) return;
+      
+      const questions = Array.from(category.questions);
+      const [reorderedItem] = questions.splice(result.source.index, 1);
+      questions.splice(result.destination.index, 0, reorderedItem);
+      
+      // Update the state
+      const updatedCategories = categories.map(cat => {
+        if (cat.id === selectedCategory) {
+          return { ...cat, questions: questions };
+        }
+        return cat;
+      });
+      
+      setCategories(updatedCategories);
+    }
+  };
   
   return (
-    <div>
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h3 className="font-medium text-lg mb-1">Pytania Rundy 2: 5 Sekund</h3>
-            <p className="text-sm text-gray-400">
-              W tej rundzie pytania są krótkie i wymagają szybkiej odpowiedzi w 5 sekund.
-              Zwykle mają format: "Wymień 3..."
-            </p>
-          </div>
-          <Button
-            className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-            onClick={handleImportQuestions}
-          >
-            <Upload size={16} /> Importuj z pliku
-          </Button>
-        </div>
-        
-        <div className="flex justify-end mb-4">
-          <Button 
-            onClick={() => setShowAddForm(!showAddForm)} 
-            className={`${showAddForm ? 'bg-gray-600' : 'bg-neon-blue'} gap-2`}
-          >
-            <Plus size={16} /> {showAddForm ? 'Anuluj' : 'Dodaj pytanie'}
-          </Button>
-        </div>
-        
-        {showAddForm && (
-          <div className="bg-black/30 border border-gray-700 rounded-md p-4 mb-6">
-            <h4 className="text-base font-medium mb-4">Nowe pytanie - Runda 2: 5 Sekund</h4>
-            
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="question"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Treść pytania</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          placeholder="np. Wymień 3 marki samochodów..."
-                          className="bg-black/50 border border-gray-700 text-white"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="answer"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Przykładowe odpowiedzi (opcjonalnie)</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          {...field} 
-                          placeholder="np. Toyota, BMW, Mercedes, Audi, Volkswagen..."
-                          className="bg-black/50 border border-gray-700 text-white resize-none"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="flex justify-end gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setShowAddForm(false)}
-                    className="border-gray-700 text-white"
-                  >
-                    Anuluj
-                  </Button>
-                  <Button type="submit" className="bg-neon-blue hover:bg-neon-blue/80">
-                    Zapisz pytanie
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
-        )}
-        
-        {/* Lista pytań */}
-        <div className="space-y-4">
-          {mockQuestions.map((question) => (
-            <div 
-              key={question.id}
-              className="bg-black/40 border border-gray-800 rounded-lg overflow-hidden"
-            >
-              <div className="flex justify-between items-center px-4 py-3">
-                <div className="flex-1">
-                  <h4 className="text-white font-medium mb-1">{question.question}</h4>
-                  {question.answer && (
-                    <p className="text-gray-400 text-sm">Przykłady: {question.answer}</p>
-                  )}
-                </div>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300 hover:bg-blue-950/30">
-                    <Edit size={16} />
-                  </Button>
-                  <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-950/30">
-                    <Trash2 size={16} />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Category Management */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4 text-white">Kategorie</h3>
           
-          {mockQuestions.length === 0 && (
-            <p className="text-gray-400 text-center py-6">
-              Brak pytań w rundzie 5 sekund. Dodaj pierwsze pytanie używając przycisku "Dodaj pytanie".
-            </p>
+          <div className="mb-4">
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Nazwa nowej kategorii"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                className="bg-black/40 border-gray-700 text-white"
+              />
+              <Button onClick={handleAddCategory}>Dodaj</Button>
+            </div>
+          </div>
+          
+          <Droppable droppableId="categories" type="CATEGORY">
+            {(provided) => (
+              <ul {...provided.droppableProps} ref={provided.innerRef}>
+                {categories
+                  .filter(cat => cat.round === GameRound.ROUND_TWO)
+                  .map((category, index) => (
+                    <Draggable key={category.id} draggableId={category.id} index={index}>
+                      {(provided) => (
+                        <li
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className={`mb-2 p-3 rounded-md bg-black/30 border border-gray-700 text-white cursor-move ${selectedCategory === category.id ? 'border-neon-blue' : ''}`}
+                          onClick={() => setSelectedCategory(category.id)}
+                        >
+                          <div className="flex justify-between items-center">
+                            {category.name}
+                            <Button 
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-500 hover:bg-red-500/10"
+                              onClick={() => handleRemoveCategory(category.id)}
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+                        </li>
+                      )}
+                    </Draggable>
+                  ))}
+                {provided.placeholder}
+              </ul>
+            )}
+          </Droppable>
+        </div>
+        
+        {/* Question Management */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4 text-white">Pytania</h3>
+          
+          {selectedCategory ? (
+            <>
+              <div className="mb-4">
+                <Label>Treść pytania</Label>
+                <Textarea
+                  placeholder="Wpisz treść pytania"
+                  value={newQuestionText}
+                  onChange={(e) => setNewQuestionText(e.target.value)}
+                  className="bg-black/40 border-gray-700 text-white resize-none"
+                />
+              </div>
+              
+              <div className="mb-4">
+                <Label>Poprawna odpowiedź</Label>
+                <Input
+                  type="text"
+                  placeholder="Wpisz poprawną odpowiedź"
+                  value={newAnswerText}
+                  onChange={(e) => setNewAnswerText(e.target.value)}
+                  className="bg-black/40 border-gray-700 text-white"
+                />
+              </div>
+              
+              <Button onClick={handleAddQuestion} className="w-full">Dodaj pytanie</Button>
+              
+              <Accordion type="multiple" className="mt-6">
+                <Droppable droppableId="questions" type="QUESTION">
+                  {(provided) => (
+                    <ul {...provided.droppableProps} ref={provided.innerRef}>
+                      {categories
+                        .find(cat => cat.id === selectedCategory)?.questions
+                        .map((question, index) => (
+                          <Draggable key={question.id} draggableId={question.id} index={index}>
+                            {(provided) => (
+                              <AccordionItem 
+                                value={question.id}
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className="border-b border-gray-700 last:border-none"
+                              >
+                                <AccordionTrigger className="text-left text-white">
+                                  {question.text}
+                                </AccordionTrigger>
+                                <AccordionContent className="text-white/80">
+                                  <p className="mb-2">Odpowiedź: {question.correctAnswer}</p>
+                                  <Button 
+                                    variant="link"
+                                    size="sm"
+                                    className="text-red-500 hover:text-red-500/80"
+                                    onClick={() => handleRemoveQuestion(question.id)}
+                                  >
+                                    Usuń pytanie
+                                  </Button>
+                                </AccordionContent>
+                              </AccordionItem>
+                            )}
+                          </Draggable>
+                        ))}
+                      {provided.placeholder}
+                    </ul>
+                  )}
+                </Droppable>
+              </Accordion>
+            </>
+          ) : (
+            <p className="text-white/60">Wybierz kategorię, aby wyświetlić pytania.</p>
           )}
         </div>
       </div>
-    </div>
+    </DragDropContext>
   );
 };
 
