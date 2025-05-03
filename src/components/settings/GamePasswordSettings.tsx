@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -36,6 +36,47 @@ const GamePasswordSettings = () => {
       password: "",
     },
   });
+
+  // Load password from Supabase or localStorage when component mounts
+  useEffect(() => {
+    const loadPassword = async () => {
+      try {
+        // Try to load from Supabase first
+        if (supabase) {
+          const { data, error } = await supabase
+            .from('game_settings')
+            .select('value')
+            .eq('id', 'password')
+            .single();
+            
+          if (data && !error) {
+            let passwordValue: string;
+            
+            if (typeof data.value === 'string') {
+              passwordValue = data.value;
+            } else if (typeof data.value === 'object' && data.value !== null) {
+              passwordValue = (data.value as any).password || '';
+            } else {
+              passwordValue = '';
+            }
+            
+            form.setValue("password", passwordValue);
+            return;
+          }
+        }
+        
+        // Fallback to localStorage
+        const savedPassword = localStorage.getItem('game_password');
+        if (savedPassword) {
+          form.setValue("password", savedPassword);
+        }
+      } catch (error) {
+        console.error('Error loading password:', error);
+      }
+    };
+    
+    loadPassword();
+  }, [form]);
   
   const togglePasswordVisibility = () => {
     setIsPasswordVisible(!isPasswordVisible);

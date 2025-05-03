@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { Input } from '@/components/ui/input';
@@ -112,21 +113,45 @@ const ThemeSettings = () => {
               .single();
               
             if (data && !error) {
-              const themeData = data.value;
-              setCustomTheme(themeData);
-              setPrimaryColor(themeData.primaryColor);
-              setSecondaryColor(themeData.backgroundColor);
-              
-              // Find matching predefined theme if any
-              const matchingTheme = defaultThemes.find(
-                t => t.primaryColor === themeData.primaryColor && t.backgroundColor === themeData.backgroundColor
-              );
-              if (matchingTheme) {
-                setSelectedTheme(matchingTheme.id);
-              } else {
-                setSelectedTheme(null);
+              // Safely parse the JSON value
+              try {
+                // If value is already an object, use it directly
+                let themeData: ThemeData;
+                
+                if (typeof data.value === 'string') {
+                  themeData = JSON.parse(data.value);
+                } else if (typeof data.value === 'object') {
+                  // Create a safe copy with required fields
+                  themeData = {
+                    name: (data.value as any)?.name || "Custom Theme",
+                    primaryColor: (data.value as any)?.primaryColor || "#9b87f5",
+                    backgroundColor: (data.value as any)?.backgroundColor || "#1A1F2C",
+                    cardColor: (data.value as any)?.cardColor || "#203748",
+                    textColor: (data.value as any)?.textColor || "#FFFFFF",
+                    font: (data.value as any)?.font || "Inter, sans-serif"
+                  };
+                } else {
+                  throw new Error("Invalid theme data format");
+                }
+
+                // Update state with the parsed theme data
+                setCustomTheme(themeData);
+                setPrimaryColor(themeData.primaryColor);
+                setSecondaryColor(themeData.backgroundColor);
+                
+                // Find matching predefined theme if any
+                const matchingTheme = defaultThemes.find(
+                  t => t.primaryColor === themeData.primaryColor && t.backgroundColor === themeData.backgroundColor
+                );
+                if (matchingTheme) {
+                  setSelectedTheme(matchingTheme.id);
+                } else {
+                  setSelectedTheme(null);
+                }
+                return;
+              } catch (parseError) {
+                console.error('Error parsing theme data:', parseError);
               }
-              return;
             }
           } catch (error) {
             console.error('Error loading theme from Supabase:', error);
@@ -136,10 +161,14 @@ const ThemeSettings = () => {
         // Fallback to localStorage if Supabase fails or isn't available
         const savedTheme = localStorage.getItem('gameTheme');
         if (savedTheme) {
-          const themeData = JSON.parse(savedTheme);
-          setCustomTheme(themeData);
-          setPrimaryColor(themeData.primaryColor);
-          setSecondaryColor(themeData.backgroundColor);
+          try {
+            const themeData = JSON.parse(savedTheme);
+            setCustomTheme(themeData);
+            setPrimaryColor(themeData.primaryColor);
+            setSecondaryColor(themeData.backgroundColor);
+          } catch (error) {
+            console.error('Error parsing localStorage theme data:', error);
+          }
         }
       } catch (error) {
         console.error('Error loading theme:', error);
@@ -191,11 +220,12 @@ const ThemeSettings = () => {
       // Save to Supabase if available
       if (supabase) {
         try {
+          // Convert the ThemeData to a format Supabase accepts (JSON)
           const { error } = await supabase
             .from('game_settings')
             .upsert({
               id: 'theme',
-              value: customTheme
+              value: customTheme as any // Cast as any to prevent TypeScript error
             });
             
           if (error) throw error;

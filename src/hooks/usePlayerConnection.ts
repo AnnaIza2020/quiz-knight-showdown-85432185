@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
-type ConnectionStatus = 'connected' | 'error' | 'checking';
+export type ConnectionStatus = 'connected' | 'error' | 'checking';
 
 interface PlayerConnectionOptions {
   playerId?: string;

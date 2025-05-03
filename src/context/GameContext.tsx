@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
-import { GameContextType, GameRound, SpecialCard, SpecialCardAwardRule } from '@/types/game-types';
+import { GameContextType, GameRound, SpecialCard, SpecialCardAwardRule, SoundEffect } from '@/types/game-types';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
@@ -80,8 +80,16 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   } = useGameLogic(players, setPlayers, setRound, setWinnerIds);
 
   // Initialize sound effects with options properly
-  const { playSound, setEnabled: setSoundsEnabled } = useSoundEffects({ 
-    enabled: true 
+  const { 
+    playSound,
+    setEnabled: setSoundsEnabled,
+    volume,
+    setVolume,
+    addCustomSound,
+    availableSounds = {}
+  } = useSoundEffects({ 
+    enabled: true,
+    useLocalStorage: true
   });
   
   // Special cards management
@@ -144,6 +152,14 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     specialCards,
     specialCardRules,
     
+    // Sound-related properties
+    volume,
+    setVolume,
+    availableSounds,
+    addCustomSound,
+    playSound,
+    setEnabled: setSoundsEnabled,
+    
     // Methods
     setRound,
     addPlayer,
@@ -183,10 +199,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     setPrimaryColor,
     setSecondaryColor,
     setHostCameraUrl,
-    
-    // Sound effects
-    playSound,
-    setEnabled: setSoundsEnabled,
     
     // Data persistence methods
     loadGameData,
