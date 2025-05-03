@@ -1,187 +1,179 @@
 
 import React, { useState } from 'react';
-import { useGameContext } from '@/context/GameContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { PlusCircle } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { v4 as uuidv4 } from 'uuid';
+import { useGameContext } from '@/context/GameContext';
+import { Player, GameRound } from '@/types/game-types';
 import PlayerCardWithControls from './PlayerCardWithControls';
-import WelcomeMessage from './WelcomeMessage';
-import CountdownTimer from '@/components/CountdownTimer';
-import { Player } from '@/types/game-types';
+import { User, UserPlus, AlertCircle } from 'lucide-react';
+import { getRandomName } from '@/utils/name-generator';
+import { getRandomNeonColor } from '@/utils/utils';
 
 interface PreparationViewProps {
-  players: Player[];
-  addEvent: (event: string) => void;
-  handleTimerStart: (seconds: number) => void;
-  timerRunning: boolean;
-  timerSeconds: number;
-  stopTimer: () => void;
-  startGame: () => void;
+  onStartGameClicked: () => void;
 }
 
-const PreparationView: React.FC<PreparationViewProps> = ({ 
-  players, 
-  addEvent,
-  handleTimerStart,
-  timerRunning,
-  timerSeconds,
-  stopTimer,
-  startGame
-}) => {
-  const { addPlayer } = useGameContext();
-  const [showWelcome, setShowWelcome] = useState(true);
+const PreparationView: React.FC<PreparationViewProps> = ({ onStartGameClicked }) => {
+  const { players, addPlayer, removePlayer, setPlayers } = useGameContext();
   const [newPlayerName, setNewPlayerName] = useState('');
-  const [newPlayerCamera, setNewPlayerCamera] = useState('');
-  
+
+  // Add a new player
   const handleAddPlayer = () => {
-    if (!newPlayerName.trim()) {
-      return;
-    }
+    const name = newPlayerName.trim() || getRandomName();
     
-    // Create a complete Player object with all required properties
     const newPlayer: Player = {
-      id: uuidv4(), // Generate a unique ID
-      name: newPlayerName,
-      cameraUrl: newPlayerCamera,
+      id: uuidv4(),
+      name,
+      points: 0,
       health: 100,
       lives: 3,
-      points: 0,
       isEliminated: false,
-      specialCards: []
+      specialCards: [],
+      color: getRandomNeonColor(),
+      isActive: true
     };
     
     addPlayer(newPlayer);
-    
-    addEvent(`Dodano gracza: ${newPlayerName}`);
-    
     setNewPlayerName('');
-    setNewPlayerCamera('');
   };
   
-  const dismissWelcome = () => {
-    setShowWelcome(false);
+  // Random player generator
+  const handleAddRandomPlayers = (count: number) => {
+    const newPlayers: Player[] = [];
+    
+    for (let i = 0; i < count; i++) {
+      newPlayers.push({
+        id: uuidv4(),
+        name: getRandomName(),
+        points: 0,
+        health: 100,
+        lives: 3,
+        isEliminated: false,
+        specialCards: [],
+        color: getRandomNeonColor(),
+        isActive: true
+      });
+    }
+    
+    // Add all new players at once
+    setPlayers([...players, ...newPlayers]);
   };
   
+  // Clear all players
+  const handleClearAllPlayers = () => {
+    setPlayers([]);
+  };
+
+  // Handle keypress for adding player
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleAddPlayer();
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 gap-6">
-      {showWelcome && (
-        <WelcomeMessage 
-          onDismiss={dismissWelcome} 
-          onStartGame={startGame}
-        />
-      )}
-      
-      <div className="neon-card">
-        <h2 className="text-xl font-bold mb-4 text-white">Dodawanie graczy</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm text-white/70 mb-1">Nazwa gracza</label>
+    <>
+      <div className="flex gap-4 mb-6">
+        {/* Left column - Player management */}
+        <div className="flex-1 bg-black/30 rounded-lg border border-white/10 p-4">
+          <h2 className="text-xl font-semibold text-white mb-4">Gracze ({players.length})</h2>
+          
+          <div className="flex gap-2 mb-4">
             <Input
+              placeholder="Nazwa gracza"
               value={newPlayerName}
               onChange={(e) => setNewPlayerName(e.target.value)}
-              placeholder="Nazwa gracza"
-              className="bg-black/50 border-white/20 text-white"
+              onKeyPress={handleKeyPress}
+              className="bg-black/50 text-white"
             />
+            <Button
+              onClick={handleAddPlayer}
+              className="whitespace-nowrap"
+            >
+              <UserPlus className="h-4 w-4 mr-1" /> Dodaj
+            </Button>
           </div>
           
-          <div>
-            <label className="block text-sm text-white/70 mb-1">URL kamery (opcjonalnie)</label>
-            <Input
-              value={newPlayerCamera}
-              onChange={(e) => setNewPlayerCamera(e.target.value)}
-              placeholder="https://..."
-              className="bg-black/50 border-white/20 text-white"
-            />
+          <div className="flex gap-2 mb-4">
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => handleAddRandomPlayers(1)}
+            >
+              +1 Losowy
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => handleAddRandomPlayers(6)}
+            >
+              +6 Losowych
+            </Button>
+            <Button 
+              variant="destructive" 
+              className="flex-1"
+              onClick={handleClearAllPlayers}
+            >
+              Wyczyść
+            </Button>
           </div>
-        </div>
-        
-        <Button 
-          onClick={handleAddPlayer}
-          className="w-full bg-neon-green text-black hover:bg-neon-green/80"
-        >
-          <PlusCircle size={18} className="mr-2" />
-          Dodaj gracza
-        </Button>
-      </div>
-      
-      <div className="neon-card">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-white">Lista graczy ({players.length}/10)</h2>
           
-          <div className="flex items-center space-x-2">
-            <CountdownTimer size="sm" />
-            
-            <div className="flex gap-1">
-              {[5, 10, 30].map(seconds => (
-                <Button
-                  key={seconds}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleTimerStart(seconds)}
-                  disabled={timerRunning}
-                  className="text-neon-green border-neon-green hover:bg-neon-green/20"
-                >
-                  {seconds}s
-                </Button>
-              ))}
-              
-              {timerRunning && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={stopTimer}
-                  className="text-neon-red border-neon-red hover:bg-neon-red/20"
-                >
-                  Stop
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        {players.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Player list */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
             {players.map((player) => (
-              <PlayerCardWithControls 
-                key={player.id} 
+              <PlayerCardWithControls
+                key={player.id}
                 player={player}
-                showControls={true}
+                onEliminate={removePlayer}
               />
             ))}
+            
+            {players.length === 0 && (
+              <div className="col-span-2 text-center p-4 text-gray-400 bg-black/20 rounded border border-gray-700">
+                <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>Dodaj graczy, aby rozpocząć grę</p>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="text-center py-8 text-white/50">
-            Brak graczy. Dodaj graczy powyżej.
-          </div>
-        )}
-      </div>
-      
-      <div className="neon-card">
-        <h2 className="text-xl font-bold mb-4 text-white">Przygotowanie do gry</h2>
-        
-        <div className="bg-black/30 p-4 rounded-lg mb-4">
-          <div className="font-semibold text-white mb-2">Panel hosta Discord Game Show</div>
-          <p className="text-white/70 text-sm">
-            Dodaj co najmniej 6 graczy przed rozpoczęciem gry. Gra składa się z trzech rund:
-          </p>
-          <ul className="text-white/70 text-sm list-disc pl-5 mt-2">
-            <li>Runda 1: Eliminacje - 10 graczy, system zdrowia</li>
-            <li>Runda 2: 5 sekund - 6 graczy, 3 życia na gracza</li>
-            <li>Runda 3: Koło fortuny - 3 graczy, losowe kategorie</li>
-          </ul>
         </div>
         
-        <Button 
-          onClick={startGame}
-          className="w-full bg-neon-green text-black hover:bg-neon-green/80 font-bold text-lg py-6"
-          disabled={players.length === 0}
-        >
-          Rozpocznij grę
-        </Button>
+        {/* Right column - Game settings */}
+        <div className="w-80 bg-black/30 rounded-lg border border-white/10 p-4">
+          <h2 className="text-xl font-semibold text-white mb-4">Rozpocznij Grę</h2>
+          
+          <div className="text-white/80 mb-6 space-y-2">
+            <div className="flex justify-between">
+              <span>Ilość graczy:</span>
+              <span className={players.length < 6 ? "text-yellow-500" : "text-green-500"}>
+                {players.length}/10
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Kategorie:</span>
+              <span className="text-green-500">Gotowe</span>
+            </div>
+          </div>
+          
+          <Button
+            onClick={onStartGameClicked}
+            size="lg"
+            disabled={players.length < 1}
+            className="w-full bg-gradient-to-r from-neon-blue to-neon-purple hover:opacity-90"
+          >
+            <User className="h-4 w-4 mr-2" /> 
+            Rozpocznij Grę
+          </Button>
+          
+          {players.length < 6 && (
+            <div className="mt-4 text-sm text-yellow-500">
+              <AlertCircle className="h-4 w-4 inline mr-1" />
+              Zalecane minimum 6 graczy
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

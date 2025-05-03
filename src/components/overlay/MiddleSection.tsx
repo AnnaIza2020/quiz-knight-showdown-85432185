@@ -12,6 +12,7 @@ interface MiddleSectionProps {
   timerSeconds: number;
   categories?: string[];
   onCategorySelected?: (category: string) => void;
+  hostCameraUrl?: string;
 }
 
 const MiddleSection: React.FC<MiddleSectionProps> = ({
@@ -20,7 +21,8 @@ const MiddleSection: React.FC<MiddleSectionProps> = ({
   timerRunning,
   timerSeconds,
   categories = [],
-  onCategorySelected = () => {}
+  onCategorySelected = () => {},
+  hostCameraUrl
 }) => {
   // If it's round 3 and we have categories, show the fortune wheel
   if (round === GameRound.ROUND_THREE && categories.length > 0) {

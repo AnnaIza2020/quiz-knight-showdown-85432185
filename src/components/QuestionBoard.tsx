@@ -7,12 +7,13 @@ import { Hourglass, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useGameContext } from '@/context/GameContext';
 
-interface QuestionBoardProps {
-  question: Question | null;
+export interface QuestionBoardProps {
+  question?: Question | null;
   timeRemaining?: number;
   onCorrectAnswer?: () => void;
   onIncorrectAnswer?: () => void;
   onSkip?: () => void;
+  className?: string;
 }
 
 const QuestionBoard: React.FC<QuestionBoardProps> = ({
@@ -20,7 +21,8 @@ const QuestionBoard: React.FC<QuestionBoardProps> = ({
   timeRemaining,
   onCorrectAnswer,
   onIncorrectAnswer,
-  onSkip
+  onSkip,
+  className
 }) => {
   const { playSound, timerRunning } = useGameContext();
   
@@ -36,7 +38,7 @@ const QuestionBoard: React.FC<QuestionBoardProps> = ({
 
   if (!question) {
     return (
-      <Card className="w-full h-full flex items-center justify-center">
+      <Card className={`w-full h-full flex items-center justify-center ${className || ''}`}>
         <CardContent className="text-center p-6">
           <p className="text-muted-foreground">Wybierz pytanie z listy</p>
         </CardContent>
@@ -48,7 +50,7 @@ const QuestionBoard: React.FC<QuestionBoardProps> = ({
   const categoryName = question.categoryId ? (question.category || 'Nieznana kategoria') : 'Nieznana kategoria';
 
   return (
-    <Card className="w-full">
+    <Card className={`w-full ${className || ''}`}>
       <CardHeader>
         <div className="flex justify-between items-center">
           <div>
@@ -65,7 +67,7 @@ const QuestionBoard: React.FC<QuestionBoardProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="p-4 bg-black/30 rounded-lg border border-white/10">
-          <p className="text-lg">{question.text || question.question}</p> {/* Używamy question jako fallback */}
+          <p className="text-lg">{question.text || question.question}</p>
         </div>
         
         {question.options && question.options.length > 0 && (
@@ -82,7 +84,7 @@ const QuestionBoard: React.FC<QuestionBoardProps> = ({
         <div>
           <p className="font-semibold text-sm mb-1">Poprawna odpowiedź:</p>
           <p className="p-2 bg-green-500/20 rounded border border-green-500/40">
-            {question.correctAnswer || question.answer} {/* Używamy answer jako fallback */}
+            {question.correctAnswer || question.answer}
           </p>
         </div>
       </CardContent>
@@ -99,7 +101,7 @@ const QuestionBoard: React.FC<QuestionBoardProps> = ({
           </Button>
         )}
         {onCorrectAnswer && (
-          <Button variant="success" className="bg-green-600 hover:bg-green-700" onClick={onCorrectAnswer}>
+          <Button variant="secondary" className="bg-green-600 hover:bg-green-700 text-white" onClick={onCorrectAnswer}>
             <Check className="mr-1 h-4 w-4" />
             Poprawnie
           </Button>

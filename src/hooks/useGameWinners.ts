@@ -32,11 +32,10 @@ export const useGameWinners = () => {
         created_at: new Date().toISOString()
       };
 
-      // Try to insert into Supabase
-      // Używamy bezpośredniego dostępu do tabeli zamiast typowego from()
+      // Try to insert into Supabase using customized database typing
       const { error } = await supabase
         .from('game_winners')
-        .insert(winner);
+        .insert(winner as any);
 
       if (error) {
         console.error('Error storing winner in Supabase:', error);
@@ -69,8 +68,7 @@ export const useGameWinners = () => {
   // Get recent winners
   const getRecentWinners = async (limit = 5): Promise<GameWinner[]> => {
     try {
-      // Try to get from Supabase first
-      // Używamy bezpośredniego dostępu do tabeli zamiast typowego from()
+      // Try to get from Supabase first using customized database typing
       const { data, error } = await supabase
         .from('game_winners')
         .select('*')

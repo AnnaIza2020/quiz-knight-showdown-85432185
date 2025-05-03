@@ -6,15 +6,17 @@ import { useGameContext } from '@/context/GameContext';
 import { toast } from 'sonner';
 
 interface FortuneWheelProps {
-  categories: string[];
-  onCategorySelected: (category: string) => void;
+  categories?: string[];
+  onCategorySelected?: (category: string) => void;
   disabled?: boolean;
+  className?: string;
 }
 
 const FortuneWheel: React.FC<FortuneWheelProps> = ({
-  categories,
-  onCategorySelected,
-  disabled = false
+  categories = [],
+  onCategorySelected = () => {},
+  disabled = false,
+  className = ''
 }) => {
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -136,7 +138,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
   };
   
   return (
-    <Card className="w-full overflow-hidden">
+    <Card className={`w-full overflow-hidden ${className}`}>
       <CardHeader>
         <CardTitle className="text-center">Koło Fortuny</CardTitle>
       </CardHeader>

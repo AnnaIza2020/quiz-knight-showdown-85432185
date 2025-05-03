@@ -1,6 +1,6 @@
 
 import React from 'react';
-import QuestionBoard from '@/components/QuestionBoard';
+import QuestionBoard, { QuestionBoardProps } from '@/components/QuestionBoard';
 import CountdownTimer from '@/components/CountdownTimer';
 import FortuneWheel from '@/components/FortuneWheel';
 import { GameRound, Question } from '@/types/game-types';
@@ -10,6 +10,7 @@ interface GameControlsProps {
   timerRunning: boolean;
   startTimer: (seconds: number) => void;
   stopTimer: () => void;
+  currentQuestion?: Question | null;
 }
 
 const GameControls: React.FC<GameControlsProps> = ({
@@ -17,12 +18,13 @@ const GameControls: React.FC<GameControlsProps> = ({
   timerRunning,
   startTimer,
   stopTimer,
+  currentQuestion = null
 }) => {
   return (
     <div className="grid grid-cols-[2fr_1fr] gap-6 mb-6">
       <div className="neon-card">
         <h2 className="text-xl font-bold mb-4 text-white">Pytania i kategorie</h2>
-        <QuestionBoard />
+        <QuestionBoard question={currentQuestion} />
       </div>
       
       <div className="neon-card">
@@ -59,7 +61,7 @@ const GameControls: React.FC<GameControlsProps> = ({
         {round === GameRound.ROUND_THREE && (
           <div className="mt-6">
             <h3 className="text-lg font-bold mb-2 text-neon-purple">Koło Fortuny</h3>
-            <FortuneWheel className="w-full max-w-xs mx-auto" />
+            <FortuneWheel />
           </div>
         )}
       </div>

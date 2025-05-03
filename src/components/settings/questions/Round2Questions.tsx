@@ -17,16 +17,36 @@ import {
 import { Trash2 } from 'lucide-react';
 
 // Tymczasowe zastąpienie react-beautiful-dnd
-const DummyDragDropContext = ({ children }: { children: React.ReactNode }) => children;
-const DummyDroppable = ({ children, ...props }: { children: any, droppableId: string, type: string }) => 
-  children({ innerRef: React.createRef(), droppableProps: {}, placeholder: null });
-const DummyDraggable = ({ children, ...props }: { children: any, draggableId: string, index: number }) => 
-  children({ innerRef: React.createRef(), draggableProps: {}, dragHandleProps: {} });
+interface DragDropContextProps {
+  children: React.ReactNode;
+  onDragEnd: (result: any) => void;
+}
 
-// Eksportuj jako zastępniki rzeczywistych komponentów
-const DragDropContext = DummyDragDropContext;
-const Droppable = DummyDroppable;
-const Draggable = DummyDraggable;
+interface DroppableProps {
+  children: (provided: {
+    innerRef: React.RefObject<any>;
+    droppableProps: {};
+    placeholder: null;
+  }) => React.ReactNode;
+  droppableId: string;
+  type: string;
+}
+
+interface DraggableProps {
+  children: (provided: {
+    innerRef: React.RefObject<any>;
+    draggableProps: {};
+    dragHandleProps: {};
+  }) => React.ReactNode;
+  draggableId: string;
+  index: number;
+}
+
+const DragDropContext: React.FC<DragDropContextProps> = ({ children, onDragEnd }) => <>{children}</>;
+const Droppable: React.FC<DroppableProps> = ({ children, ...props }) => 
+  children({ innerRef: React.createRef(), droppableProps: {}, placeholder: null });
+const Draggable: React.FC<DraggableProps> = ({ children, ...props }) => 
+  children({ innerRef: React.createRef(), draggableProps: {}, dragHandleProps: {} });
 
 const Round2Questions = () => {
   const { categories, addCategory, removeCategory, setCategories, addQuestion, removeQuestion } = useGameContext();

@@ -41,12 +41,12 @@ export interface Question {
   options?: string[];
   correctAnswer: string;
   categoryId: string;
-  category?: string; // Dodane dla wstecznej kompatybilności
+  category?: string; // For backward compatibility
   difficulty: number;
   imageUrl?: string;
   used?: boolean;
-  question?: string; // Dodane dla wstecznej kompatybilności
-  answer?: string; // Dodane dla wstecznej kompatybilności
+  question?: string; // For backward compatibility
+  answer?: string; // For backward compatibility
 }
 
 // Special Card interface
@@ -64,12 +64,12 @@ export interface SpecialCard {
 export interface SpecialCardAwardRule {
   id: string;
   cardId: string;
-  condition: 'correct_answer' | 'incorrect_answer' | 'round_start' | 'round_end' | 'random' | string; // Rozszerzono, aby akceptować wartości typu string
+  condition: 'correct_answer' | 'incorrect_answer' | 'round_start' | 'round_end' | 'random' | string; // Extended to accept string values
   probability?: number; // 0-100
   roundApplicable?: GameRound[];
-  roundType?: GameRound; // Dodana property
-  description?: string; // Dodana property
-  isEnabled?: boolean; // Dodana property
+  roundType?: GameRound; // Added property
+  description?: string; // Added property
+  isEnabled?: boolean; // Added property
 }
 
 // Sound effects
@@ -125,7 +125,7 @@ export interface GameContextType {
   advanceToRoundTwo: () => void;
   advanceToRoundThree: () => void;
   finishGame: (winnerIds: string[]) => void;
-  checkRoundThreeEnd: () => boolean | void; // Zmieniony typ zwracany
+  checkRoundThreeEnd: () => boolean | void;
   resetGame: () => void;
   setWinnerIds: (ids: string[]) => void;
   
@@ -149,7 +149,7 @@ export interface GameContextType {
   loadGameData: () => void;
   saveGameData: () => void;
   
-  // Question methods (dodane)
+  // Question methods
   addQuestion: (categoryId: string, question: Question) => void;
   removeQuestion: (categoryId: string, questionId: string) => void;
   updateQuestion: (categoryId: string, question: Question) => void;

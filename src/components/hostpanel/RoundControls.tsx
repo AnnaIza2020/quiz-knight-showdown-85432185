@@ -15,7 +15,7 @@ const RoundControls: React.FC<RoundControlsProps> = ({
   round,
   handleStartTimer
 }) => {
-  const { categories } = useGameContext();
+  const { categories, currentQuestion } = useGameContext();
   
   // Render different controls based on game round
   if (round === GameRound.SETUP) {
@@ -43,7 +43,7 @@ const RoundControls: React.FC<RoundControlsProps> = ({
           </button>
         </div>
         
-        <QuestionBoard className="h-96" />
+        <QuestionBoard question={currentQuestion} />
       </div>
     );
   }
@@ -81,7 +81,7 @@ const RoundControls: React.FC<RoundControlsProps> = ({
             </div>
           </div>
           
-          <QuestionBoard className="h-64" />
+          <QuestionBoard question={currentQuestion} />
         </div>
       </div>
     );
@@ -102,8 +102,11 @@ const RoundControls: React.FC<RoundControlsProps> = ({
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FortuneWheel className="max-w-xs mx-auto" />
-          <QuestionBoard className="h-96" />
+          {/* Replace className with proper props */}
+          <FortuneWheel 
+            categories={categories.map(c => c.name)}
+          />
+          <QuestionBoard question={currentQuestion} />
         </div>
         
         <div className="mt-4 p-4 bg-black/30 border border-white/10 rounded-lg">
