@@ -1,12 +1,6 @@
-/**
- * Generates a unique token for identifying players
- */
-export function generateUniqueToken(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-}
 
 /**
- * Generates a unique identifier
+ * Generates a unique token for identifying players
  */
 export function generateUniqueId(): string {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -59,4 +53,24 @@ export function deepEqual(obj1: any, obj2: any): boolean {
   }
   
   return true;
+}
+
+/**
+ * Funkcja prostego debounce do opóźniania wykonania funkcji
+ */
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  
+  return function(...args: Parameters<T>): void {
+    const later = () => {
+      timeout = null;
+      func(...args);
+    };
+    
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
 }
