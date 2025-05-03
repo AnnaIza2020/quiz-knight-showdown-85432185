@@ -1,129 +1,168 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
+import { useState, useEffect, useCallback, useRef } from 'react';
+
+interface Cache<T> {
+  [key: string]: {
+    data: T;
+    timestamp: number;
+  };
+}
 
 interface UseAsyncDataOptions<T> {
   initialData?: T;
+  cacheKey?: string;
+  cacheDuration?: number; // w ms, domyślnie 5 minut
+  retryCount?: number;
+  retryDelay?: number; // w ms, domyślnie 2000
   onSuccess?: (data: T) => void;
   onError?: (error: Error) => void;
-  cacheKey?: string;
-  cacheTTL?: number; // w milisekundach
-  errorMessage?: string;
 }
 
-interface CachedData<T> {
-  data: T;
-  timestamp: number;
-}
+type AsyncState<T> = {
+  data: T | null;
+  loading: boolean;
+  error: Error | null;
+  timestamp: number | null;
+};
+
+// Prosty cache w pamięci
+const globalCache: Cache<any> = {};
 
 export function useAsyncData<T>(
-  fetchFunction: () => Promise<T>,
+  asyncFn: () => Promise<T>,
   options: UseAsyncDataOptions<T> = {}
 ) {
   const {
-    initialData,
+    initialData = null,
+    cacheKey,
+    cacheDuration = 5 * 60 * 1000, // 5 minut
+    retryCount = 0,
+    retryDelay = 2000,
     onSuccess,
     onError,
-    cacheKey,
-    cacheTTL = 5 * 60 * 1000, // 5 minut domyślnie
-    errorMessage = 'Nie udało się załadować danych'
   } = options;
 
-  const [data, setData] = useState<T | undefined>(initialData);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<Error | null>(null);
+  const [state, setState] = useState<AsyncState<T>>({
+    data: initialData,
+    loading: false,
+    error: null,
+    timestamp: null,
+  });
 
-  // Funkcja do sprawdzania cache
+  const currentRetryCount = useRef(0);
+  const isMounted = useRef(true);
+
+  // Funkcja do zapisu danych w cache
+  const setCache = useCallback(
+    (data: T) => {
+      if (cacheKey) {
+        globalCache[cacheKey] = {
+          data,
+          timestamp: Date.now(),
+        };
+      }
+    },
+    [cacheKey]
+  );
+
+  // Funkcja do pobrania danych z cache
   const getFromCache = useCallback(() => {
     if (!cacheKey) return null;
-    
-    try {
-      const cachedItem = localStorage.getItem(`cache_${cacheKey}`);
-      if (!cachedItem) return null;
-      
-      const { data, timestamp }: CachedData<T> = JSON.parse(cachedItem);
-      const isExpired = Date.now() - timestamp > cacheTTL;
-      
-      if (isExpired) {
-        localStorage.removeItem(`cache_${cacheKey}`);
-        return null;
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('Error reading from cache:', error);
+
+    const cachedData = globalCache[cacheKey];
+    if (!cachedData) return null;
+
+    // Sprawdź czy dane w cache nie są przedawnione
+    const isExpired = Date.now() - cachedData.timestamp > cacheDuration;
+    if (isExpired) {
+      delete globalCache[cacheKey];
       return null;
     }
-  }, [cacheKey, cacheTTL]);
 
-  // Funkcja do zapisywania do cache
-  const saveToCache = useCallback((data: T) => {
-    if (!cacheKey) return;
+    return cachedData.data as T;
+  }, [cacheKey, cacheDuration]);
+
+  // Funkcja do pobierania danych
+  const fetchData = useCallback(async (retryAttempt = 0) => {
+    setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const cacheItem: CachedData<T> = {
-        data,
-        timestamp: Date.now()
-      };
-      localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(cacheItem));
-    } catch (error) {
-      console.error('Error saving to cache:', error);
-    }
-  }, [cacheKey]);
-
-  // Funkcja do fetchowania danych
-  const fetchData = useCallback(async (skipCache = false) => {
-    setIsLoading(true);
-    setError(null);
-    
-    // Sprawdź cache jeśli nie pomijamy
-    if (!skipCache && cacheKey) {
+      // Sprawdź najpierw w cache
       const cachedData = getFromCache();
       if (cachedData) {
-        setData(cachedData);
-        setIsLoading(false);
+        setState({
+          data: cachedData,
+          loading: false,
+          error: null,
+          timestamp: globalCache[cacheKey!].timestamp,
+        });
         onSuccess?.(cachedData);
         return;
       }
-    }
 
-    try {
-      const result = await fetchFunction();
-      setData(result);
+      // Pobierz dane, jeśli nie ma ich w cache
+      const data = await asyncFn();
       
-      if (cacheKey) {
-        saveToCache(result);
+      if (isMounted.current) {
+        setState({
+          data,
+          loading: false,
+          error: null,
+          timestamp: Date.now(),
+        });
+        
+        // Zapisz w cache, jeśli podano klucz
+        setCache(data);
+        onSuccess?.(data);
       }
-      
-      onSuccess?.(result);
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error);
-      onError?.(error);
-      
-      // Pokaż toast z błędem
-      toast.error(errorMessage, {
-        description: error.message
-      });
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      if (isMounted.current) {
+        console.error("Error fetching data:", error);
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: error instanceof Error ? error : new Error(String(error)),
+        }));
+        
+        // Spróbuj ponownie, jeśli nie przekroczyliśmy limitu prób
+        if (retryAttempt < retryCount) {
+          setTimeout(() => {
+            fetchData(retryAttempt + 1);
+          }, retryDelay);
+        } else {
+          onError?.(error instanceof Error ? error : new Error(String(error)));
+        }
+      }
     }
-  }, [fetchFunction, cacheKey, getFromCache, saveToCache, onSuccess, onError, errorMessage]);
+  }, [asyncFn, getFromCache, onError, onSuccess, retryCount, retryDelay, setCache]);
 
-  // Ładowanie danych przy montowaniu komponentu
-  useEffect(() => {
+  // Funkcja do manualnego odświeżenia danych
+  const refresh = useCallback(() => {
+    currentRetryCount.current = 0;
     fetchData();
   }, [fetchData]);
 
-  // Odśwież dane, opcjonalnie pomijając cache
-  const refresh = useCallback((skipCache = false) => {
-    return fetchData(skipCache);
+  // Funkcja do czyszczenia cache
+  const clearCache = useCallback(() => {
+    if (cacheKey && globalCache[cacheKey]) {
+      delete globalCache[cacheKey];
+    }
+  }, [cacheKey]);
+
+  useEffect(() => {
+    fetchData();
+    
+    return () => {
+      isMounted.current = false;
+    };
   }, [fetchData]);
 
   return {
-    data,
-    isLoading,
-    error,
-    refresh
+    ...state,
+    refresh,
+    clearCache,
+    isStale: cacheKey && state.timestamp 
+      ? Date.now() - state.timestamp > cacheDuration / 2 
+      : false,
   };
 }

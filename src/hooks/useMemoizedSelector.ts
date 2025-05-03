@@ -1,5 +1,5 @@
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { deepEqual } from '@/utils/utils';
 
@@ -29,7 +29,7 @@ export function useMemoizedSelectorDeep<T>(
   selector: (state: ReturnType<typeof useGameContext>) => T
 ) {
   const gameContext = useGameContext();
-  const previousResultRef = React.useRef<T | undefined>();
+  const previousResultRef = useRef<T | undefined>();
   
   const result = selector(gameContext);
   

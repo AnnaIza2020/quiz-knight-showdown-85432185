@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useGameContext } from '@/context/GameContext';
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { getRandomName } from '@/utils/name-generator';
 import { toast } from 'sonner';
-import { generateUniqueToken, getRandomNeonColor } from '@/utils/utils';
+import { generateUniqueId, getRandomNeonColor } from '@/utils/utils';
 import {
   Table,
   TableBody,
@@ -38,7 +39,7 @@ const SettingsPlayers = () => {
       isEliminated: false,
       avatar: '',
       specialCards: [],
-      uniqueLinkToken: generateUniqueToken(),
+      uniqueLinkToken: generateUniqueId(), // Zmieniono z generateUniqueToken na generateUniqueId
       color: getRandomNeonColor()
     };
     
@@ -63,7 +64,7 @@ const SettingsPlayers = () => {
       lives: 3,
       isEliminated: false,
       specialCards: [],
-      uniqueLinkToken: generateUniqueToken(),
+      uniqueLinkToken: generateUniqueId(), // Zmieniono z generateUniqueToken na generateUniqueId
       color: getRandomNeonColor()
     };
     

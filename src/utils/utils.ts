@@ -1,4 +1,3 @@
-
 // Istniejący kod
 export const getRandomNeonColor = () => {
   const colors = [
@@ -94,6 +93,12 @@ export const generateUniqueId = (): string => {
 };
 
 /**
+ * Alias dla generateUniqueId, dla zachowania kompatybilności
+ * z istniejącym kodem używającym generateUniqueToken
+ */
+export const generateUniqueToken = generateUniqueId;
+
+/**
  * Formatowanie daty do przyjaznego formatu
  */
 export const formatDate = (date: Date): string => {
@@ -112,3 +117,52 @@ export const formatDate = (date: Date): string => {
 export const sleep = (ms: number): Promise<void> => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
+
+/**
+ * Memoizacja funkcji z opcją porównania głębokiego
+ * @param func Funkcja do memoizacji
+ * @param equalityFn Funkcja porównująca (domyślnie Object.is)
+ */
+export function memoize<T extends (...args: any[]) => any>(
+  func: T,
+  equalityFn: (a: any, b: any) => boolean = Object.is
+): (...args: Parameters<T>) => ReturnType<T> {
+  let lastArgs: Parameters<T> | undefined;
+  let lastResult: ReturnType<T>;
+  
+  return (...args: Parameters<T>): ReturnType<T> => {
+    if (
+      !lastArgs ||
+      args.length !== lastArgs.length ||
+      args.some((arg, index) => !equalityFn(arg, lastArgs![index]))
+    ) {
+      lastResult = func(...args);
+      lastArgs = args;
+    }
+    return lastResult;
+  };
+}
+
+/**
+ * Funkcja do przetwarzania asynchronicznego z ratelimiting
+ * @param asyncFunction Funkcja asynchroniczna do wywołania
+ * @param interval Minimalny czas między wywołaniami w ms
+ */
+export function rateLimit<T extends (...args: any[]) => Promise<any>>(
+  asyncFunction: T,
+  interval: number
+): (...args: Parameters<T>) => Promise<ReturnType<T>> {
+  let lastInvokeTime = 0;
+  
+  return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
+    const now = Date.now();
+    const timeToWait = interval - (now - lastInvokeTime);
+    
+    if (timeToWait > 0) {
+      await new Promise(resolve => setTimeout(resolve, timeToWait));
+    }
+    
+    lastInvokeTime = Date.now();
+    return await asyncFunction(...args);
+  };
+}
