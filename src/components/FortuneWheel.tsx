@@ -25,8 +25,8 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
   const wheelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  // Use default categories if none are provided
-  const wheelCategories = categories.length > 0 ? categories : [
+  // Define default categories according to the production checklist
+  const defaultCategories = [
     "Język polskiego internetu",
     "Polska scena Twitcha",
     "Zagadki",
@@ -34,6 +34,9 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
     "Gry, które podbiły Polskę",
     "Technologie i internet w Polsce"
   ];
+  
+  // Use provided categories or default to required ones
+  const wheelCategories = categories.length > 0 ? categories : defaultCategories;
   
   // Prepare the wheel when categories change
   useEffect(() => {
@@ -124,39 +127,51 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
     ctx.stroke();
   };
   
-  // Spin the wheel
+  // Spin the wheel with improved animation and error handling
   const handleSpin = () => {
     if (spinning || disabled) return;
     
-    setSpinning(true);
-    setSelectedCategory(null);
-    
-    // Play spin sound
-    playSound('wheel-spin');
-    
-    const minRotation = 2000; // Minimum rotation to ensure multiple spins
-    const randomRotation = Math.floor(Math.random() * 1000) + minRotation;
-    
-    // Animate spinning
-    setRotation(prev => prev + randomRotation);
-    
-    // Wait for animation to complete
-    setTimeout(() => {
-      const selectedIndex = getSelectedCategory(randomRotation);
-      const selected = wheelCategories[selectedIndex];
-      setSelectedCategory(selected);
+    try {
+      setSpinning(true);
+      setSelectedCategory(null);
       
-      // Play success sound
-      playSound('success');
+      // Play spin sound
+      playSound('wheel-spin');
       
-      // Notify selection
-      toast.success(`Wybrano kategorię: ${selected}`);
+      const minRotation = 2000; // Minimum rotation to ensure multiple spins
+      const randomRotation = Math.floor(Math.random() * 1000) + minRotation;
       
-      // Callback with selected category
-      onCategorySelected(selected);
+      // Animate spinning with smooth transition
+      setRotation(prev => prev + randomRotation);
       
+      // Wait for animation to complete
+      setTimeout(() => {
+        try {
+          const selectedIndex = getSelectedCategory(randomRotation);
+          const selected = wheelCategories[selectedIndex];
+          setSelectedCategory(selected);
+          
+          // Play success sound
+          playSound('success');
+          
+          // Notify selection
+          toast.success(`Wybrano kategorię: ${selected}`);
+          
+          // Callback with selected category
+          onCategorySelected(selected);
+        } catch (err) {
+          console.error("Error selecting category:", err);
+          toast.error("Błąd podczas wybierania kategorii");
+          playSound('fail');
+        } finally {
+          setSpinning(false);
+        }
+      }, 5000); // Match this with the CSS transition duration
+    } catch (err) {
+      console.error("Error spinning wheel:", err);
       setSpinning(false);
-    }, 5000); // Match this with the CSS transition duration
+      toast.error("Błąd podczas obracania koła");
+    }
   };
   
   // Calculate which category is selected based on final rotation
