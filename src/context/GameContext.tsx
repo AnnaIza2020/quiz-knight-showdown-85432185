@@ -103,8 +103,17 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   });
   
   // Special cards management
-  // We will not use the original hook functions, but create new functions with the correct signature
-  const specialCardsHook = useSpecialCards(
+  // We're getting these functions from the hook, no need to redefine them
+  const {
+    addSpecialCard,
+    updateSpecialCard,
+    removeSpecialCard,
+    addSpecialCardRule,
+    updateSpecialCardRule,
+    removeSpecialCardRule,
+    giveCardToPlayer,
+    usePlayerCard,
+  } = useSpecialCards(
     players, 
     setPlayers, 
     specialCards, 
@@ -113,33 +122,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     setSpecialCardRules, 
     playSound
   );
-  
-  // Extract base functions from the hook
-  const {
-    addSpecialCard,
-    removeSpecialCard,
-    addSpecialCardRule,
-    removeSpecialCardRule,
-    giveCardToPlayer,
-    usePlayerCard,
-  } = specialCardsHook;
-  
-  // Create correctly typed functions to match the GameContextType
-  const updateSpecialCard = (cardId: string, updates: Partial<SpecialCard>) => {
-    setSpecialCards(prevCards => 
-      prevCards.map(card => 
-        card.id === cardId ? { ...card, ...updates } : card
-      )
-    );
-  };
-
-  const updateSpecialCardRule = (ruleId: string, updates: Partial<SpecialCardAwardRule>) => {
-    setSpecialCardRules(prevRules => 
-      prevRules.map(rule => 
-        rule.id === ruleId ? { ...rule, ...updates } : rule
-      )
-    );
-  };
 
   // Question management
   const addQuestion = (categoryId: string, question: Question) => {

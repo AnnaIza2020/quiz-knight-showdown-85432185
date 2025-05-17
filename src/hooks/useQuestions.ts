@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { Category, Question } from '@/types/game-types';
@@ -14,6 +15,11 @@ export const useQuestions = () => {
     searchTerm: ''
   });
 
+  // Check if a question is used
+  const isQuestionUsed = (questionId: string): boolean => {
+    return usedQuestionIds?.includes(questionId) || false;
+  };
+
   // Extract all questions from all categories
   const questions = useMemo(() => {
     const allQuestions: Question[] = [];
@@ -23,7 +29,7 @@ export const useQuestions = () => {
         allQuestions.push({
           ...question,
           categoryId: category.id,
-          categoryName: category.name
+          category: category.name  // Use category property which exists in Question type
         });
       });
     });
@@ -65,14 +71,9 @@ export const useQuestions = () => {
       option.toLowerCase().includes(term)
     );
     const answerMatches = question.answer?.toLowerCase().includes(term);
-    const categoryMatches = question.categoryName?.toLowerCase().includes(term);
+    const categoryMatches = question.category?.toLowerCase().includes(term);
     
     return textMatches || optionsMatch || answerMatches || categoryMatches;
-  };
-
-  // Check if a question is used
-  const isQuestionUsed = (questionId: string): boolean => {
-    return usedQuestionIds?.includes(questionId) || false;
   };
 
   // Reset all questions to unused
@@ -94,11 +95,13 @@ export const useQuestions = () => {
     }
   };
 
-  // Export questions to JSON
-  const exportQuestions = () => {
+  // Export questions to JSON - fix return type
+  const exportQuestions = (exportFiltered: boolean = false): QuestionImportExport => {
     try {
+      const questionsToExport = exportFiltered ? filteredQuestions : questions;
+      
       const exportData: QuestionImportExport = {
-        questions,
+        questions: questionsToExport,
         categories: categories.map(cat => ({
           id: cat.id,
           name: cat.name,
@@ -117,11 +120,17 @@ export const useQuestions = () => {
       downloadAnchorNode.remove();
       
       toast.success('Pytania zostały wyeksportowane');
-      return true;
+      return exportData;
     } catch (error) {
       console.error('Error exporting questions:', error);
       toast.error('Wystąpił błąd podczas eksportowania pytań');
-      return false;
+      // Return empty export data structure on error
+      return {
+        questions: [],
+        categories: [],
+        exportDate: new Date().toISOString(),
+        version: '1.0.0'
+      };
     }
   };
 
