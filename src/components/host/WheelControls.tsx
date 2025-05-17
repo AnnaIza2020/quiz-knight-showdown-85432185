@@ -43,7 +43,9 @@ const WheelControls: React.FC<WheelControlsProps> = ({
   const SPIN_COOLDOWN_MS = 3000;
 
   useEffect(() => {
-    // Subscribe to wheel events from other components
+    // Initialize subscription
+    subscribe();
+    
     return () => {
       // Cleanup subscription when component unmounts
       subscribe(false);

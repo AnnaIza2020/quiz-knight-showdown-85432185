@@ -12,6 +12,7 @@ export const pathToTab: Record<string, string> = {
   '/settings/automatyzacja': 'automatyzacja',
   '/settings/haslo': 'haslo',
   '/settings/testy': 'testy',
+  '/settings/kolo': 'kolo'
 };
 
 // Array of tab definitions
@@ -23,6 +24,7 @@ export const tabDefinitions = [
   { id: 'dzwieki', label: 'Dźwięki', path: '/settings/dzwieki' },
   { id: 'role', label: 'Role', path: '/settings/role' },
   { id: 'ranking', label: 'Ranking', path: '/settings/ranking' },
+  { id: 'kolo', label: 'Koło fortuny', path: '/settings/kolo' },
   { id: 'automatyzacja', label: 'Automatyzacja', path: '/settings/automatyzacja' },
   { id: 'haslo', label: 'Hasło', path: '/settings/haslo' },
   { id: 'testy', label: 'Testy', path: '/settings/testy' },

@@ -50,8 +50,12 @@ export const useWheelSync = (options?: WheelSyncOptions) => {
   
   // Initialize subscription when component mounts
   useEffect(() => {
+    // Just call subscribe without arguments to enable subscription
+    subscribe();
+    
     return () => {
-      subscribe(false); // Clean up subscription
+      // Pass false to disable subscription on cleanup
+      subscribe(false);
     };
   }, [subscribe]);
   

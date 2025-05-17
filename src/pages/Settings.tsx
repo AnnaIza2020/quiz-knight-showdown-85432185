@@ -14,6 +14,7 @@ import SettingsQuestions from '@/components/settings/SettingsQuestions';
 import SettingsCards from '@/components/settings/SettingsCards';
 import GamePasswordSettings from '@/components/settings/GamePasswordSettings';
 import SettingsTests from '@/components/settings/SettingsTests';
+import SettingsWheelCategories from '@/components/settings/SettingsWheelCategories';
 import { useSettingsExport } from '@/hooks/useSettingsExport';
 import { pathToTab } from '@/components/settings/SettingsTabsMapping';
 
@@ -86,6 +87,10 @@ const Settings = () => {
           
           <TabsContent value="ranking">
             <SettingsRanking />
+          </TabsContent>
+          
+          <TabsContent value="kolo">
+            <SettingsWheelCategories />
           </TabsContent>
           
           <TabsContent value="automatyzacja">
