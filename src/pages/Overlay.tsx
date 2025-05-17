@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { GameRound, SoundEffect } from '@/types/game-types';
@@ -116,7 +117,6 @@ const Overlay = () => {
     const lastRound = lastRoundStr ? parseInt(lastRoundStr, 10) : null;
     
     // Only show transition if the round has actually changed
-    // Zmieniamy porównanie, aby było bezpieczne typowo
     if (lastRound !== round) {
       if (round !== GameRound.SETUP) {
         setShowRoundTransition(true);

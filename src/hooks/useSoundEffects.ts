@@ -85,10 +85,11 @@ export function useSoundEffects(config?: SoundEffectConfig) {
           audio.addEventListener('error', (error) => {
             console.error(`Failed to load sound ${name} from ${url}`, error);
             setSoundStatus(prev => ({ ...prev, [name]: 'error' }));
-            reportError(`Failed to load sound ${name}`, {
+            const errorConfig: ErrorConfig = {
               category: 'sound-loading',
               silent: true
-            } as ErrorConfig);
+            };
+            reportError(`Failed to load sound ${name}`, errorConfig);
             failedSounds.push(name);
             resolve();
           });
@@ -125,9 +126,10 @@ export function useSoundEffects(config?: SoundEffectConfig) {
     const url = availableSounds[sound];
     if (!url) {
       console.warn(`Sound ${sound} not found in available sounds.`);
-      reportError(`Sound ${sound} not found`, { 
+      const errorConfig: ErrorConfig = { 
         category: 'sound-playback'
-      } as ErrorConfig);
+      };
+      reportError(`Sound ${sound} not found`, errorConfig);
       return;
     }
     
@@ -151,9 +153,10 @@ export function useSoundEffects(config?: SoundEffectConfig) {
     // Play the sound
     audio.play().catch(error => {
       console.error(`Failed to play sound ${sound}:`, error);
-      reportError(`Failed to play sound ${sound}`, { 
+      const errorConfig: ErrorConfig = { 
         category: 'sound-playback'
-      } as ErrorConfig);
+      };
+      reportError(`Failed to play sound ${sound}`, errorConfig);
     });
   };
 
@@ -196,8 +199,6 @@ export function useSoundEffects(config?: SoundEffectConfig) {
 
   return {
     // For compatibility with both naming conventions
-    enabled: soundsEnabled,
-    setEnabled: setSoundsEnabled,
     soundsEnabled,
     setSoundsEnabled,
     volume,

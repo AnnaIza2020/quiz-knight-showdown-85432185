@@ -5,7 +5,8 @@ import { useState, useCallback } from 'react';
 export interface ErrorConfig {
   category?: string;
   silent?: boolean;
-  throttleMs?: number;  // Added this property that was missing
+  throttleMs?: number;
+  aggregationKey?: string;
 }
 
 export interface ErrorAggregatorOptions {
@@ -35,7 +36,7 @@ export function useErrorAggregator(options?: ErrorAggregatorOptions) {
     const isSilent = config?.silent || silentCategories.has(category);
     
     // Create a unique key for this error
-    const errorKey = `${category}:${message}`;
+    const errorKey = config?.aggregationKey || `${category}:${message}`;
     
     // Check if this error is currently throttled
     if (throttledErrors.has(errorKey)) {
