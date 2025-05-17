@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
 import { GameContextType, GameRound, SpecialCard, SpecialCardAwardRule, SoundEffect, Question } from '@/types/game-types';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
@@ -157,6 +156,24 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         return category;
       });
     });
+  };
+
+  // Fix the function signature to accept cardId and updates
+  const updateSpecialCard = (cardId: string, updates: Partial<SpecialCard>) => {
+    setSpecialCards(prevCards => 
+      prevCards.map(card => 
+        card.id === cardId ? { ...card, ...updates } : card
+      )
+    );
+  };
+
+  // Fix the function signature to accept ruleId and updates
+  const updateSpecialCardRule = (ruleId: string, updates: Partial<SpecialCardAwardRule>) => {
+    setSpecialCardRules(prevRules => 
+      prevRules.map(rule => 
+        rule.id === ruleId ? { ...rule, ...updates } : rule
+      )
+    );
   };
 
   // Timer effect

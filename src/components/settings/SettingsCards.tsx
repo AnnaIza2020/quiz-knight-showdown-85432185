@@ -783,7 +783,7 @@ const SettingsCards = () => {
             <CardHeader>
               <CardTitle>Lista graczy i ich karty</CardTitle>
               <CardDescription>
-                Przeglądaj jakie karty posiadają aktywni gracze
+                Przeglądaj, którzy gracze mają które karty specjalne oraz przydzielaj karty manualnie do poszczególnych graczy.
               </CardDescription>
             </CardHeader>
             <CardContent>
