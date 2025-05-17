@@ -1,3 +1,4 @@
+
 import { SoundEffectOptions } from '@/hooks/useSoundEffects';
 
 // Game rounds
@@ -23,6 +24,7 @@ export interface Player {
   color?: string;
   isActive?: boolean;
   uniqueLinkToken?: string;
+  forcedEliminated?: boolean; // Added the missing property
 }
 
 // Category interface
