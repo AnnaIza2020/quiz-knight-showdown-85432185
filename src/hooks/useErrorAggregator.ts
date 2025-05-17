@@ -1,95 +1,114 @@
-import { useState, useEffect, useCallback } from 'react';
-import { errorToast } from './use-toast';
 
-interface ErrorConfig {
-  cooldownPeriod?: number; // Time in ms before same error can be shown again
-  maxDuplicates?: number;  // Maximum number of identical errors before aggregating
-  silentCategories?: string[]; // Categories of errors to silence completely
+import { toast } from 'sonner';
+import { useState, useCallback } from 'react';
+
+export interface ErrorConfig {
+  category?: string;
+  silent?: boolean;
+  throttleMs?: number;  // Added this property that was missing
+}
+
+export interface ErrorAggregatorOptions {
+  throttleMs?: number;
+  maxDuplicates?: number;
+  silentCategories?: string[];
 }
 
 /**
- * A hook to manage error aggregation and prevent notification spam
+ * Hook for aggregating and managing error messages
+ * Prevents duplicate errors from flooding the UI
  */
-export function useErrorAggregator(config: ErrorConfig = {}) {
-  const {
-    cooldownPeriod = 5000,
-    maxDuplicates = 2,
-    silentCategories = []
-  } = config;
+export function useErrorAggregator(options?: ErrorAggregatorOptions) {
+  const [errorCounts, setErrorCounts] = useState<Record<string, number>>({});
+  const [throttledErrors, setThrottledErrors] = useState<Set<string>>(new Set());
   
-  // Track error occurrences by category and message
-  const [errorCounts, setErrorCounts] = useState<Record<string, Record<string, number>>>({});
+  // Default options
+  const throttleMs = options?.throttleMs || 3000;
+  const maxDuplicates = options?.maxDuplicates || 3;
+  const silentCategories = new Set(options?.silentCategories || []);
   
-  // Track when categories were last reported
-  const [lastReported, setLastReported] = useState<Record<string, number>>({});
-  
-  // Reset error counts periodically to prevent memory bloat
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setErrorCounts(prev => {
-        const now = Date.now();
-        const newCounts: Record<string, Record<string, number>> = {};
-        
-        // Only keep errors that occurred in the last hour
-        Object.entries(prev).forEach(([category, errors]) => {
-          if (now - (lastReported[category] || 0) < 3600000) { // 1 hour
-            newCounts[category] = errors;
-          }
-        });
-        
-        return newCounts;
-      });
-    }, 3600000); // Check every hour
+  /**
+   * Report an error with optional configuration
+   */
+  const reportError = useCallback((message: string, config?: ErrorConfig) => {
+    const category = config?.category || 'general';
+    const isSilent = config?.silent || silentCategories.has(category);
     
-    return () => clearInterval(interval);
-  }, [lastReported]);
-  
-  // Function to report an error with aggregation logic
-  const reportError = useCallback((message: string, category: string = "general") => {
-    // If this category is silenced, don't show any notification
-    if (silentCategories.includes(category)) {
+    // Create a unique key for this error
+    const errorKey = `${category}:${message}`;
+    
+    // Check if this error is currently throttled
+    if (throttledErrors.has(errorKey)) {
+      return; // Skip showing this error
+    }
+    
+    // Update error count
+    setErrorCounts(prev => {
+      const currentCount = (prev[errorKey] || 0) + 1;
+      return { ...prev, [errorKey]: currentCount };
+    });
+    
+    // Determine if we should show or throttle this error
+    const currentCount = errorCounts[errorKey] || 0;
+    
+    // If this is a silent error or we've shown it too many times, don't show it
+    if (isSilent) {
+      console.error(`[${category}] ${message}`);
       return;
     }
     
-    const now = Date.now();
-    const timeSinceLastReport = now - (lastReported[category] || 0);
-    
-    // Update error counts
-    setErrorCounts(prev => {
-      const categoryErrors = prev[category] || {};
-      const count = (categoryErrors[message] || 0) + 1;
-      
-      return {
-        ...prev,
-        [category]: {
-          ...categoryErrors,
-          [message]: count
-        }
-      };
-    });
-    
-    setErrorCounts(prev => {
-      const count = (prev[category]?.[message] || 0) + 1;
-      
-      // Check if we should show this error based on cooldown and count
-      if (timeSinceLastReport < cooldownPeriod) {
-        return prev;
+    if (currentCount >= maxDuplicates) {
+      // If we've shown this error too many times, throttle it
+      if (!throttledErrors.has(errorKey)) {
+        setThrottledErrors(prev => new Set(prev).add(errorKey));
+        
+        // Show aggregated message
+        toast.error(`Multiple similar errors occurred`, {
+          description: `${message} (${currentCount} occurrences)`,
+          duration: 5000,
+        });
+        
+        // Set a timer to remove from throttled list
+        setTimeout(() => {
+          setThrottledErrors(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(errorKey);
+            return newSet;
+          });
+        }, throttleMs);
       }
-      
-      // Update last reported time
-      setLastReported(prev => ({ ...prev, [category]: now }));
-      
-      // If we've seen this error multiple times, show an aggregated message
-      if (count > maxDuplicates) {
-        errorToast(`${message} (${count} razy)`, category);
-      } else {
-        // First few occurrences show normally
-        errorToast(message, category);
-      }
-      
-      return prev;
-    });
-  }, [cooldownPeriod, maxDuplicates, silentCategories, lastReported]);
+    } else {
+      // Show the error normally
+      toast.error(message);
+    }
+    
+    // Log to console regardless
+    console.error(`[${category}] ${message}`);
+  }, [errorCounts, maxDuplicates, silentCategories, throttleMs, throttledErrors]);
   
-  return { reportError };
+  /**
+   * Reset error counts for a category or all categories
+   */
+  const resetErrorCounts = useCallback((category?: string) => {
+    if (category) {
+      const prefix = `${category}:`;
+      setErrorCounts(prev => {
+        const newCounts = { ...prev };
+        Object.keys(newCounts).forEach(key => {
+          if (key.startsWith(prefix)) {
+            delete newCounts[key];
+          }
+        });
+        return newCounts;
+      });
+    } else {
+      setErrorCounts({});
+    }
+  }, []);
+  
+  return {
+    reportError,
+    errorCounts,
+    resetErrorCounts
+  };
 }

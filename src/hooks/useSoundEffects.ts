@@ -1,5 +1,6 @@
+
 import { useState, useEffect, useRef } from 'react';
-import { useErrorAggregator } from './useErrorAggregator';
+import { useErrorAggregator, ErrorConfig } from './useErrorAggregator';
 
 export interface SoundEffectOptions {
   volume?: number;
@@ -87,7 +88,7 @@ export function useSoundEffects(config?: SoundEffectConfig) {
             reportError(`Failed to load sound ${name}`, {
               category: 'sound-loading',
               silent: true
-            });
+            } as ErrorConfig);
             failedSounds.push(name);
             resolve();
           });
@@ -124,7 +125,9 @@ export function useSoundEffects(config?: SoundEffectConfig) {
     const url = availableSounds[sound];
     if (!url) {
       console.warn(`Sound ${sound} not found in available sounds.`);
-      reportError(`Sound ${sound} not found`, { category: 'sound-playback' });
+      reportError(`Sound ${sound} not found`, { 
+        category: 'sound-playback'
+      } as ErrorConfig);
       return;
     }
     
@@ -148,7 +151,9 @@ export function useSoundEffects(config?: SoundEffectConfig) {
     // Play the sound
     audio.play().catch(error => {
       console.error(`Failed to play sound ${sound}:`, error);
-      reportError(`Failed to play sound ${sound}`, { category: 'sound-playback' });
+      reportError(`Failed to play sound ${sound}`, { 
+        category: 'sound-playback'
+      } as ErrorConfig);
     });
   };
 

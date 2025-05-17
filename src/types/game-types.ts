@@ -1,4 +1,3 @@
-
 import { SoundEffectOptions } from '@/hooks/useSoundEffects';
 
 // Game rounds
@@ -74,7 +73,20 @@ export interface SpecialCardAwardRule {
 }
 
 // Sound effects
-export type SoundEffect = 'success' | 'fail' | 'timeout' | 'eliminate' | 'round-start' | 'victory' | 'card-reveal' | 'wheel-spin' | 'wheel-tick' | 'bonus' | 'narrator' | 'intro-music' | string;
+export type SoundEffect = 
+  | 'success'
+  | 'fail' 
+  | 'timeout' 
+  | 'eliminate'
+  | 'round-start'
+  | 'victory'
+  | 'card-reveal'
+  | 'wheel-spin'
+  | 'wheel-tick'
+  | 'bonus'
+  | 'intro-music'
+  | 'narrator'
+  | string; // Allow for custom sounds
 
 // Error notification settings
 export interface ErrorNotificationSettings {
