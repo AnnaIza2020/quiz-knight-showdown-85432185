@@ -13,6 +13,7 @@ import SettingsPlayers from '@/components/settings/SettingsPlayers';
 import SettingsQuestions from '@/components/settings/SettingsQuestions';
 import SettingsCards from '@/components/settings/SettingsCards';
 import GamePasswordSettings from '@/components/settings/GamePasswordSettings';
+import SettingsTests from '@/components/settings/SettingsTests';
 import { useSettingsExport } from '@/hooks/useSettingsExport';
 import { pathToTab } from '@/components/settings/SettingsTabsMapping';
 
@@ -93,6 +94,10 @@ const Settings = () => {
           
           <TabsContent value="haslo">
             <GamePasswordSettings />
+          </TabsContent>
+          
+          <TabsContent value="testy">
+            <SettingsTests />
           </TabsContent>
         </Tabs>
       </div>

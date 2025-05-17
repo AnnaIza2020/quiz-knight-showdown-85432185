@@ -6,12 +6,18 @@ import FortuneWheel from '@/components/FortuneWheel';
 import { useGameContext } from '@/context/GameContext';
 import { toast } from 'sonner';
 import { useSubscription } from '@/hooks/useSubscription';
-import { ArrowClockwise, Check, XCircle } from 'lucide-react';
+import { RotateCcw, Check, XCircle } from 'lucide-react';
 
 interface WheelControlsProps {
   categories: string[];
   onCategorySelected?: (category: string) => void;
   className?: string;
+}
+
+interface WheelEventPayload {
+  type: string;
+  category?: string;
+  timestamp: number;
 }
 
 const WheelControls: React.FC<WheelControlsProps> = ({
@@ -24,9 +30,10 @@ const WheelControls: React.FC<WheelControlsProps> = ({
   const [lastSpinTime, setLastSpinTime] = useState<number>(0);
   const { playSound } = useGameContext();
   const { broadcast, subscribe } = useSubscription('wheel_events', 'category_selected', 
-    (payload) => {
-      if (payload.category) {
-        handleCategorySelected(payload.category);
+    (payload: unknown) => {
+      const wheelPayload = payload as WheelEventPayload;
+      if (wheelPayload.category) {
+        handleCategorySelected(wheelPayload.category);
       }
     }, 
     { immediate: false }
@@ -128,7 +135,7 @@ const WheelControls: React.FC<WheelControlsProps> = ({
               disabled={isSpinning}
               className="flex items-center gap-1"
             >
-              <ArrowClockwise className="h-4 w-4" />
+              <RotateCcw className="h-4 w-4" />
               Reset
             </Button>
             <Button 
@@ -181,7 +188,6 @@ const WheelControls: React.FC<WheelControlsProps> = ({
           categories={categories}
           onCategorySelected={handleCategorySelected}
           disabled={isSpinning}
-          triggerSpin={isSpinning}
         />
         
         {selectedCategory && (

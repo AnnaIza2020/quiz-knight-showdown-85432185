@@ -24,6 +24,12 @@ export interface CardEffect {
   soundEffect?: string;
 }
 
+interface CardEffectPayload {
+  type: string;
+  effect: CardEffect;
+  timestamp: number;
+}
+
 export interface CardEffectOptions {
   broadcast?: boolean;
   showToast?: boolean;
@@ -40,9 +46,10 @@ export function useSpecialCardEffects(options?: CardEffectOptions) {
   
   // Subscribe to card effect events from other components
   const { broadcast } = useSubscription('card_effects', 'apply_effect', 
-    (payload) => {
-      if (payload.effect) {
-        addEffect(payload.effect);
+    (payload: unknown) => {
+      const cardPayload = payload as CardEffectPayload;
+      if (cardPayload.effect) {
+        addEffect(cardPayload.effect);
       }
     }, 
     { immediate: false }
