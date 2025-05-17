@@ -36,6 +36,7 @@ const Overlay = () => {
   
   // Sound effects
   const { playSound, stopAllSounds } = useSoundEffects({
+    enabled: true,
     useLocalStorage: true,
     defaultVolume: 0.7
   });

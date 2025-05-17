@@ -113,7 +113,7 @@ export interface GameContextType {
   availableSounds?: Record<string, string>;
   addCustomSound?: (name: string, url: string | File) => void;
   playSound?: (sound: SoundEffect, volume?: number) => void;
-  playSoundWithOptions?: (sound: SoundEffect, options?: any) => void; 
+  playSoundWithOptions?: (sound: SoundEffect, options?: SoundEffectOptions) => void; 
   stopSound?: (sound: SoundEffect) => void;
   stopAllSounds?: () => void;
   soundsEnabled?: boolean;

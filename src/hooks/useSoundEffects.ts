@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useErrorAggregator } from './useErrorAggregator';
 
@@ -7,14 +8,22 @@ export interface SoundEffectOptions {
   onEnd?: () => void;
 }
 
+interface SoundEffectConfig {
+  enabled?: boolean;
+  useLocalStorage?: boolean;
+  defaultVolume?: number;
+}
+
 /**
  * Hook to manage sound effects in the application
  */
-export function useSoundEffects() {
-  const [soundsEnabled, setSoundsEnabled] = useState<boolean>(true);
-  const [volume, setVolume] = useState<number>(1.0);
+export function useSoundEffects(config?: SoundEffectConfig) {
+  // Initialize with config or default values
+  const [soundsEnabled, setSoundsEnabled] = useState<boolean>(config?.enabled ?? true);
+  const [volume, setVolume] = useState<number>(config?.defaultVolume ?? 1.0);
   const [availableSounds, setAvailableSounds] = useState<Record<string, string>>({});
   const [soundStatus, setSoundStatus] = useState<Record<string, any>>({});
+  const [soundsPreloaded, setSoundsPreloaded] = useState<boolean>(false);
   
   const audioElements = useRef<Record<string, HTMLAudioElement>>({});
   const { reportError } = useErrorAggregator({
@@ -22,6 +31,41 @@ export function useSoundEffects() {
     maxDuplicates: 3,      // Show individual errors up to 3 times before aggregating
     silentCategories: ['sound-loading'] // Don't show sound loading errors in toasts
   });
+
+  // Save sound preferences to localStorage if configured
+  useEffect(() => {
+    if (config?.useLocalStorage) {
+      try {
+        localStorage.setItem('game_sounds_enabled', soundsEnabled ? 'true' : 'false');
+        localStorage.setItem('game_sounds_volume', volume.toString());
+      } catch (error) {
+        console.warn('Failed to save sound preferences to localStorage', error);
+      }
+    }
+  }, [soundsEnabled, volume, config?.useLocalStorage]);
+
+  // Load sound preferences from localStorage on mount if configured
+  useEffect(() => {
+    if (config?.useLocalStorage) {
+      try {
+        const savedEnabled = localStorage.getItem('game_sounds_enabled');
+        const savedVolume = localStorage.getItem('game_sounds_volume');
+        
+        if (savedEnabled !== null) {
+          setSoundsEnabled(savedEnabled === 'true');
+        }
+        
+        if (savedVolume !== null) {
+          const parsedVolume = parseFloat(savedVolume);
+          if (!isNaN(parsedVolume) && parsedVolume >= 0 && parsedVolume <= 1) {
+            setVolume(parsedVolume);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load sound preferences from localStorage', error);
+      }
+    }
+  }, [config?.useLocalStorage]);
 
   // A function to preload all sounds
   const preloadSounds = async (sounds: Record<string, string>) => {
@@ -69,6 +113,7 @@ export function useSoundEffects() {
     }
     
     setAvailableSounds(sounds);
+    setSoundsPreloaded(true);
     return Object.keys(sounds).filter(name => !failedSounds.includes(name));
   };
 
@@ -229,6 +274,9 @@ export function useSoundEffects() {
   }, []);
 
   return {
+    // For compatibility with both naming conventions
+    enabled: soundsEnabled,
+    setEnabled: setSoundsEnabled,
     soundsEnabled,
     setSoundsEnabled,
     volume,
@@ -240,7 +288,8 @@ export function useSoundEffects() {
     playSoundWithOptions,
     stopSound,
     stopAllSounds,
-    soundStatus
+    soundStatus,
+    soundsPreloaded
   };
 }
 
