@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -344,7 +345,6 @@ const SettingsCards = () => {
   };
 
   return (
-    
     <div className="bg-[#0c0e1a] rounded-lg p-6 shadow-lg border border-gray-800">
       <h2 className="text-xl font-bold mb-2 text-white">Karty Specjalne</h2>
       
@@ -783,4 +783,180 @@ const SettingsCards = () => {
             <CardHeader>
               <CardTitle>Lista graczy i ich karty</CardTitle>
               <CardDescription>
-                P
+                Przeglądaj jakie karty posiadają aktywni gracze
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4">
+                {players.filter(p => !p.isEliminated).map((player) => {
+                  const playerCards = player.specialCards?.map(
+                    cardId => specialCards.find(c => c.id === cardId)
+                  ).filter(Boolean) || [];
+                  
+                  return (
+                    <div key={player.id} className="border border-gray-800 rounded-md p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="font-medium text-lg">{player.name}</div>
+                        <Badge variant="outline" className="bg-purple-900/20 text-purple-400 border-purple-500">
+                          {playerCards.length} kart
+                        </Badge>
+                      </div>
+                      
+                      {playerCards.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {playerCards.map((card) => card && (
+                            <div 
+                              key={card.id} 
+                              className="flex items-center gap-1 px-2 py-1 bg-black/30 rounded-md border border-gray-800"
+                              title={card.description}
+                            >
+                              {card.iconName && iconMap[card.iconName] && React.createElement(iconMap[card.iconName], { size: 14 })}
+                              <span className="text-sm">{card.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-400">Gracz nie posiada żadnych kart</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Test animacji kart */}
+        <TabsContent value="test" className="mt-6">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold mb-2">Test animacji kart</h3>
+            <p className="text-sm text-gray-400 mb-4">
+              Wybierz kartę, aby zobaczyć jak wygląda jej animacja dla gracza
+            </p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {specialCards.map((card) => {
+                const IconComponent = iconMap[card.iconName] || SkipForward;
+                return (
+                  <Button 
+                    key={card.id}
+                    variant="outline"
+                    className="flex items-center justify-start gap-2 px-3 py-6 h-auto bg-black/20 border-gray-800 hover:bg-black/40"
+                    onClick={() => handleTestCardAnimation(card.id)}
+                  >
+                    <IconComponent className="text-neon-green" size={20} />
+                    <div className="text-left">
+                      <div className="font-medium">{card.name}</div>
+                      <div className="text-xs text-gray-400 truncate max-w-[200px]">{card.description}</div>
+                    </div>
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Obrazy kart */}
+        <TabsContent value="obrazy" className="mt-6">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold mb-2">Zarządzanie obrazami kart</h3>
+            <p className="text-sm text-gray-400 mb-4">
+              Dodaj lub zastąp obrazy dla kart specjalnych (tylko pliki PNG)
+            </p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {specialCards.map((card) => (
+                <Card key={card.id} className="bg-black/30 border-gray-800">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      {card.iconName && iconMap[card.iconName] && React.createElement(iconMap[card.iconName], { size: 16 })}
+                      {card.name}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-3">
+                    {card.imageUrl ? (
+                      <div className="relative aspect-[3/4] bg-black/50 rounded-md overflow-hidden border border-gray-700">
+                        <img 
+                          src={card.imageUrl} 
+                          alt={`Karta ${card.name}`} 
+                          className="w-full h-full object-contain" 
+                        />
+                        <Button 
+                          size="icon"
+                          variant="ghost"
+                          className="absolute top-2 right-2 h-8 w-8 bg-black/60 hover:bg-black/80"
+                          onClick={() => openImageUploadDialog(card.id)}
+                        >
+                          <Pencil size={14} className="text-white" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div 
+                        className="flex flex-col items-center justify-center aspect-[3/4] bg-black/50 rounded-md border border-gray-700 border-dashed p-4 cursor-pointer hover:bg-black/60"
+                        onClick={() => openImageUploadDialog(card.id)}
+                      >
+                        <Upload className="text-gray-500 mb-2" size={24} />
+                        <span className="text-sm text-center text-gray-500">Dodaj obraz</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+          
+          {/* Dialog do przesyłania obrazu */}
+          <Dialog open={isImageUploadDialogOpen} onOpenChange={setIsImageUploadDialogOpen}>
+            <DialogContent className="bg-[#0c0e1a] border-gray-800">
+              <DialogHeader>
+                <DialogTitle className="text-white">Dodaj obraz karty</DialogTitle>
+                <DialogDescription>
+                  Wybierz plik PNG z obrazem karty
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="card-image">Obraz karty</Label>
+                  <Input
+                    id="card-image"
+                    type="file"
+                    accept="image/png"
+                    className="bg-black/50 border-gray-700"
+                    onChange={handleImageUpload}
+                  />
+                  <p className="text-xs text-gray-400">Dozwolone są tylko pliki PNG</p>
+                </div>
+                
+                {imagePreview && (
+                  <div className="border border-gray-700 rounded-md p-2 bg-black/30">
+                    <div className="aspect-[3/4] max-h-[300px] flex items-center justify-center">
+                      <img 
+                        src={imagePreview} 
+                        alt="Podgląd obrazu" 
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <DialogFooter className="flex space-x-2">
+                <Button variant="outline" onClick={() => setIsImageUploadDialogOpen(false)}>Anuluj</Button>
+                <Button 
+                  className="bg-neon-green hover:bg-neon-green/80" 
+                  onClick={handleSaveCardImage}
+                  disabled={!imagePreview}
+                >
+                  Zapisz obraz
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default SettingsCards;
