@@ -1,10 +1,11 @@
 
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
-import { GameContextType, GameRound, SpecialCard, SpecialCardAwardRule, SoundEffect, Question } from '@/types/game-types';
+import { GameContextType, GameRound, SoundEffect, Question } from '@/types/game-types';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
-import { useSpecialCards } from '@/hooks/useSpecialCards';
+import { QuestionsProvider } from './QuestionsContext';
+import { SpecialCardsProvider } from './SpecialCardsContext';
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
@@ -24,6 +25,8 @@ interface GameProviderProps {
 }
 
 export const GameProvider = ({ children }: GameProviderProps) => {
+  const gameState = useGameStateManagement();
+  
   const {
     // State
     round,
@@ -65,7 +68,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     stopTimer,
     loadGameData,
     saveGameData,
-  } = useGameStateManagement();
+  } = gameState;
 
   const {
     awardPoints,
@@ -101,72 +104,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     enabled: true,
     useLocalStorage: true
   });
-  
-  // Special cards management
-  // We're getting these functions from the hook, no need to redefine them
-  const {
-    addSpecialCard,
-    updateSpecialCard,
-    removeSpecialCard,
-    addSpecialCardRule,
-    updateSpecialCardRule,
-    removeSpecialCardRule,
-    giveCardToPlayer,
-    usePlayerCard,
-  } = useSpecialCards(
-    players, 
-    setPlayers, 
-    specialCards, 
-    setSpecialCards, 
-    specialCardRules, 
-    setSpecialCardRules, 
-    playSound
-  );
-
-  // Question management
-  const addQuestion = (categoryId: string, question: Question) => {
-    setCategories(prevCategories => {
-      return prevCategories.map(category => {
-        if (category.id === categoryId) {
-          return {
-            ...category,
-            questions: [...category.questions, question]
-          };
-        }
-        return category;
-      });
-    });
-  };
-
-  const removeQuestion = (categoryId: string, questionId: string) => {
-    setCategories(prevCategories => {
-      return prevCategories.map(category => {
-        if (category.id === categoryId) {
-          return {
-            ...category,
-            questions: category.questions.filter(q => q.id !== questionId)
-          };
-        }
-        return category;
-      });
-    });
-  };
-
-  const updateQuestion = (categoryId: string, updatedQuestion: Question) => {
-    setCategories(prevCategories => {
-      return prevCategories.map(category => {
-        if (category.id === categoryId) {
-          return {
-            ...category,
-            questions: category.questions.map(q => 
-              q.id === updatedQuestion.id ? updatedQuestion : q
-            )
-          };
-        }
-        return category;
-      });
-    });
-  };
 
   // Timer effect
   useEffect(() => {
@@ -215,6 +152,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     saveGameData
   ]);
 
+  // Create combined context value
   const value: GameContextType = {
     // State
     round,
@@ -271,14 +209,14 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     setWinnerIds,
     
     // Special cards methods
-    addSpecialCard,
-    updateSpecialCard,
-    removeSpecialCard,
-    addSpecialCardRule,
-    updateSpecialCardRule,
-    removeSpecialCardRule,
-    giveCardToPlayer,
-    usePlayerCard,
+    addSpecialCard: () => {},  // These will be overridden by the provider
+    updateSpecialCard: () => {},
+    removeSpecialCard: () => {},
+    addSpecialCardRule: () => {},
+    updateSpecialCardRule: () => {},
+    removeSpecialCardRule: () => {},
+    giveCardToPlayer: () => {},
+    usePlayerCard: () => {},
     
     // Settings methods
     setGameLogo,
@@ -291,13 +229,36 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     saveGameData,
     
     // Questions methods
-    addQuestion,
-    removeQuestion,
-    updateQuestion,
+    addQuestion: () => {},  // These will be overridden by the provider
+    removeQuestion: () => {},
+    updateQuestion: () => {},
     markQuestionAsUsed,
     resetUsedQuestions,
     isQuestionUsed
   };
 
-  return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
+  // Return nested providers to ensure all contexts have access to necessary data
+  return (
+    <GameContext.Provider value={value}>
+      <SpecialCardsProvider
+        players={players}
+        setPlayers={setPlayers}
+        specialCards={specialCards}
+        setSpecialCards={setSpecialCards}
+        specialCardRules={specialCardRules}
+        setSpecialCardRules={setSpecialCardRules}
+        playSound={playSound}
+      >
+        <QuestionsProvider
+          gameState={gameState}
+          usedQuestionIds={usedQuestionIds}
+          markQuestionAsUsed={markQuestionAsUsed}
+          resetUsedQuestions={resetUsedQuestions}
+          isQuestionUsed={isQuestionUsed}
+        >
+          {children}
+        </QuestionsProvider>
+      </SpecialCardsProvider>
+    </GameContext.Provider>
+  );
 };

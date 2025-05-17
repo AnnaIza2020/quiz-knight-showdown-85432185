@@ -1,12 +1,19 @@
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useGameContext } from '@/context/GameContext';
-import { Category, Question } from '@/types/game-types';
+import { useQuestionsContext } from '@/context/QuestionsContext';
+import { Question } from '@/types/game-types';
 import { QuestionFilterOptions, QuestionImportExport } from '@/types/questions-types';
 import { toast } from 'sonner';
 
 export const useQuestions = () => {
-  const { categories, setCategories, saveGameData, usedQuestionIds } = useGameContext();
+  const { categories, saveGameData } = useGameContext();
+  const { 
+    usedQuestionIds, 
+    isQuestionUsed, 
+    resetUsedQuestions: contextResetUsedQuestions 
+  } = useQuestionsContext();
+  
   const [filters, setFilters] = useState<QuestionFilterOptions>({
     round: null,
     category: null,
@@ -14,11 +21,6 @@ export const useQuestions = () => {
     difficulty: null,
     searchTerm: ''
   });
-
-  // Check if a question is used
-  const isQuestionUsed = (questionId: string): boolean => {
-    return usedQuestionIds?.includes(questionId) || false;
-  };
 
   // Extract all questions from all categories
   const questions = useMemo(() => {
@@ -76,9 +78,9 @@ export const useQuestions = () => {
     return textMatches || optionsMatch || answerMatches || categoryMatches;
   };
 
-  // Reset all questions to unused
+  // Reset all questions to unused - use the one from context
   const resetUsedQuestions = () => {
-    // Implemented in GameContext
+    contextResetUsedQuestions();
   };
 
   // Import questions from JSON
@@ -95,7 +97,7 @@ export const useQuestions = () => {
     }
   };
 
-  // Export questions to JSON - fix return type
+  // Export questions to JSON
   const exportQuestions = (exportFiltered: boolean = false): QuestionImportExport => {
     try {
       const questionsToExport = exportFiltered ? filteredQuestions : questions;
