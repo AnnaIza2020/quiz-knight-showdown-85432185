@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import type {
@@ -6,13 +7,14 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_REMOVE_DELAY = 10000 // Reduced from 1000000 to 10 seconds
 
 type ToasterToast = ToastProps & {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  category?: string // Added category for grouping similar toasts
 }
 
 const actionTypes = {
@@ -55,6 +57,9 @@ interface State {
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
+// Track toast messages to prevent duplicates
+const activeToastMessages = new Set<string>()
+
 const addToRemoveQueue = (toastId: string) => {
   if (toastTimeouts.has(toastId)) {
     return
@@ -66,6 +71,13 @@ const addToRemoveQueue = (toastId: string) => {
       type: "REMOVE_TOAST",
       toastId: toastId,
     })
+    
+    // Find the toast and remove its message from the tracking set
+    const toastToRemove = memoryState.toasts.find(t => t.id === toastId)
+    if (toastToRemove && toastToRemove.description) {
+      const msgKey = `${toastToRemove.title}-${toastToRemove.description}-${toastToRemove.category || ''}`
+      activeToastMessages.delete(msgKey)
+    }
   }, TOAST_REMOVE_DELAY)
 
   toastTimeouts.set(toastId, timeout)
@@ -139,7 +151,23 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...props }: Toast) {
+// Enhanced toast function to prevent duplicates
+function toast({ title, description, category, ...props }: Toast) {
+  // Create a unique key for this toast message
+  const msgKey = `${title}-${description}-${category || ''}`
+  
+  // If this exact message is already displayed, don't add it again
+  if (activeToastMessages.has(msgKey)) {
+    return {
+      id: "",
+      dismiss: () => {},
+      update: () => {},
+    }
+  }
+  
+  // Add this message to our tracking set
+  activeToastMessages.add(msgKey)
+  
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -147,6 +175,7 @@ function toast({ ...props }: Toast) {
       type: "UPDATE_TOAST",
       toast: { ...props, id },
     })
+  
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
   dispatch({
@@ -154,6 +183,9 @@ function toast({ ...props }: Toast) {
     toast: {
       ...props,
       id,
+      title,
+      description,
+      category,
       open: true,
       onOpenChange: (open) => {
         if (!open) dismiss()
@@ -162,7 +194,7 @@ function toast({ ...props }: Toast) {
   })
 
   return {
-    id: id,
+    id,
     dismiss,
     update,
   }
@@ -188,4 +220,22 @@ function useToast() {
   }
 }
 
-export { useToast, toast }
+// New function to create categorized toasts
+function errorToast(message: string, category: string = "general") {
+  return toast({
+    variant: "destructive",
+    title: "Błąd",
+    description: message,
+    category: category,
+  })
+}
+
+function successToast(message: string, category: string = "general") {
+  return toast({
+    title: "Sukces",
+    description: message,
+    category: category,
+  })
+}
+
+export { useToast, toast, errorToast, successToast }

@@ -4,6 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
 import { toast } from 'sonner';
+import { 
+  drawWheelSection, 
+  getSelectedCategoryIndex, 
+  getNeonColors 
+} from '@/utils/wheelUtils';
 
 interface FortuneWheelProps {
   categories?: string[];
@@ -21,9 +26,10 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const { playSound } = useGameContext();
+  const { playSound, soundsEnabled } = useGameContext();
   const wheelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const spinSoundTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Define default categories according to the production checklist
   const defaultCategories = [
@@ -45,6 +51,15 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
     }
   }, [wheelCategories]);
   
+  // Clean up timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (spinSoundTimeoutRef.current) {
+        clearTimeout(spinSoundTimeoutRef.current);
+      }
+    };
+  }, []);
+  
   // Draw the wheel on the canvas
   const drawWheel = () => {
     const canvas = canvasRef.current;
@@ -63,58 +78,23 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
     // Draw sections
     const numCategories = wheelCategories.length;
     const arc = (2 * Math.PI) / numCategories;
+    const colors = getNeonColors();
     
     for (let i = 0; i < numCategories; i++) {
       const angle = i * arc;
       const endAngle = angle + arc;
+      const color = colors[i % colors.length];
       
-      // Set colors alternating - using more neon colors
-      const colors = ['#9b87f5', '#7E69AB', '#FF3E9D', '#00E0FF', '#00FFA3', '#FFA500'];
-      ctx.fillStyle = colors[i % colors.length] || '#9b87f5';
-      
-      // Draw section
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.arc(centerX, centerY, radius, angle, endAngle);
-      ctx.lineTo(centerX, centerY);
-      ctx.fill();
-      
-      // Add text
-      ctx.save();
-      ctx.translate(centerX, centerY);
-      const textAngle = angle + arc / 2;
-      ctx.rotate(textAngle);
-      ctx.textAlign = 'right';
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '14px sans-serif';
-      
-      // Wrap text if too long
-      const maxWidth = radius - 30;
-      const text = wheelCategories[i];
-      if (ctx.measureText(text).width > maxWidth) {
-        const words = text.split(' ');
-        let line = '';
-        let y = 0;
-        
-        for (const word of words) {
-          const testLine = line + word + ' ';
-          const metrics = ctx.measureText(testLine);
-          
-          if (metrics.width > maxWidth && line !== '') {
-            ctx.fillText(line, radius - 20, y);
-            line = word + ' ';
-            y += 15;
-          } else {
-            line = testLine;
-          }
-        }
-        
-        ctx.fillText(line, radius - 20, y);
-      } else {
-        ctx.fillText(text, radius - 20, 5);
-      }
-      
-      ctx.restore();
+      drawWheelSection(
+        ctx, 
+        centerX, 
+        centerY, 
+        radius, 
+        angle, 
+        endAngle, 
+        color,
+        wheelCategories[i]
+      );
     }
     
     // Draw center circle
@@ -135,8 +115,36 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
       setSpinning(true);
       setSelectedCategory(null);
       
-      // Play spin sound
-      playSound('wheel-spin');
+      // Play spin sound safely
+      if (soundsEnabled) {
+        try {
+          playSound('wheel-spin');
+          
+          // Schedule tick sounds for spinning effect
+          let tickCount = 0;
+          const tickInterval = setInterval(() => {
+            if (tickCount < 20) {
+              try {
+                playSound('wheel-tick', 0.2);
+                tickCount++;
+              } catch (e) {
+                // Silent fail for tick sounds
+                console.log('Failed to play tick sound:', e);
+              }
+            } else {
+              clearInterval(tickInterval);
+            }
+          }, 200);
+          
+          spinSoundTimeoutRef.current = setTimeout(() => {
+            clearInterval(tickInterval);
+          }, 5000);
+          
+        } catch (err) {
+          // Silently fail sound playback but don't interrupt the wheel
+          console.warn('Error playing wheel sounds:', err);
+        }
+      }
       
       const minRotation = 2000; // Minimum rotation to ensure multiple spins
       const randomRotation = Math.floor(Math.random() * 1000) + minRotation;
@@ -147,12 +155,16 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
       // Wait for animation to complete
       setTimeout(() => {
         try {
-          const selectedIndex = getSelectedCategory(randomRotation);
+          const selectedIndex = getSelectedCategoryIndex(randomRotation + rotation, wheelCategories.length);
           const selected = wheelCategories[selectedIndex];
           setSelectedCategory(selected);
           
-          // Play success sound
-          playSound('success');
+          // Try to play success sound, but don't break functionality if it fails
+          try {
+            if (soundsEnabled) playSound('success');
+          } catch (err) {
+            console.warn('Error playing success sound:', err);
+          }
           
           // Notify selection
           toast.success(`Wybrano kategorię: ${selected}`);
@@ -162,7 +174,13 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
         } catch (err) {
           console.error("Error selecting category:", err);
           toast.error("Błąd podczas wybierania kategorii");
-          playSound('fail');
+          
+          // Try to play fail sound, but don't break functionality if it fails
+          try {
+            if (soundsEnabled) playSound('fail');
+          } catch (err) {
+            console.warn('Error playing fail sound:', err);
+          }
         } finally {
           setSpinning(false);
         }
@@ -172,21 +190,6 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
       setSpinning(false);
       toast.error("Błąd podczas obracania koła");
     }
-  };
-  
-  // Calculate which category is selected based on final rotation
-  const getSelectedCategory = (addedRotation: number) => {
-    const totalRotation = rotation + addedRotation;
-    const numCategories = wheelCategories.length;
-    const degreesPerCategory = 360 / numCategories;
-    
-    // Calculate how many degrees past 0 the wheel landed on
-    const normalizedRotation = totalRotation % 360;
-    
-    // Convert to index (reverse because wheel spins clockwise)
-    const index = Math.floor((360 - normalizedRotation) / degreesPerCategory) % numCategories;
-    
-    return index;
   };
   
   return (

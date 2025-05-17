@@ -24,7 +24,7 @@ export interface Player {
   color?: string;
   isActive?: boolean;
   uniqueLinkToken?: string;
-  forcedEliminated?: boolean; // Added the missing property
+  forcedEliminated?: boolean; 
 }
 
 // Category interface
@@ -65,16 +65,24 @@ export interface SpecialCard {
 export interface SpecialCardAwardRule {
   id: string;
   cardId: string;
-  condition: 'correct_answer' | 'incorrect_answer' | 'round_start' | 'round_end' | 'random' | string; // Extended to accept string values
+  condition: 'correct_answer' | 'incorrect_answer' | 'round_start' | 'round_end' | 'random' | string;
   probability?: number; // 0-100
   roundApplicable?: GameRound[];
-  roundType?: GameRound; // Added property
-  description?: string; // Added property
-  isEnabled?: boolean; // Added property
+  roundType?: GameRound;
+  description?: string;
+  isEnabled?: boolean;
 }
 
 // Sound effects
 export type SoundEffect = 'success' | 'fail' | 'timeout' | 'eliminate' | 'round-start' | 'victory' | 'card-reveal' | 'wheel-spin' | 'wheel-tick' | 'bonus' | 'narrator' | 'intro-music' | string;
+
+// Error notification settings
+export interface ErrorNotificationSettings {
+  silent?: boolean;
+  category?: string;
+  aggregationKey?: string;
+  throttleMs?: number;
+}
 
 // Game context type
 export interface GameContextType {
@@ -111,6 +119,9 @@ export interface GameContextType {
   soundsEnabled?: boolean;
   setSoundsEnabled?: (enabled: boolean) => void;
   soundStatus?: Record<string, any>;
+  
+  // Error notification settings
+  reportError?: (message: string, settings?: ErrorNotificationSettings) => void;
   
   // Methods
   setRound: (round: GameRound) => void;

@@ -13,7 +13,7 @@ const DebugPanel = () => {
   const [networkStatus, setNetworkStatus] = useState<'online' | 'offline'>('online');
   const [supabaseStatus, setSupabaseStatus] = useState<'connected' | 'error' | 'checking'>('checking');
   const [soundsStatus, setSoundsStatus] = useState<'ok' | 'issues'>('ok');
-  const [consoleErrors, setConsoleErrors] = useState<string[]>([]);
+  const [consoleErrors, setConsoleErrors] = useState<{message: string, count: number, timestamp: number}[]>([]);
   
   const { 
     round,
@@ -79,22 +79,50 @@ const DebugPanel = () => {
     }
   }, [availableSounds, soundsEnabled]);
   
-  // Monitor console errors
+  // Monitor console errors with improved aggregation
   useEffect(() => {
     const originalConsoleError = console.error;
-    const errors: string[] = [];
     
     console.error = (...args) => {
       originalConsoleError(...args);
+      
+      // Convert error to string
       const errorMessage = args.map(arg => 
         typeof arg === 'string' ? arg : JSON.stringify(arg)
       ).join(' ');
       
-      if (errors.length >= 5) {
-        errors.pop();
-      }
-      errors.unshift(errorMessage.substring(0, 100) + (errorMessage.length > 100 ? '...' : ''));
-      setConsoleErrors([...errors]);
+      // Truncate long error messages
+      const truncatedMessage = errorMessage.substring(0, 100) + 
+        (errorMessage.length > 100 ? '...' : '');
+      
+      // Update errors with aggregation
+      setConsoleErrors(prevErrors => {
+        // Check if this is a duplicate error
+        const existingErrorIndex = prevErrors.findIndex(
+          err => err.message === truncatedMessage
+        );
+        
+        if (existingErrorIndex >= 0) {
+          // Update existing error count
+          const updatedErrors = [...prevErrors];
+          updatedErrors[existingErrorIndex] = {
+            ...updatedErrors[existingErrorIndex],
+            count: updatedErrors[existingErrorIndex].count + 1,
+            timestamp: Date.now()
+          };
+          
+          // Sort by timestamp (most recent first)
+          return updatedErrors
+            .sort((a, b) => b.timestamp - a.timestamp)
+            .slice(0, 5);
+        } else {
+          // Add new error
+          return [
+            { message: truncatedMessage, count: 1, timestamp: Date.now() },
+            ...prevErrors.slice(0, 4)
+          ];
+        }
+      });
     };
     
     return () => {
@@ -117,6 +145,13 @@ const DebugPanel = () => {
     if (!activePlayerId) return 'Brak';
     const player = players.find(p => p.id === activePlayerId);
     return player ? player.name : `Nieznany (ID: ${activePlayerId.substring(0, 8)}...)`;
+  };
+  
+  // Utility function to format error counts
+  const formatErrorMessage = (error: {message: string, count: number}) => {
+    return error.count > 1 
+      ? `${error.message} (${error.count}x)` 
+      : error.message;
   };
   
   return (
@@ -227,10 +262,10 @@ const DebugPanel = () => {
                 </div>
               </div>
               
-              {/* Console errors */}
+              {/* Console errors with improved display */}
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <h4 className="text-sm font-medium">Ostatnie błędy konsoli:</h4>
+                  <h4 className="text-sm font-medium">Błędy konsoli (zagregowane):</h4>
                   <Button 
                     variant="ghost" 
                     size="sm"
@@ -246,7 +281,7 @@ const DebugPanel = () => {
                     <div className="max-h-24 overflow-y-auto text-xs p-2">
                       {consoleErrors.map((error, index) => (
                         <div key={index} className="text-red-400 pb-1 border-b border-white/5 mb-1">
-                          {error}
+                          {formatErrorMessage(error)}
                         </div>
                       ))}
                     </div>
@@ -260,7 +295,7 @@ const DebugPanel = () => {
               
               <div className="mt-4 flex justify-between">
                 <span className="text-xs text-white/40">
-                  v1.0.0
+                  v1.0.1
                 </span>
                 <Button
                   variant="ghost"
