@@ -24,7 +24,9 @@ export const useHostActions = (addEvent: (event: string) => void) => {
   
   const { saveGame, loadGame, getSavedGames } = useGamePersistence();
   const { broadcast } = useSubscription('game_events', 'new_event', () => {}, { immediate: false });
-  const { playSound, stopAllSounds, soundsEnabled, setSoundsEnabled } = useSoundEffects();
+  const { playSound, stopAllSounds, soundsEnabled, setSoundsEnabled } = useSoundEffects({
+    useLocalStorage: true
+  });
   
   // Load game data on initial render
   useEffect(() => {

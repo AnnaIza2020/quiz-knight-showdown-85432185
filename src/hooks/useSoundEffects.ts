@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useErrorAggregator } from './useErrorAggregator';
 
@@ -8,14 +7,14 @@ export interface SoundEffectOptions {
   onEnd?: () => void;
 }
 
-interface SoundEffectConfig {
+export interface SoundEffectConfig {
   enabled?: boolean;
   useLocalStorage?: boolean;
   defaultVolume?: number;
 }
 
 /**
- * Hook to manage sound effects in the application
+ * Hook do zarządzania efektami dźwiękowymi w aplikacji
  */
 export function useSoundEffects(config?: SoundEffectConfig) {
   // Initialize with config or default values
@@ -27,8 +26,8 @@ export function useSoundEffects(config?: SoundEffectConfig) {
   
   const audioElements = useRef<Record<string, HTMLAudioElement>>({});
   const { reportError } = useErrorAggregator({
-    cooldownPeriod: 10000, // Only show errors every 10 seconds
-    maxDuplicates: 3,      // Show individual errors up to 3 times before aggregating
+    throttleMs: 5000,   // Throttle similar errors for 5 seconds
+    maxDuplicates: 3,   // Show individual errors up to 3 times before aggregating
     silentCategories: ['sound-loading'] // Don't show sound loading errors in toasts
   });
 
@@ -69,208 +68,125 @@ export function useSoundEffects(config?: SoundEffectConfig) {
 
   // A function to preload all sounds
   const preloadSounds = async (sounds: Record<string, string>) => {
-    console.log("Preloading sounds:", sounds);
-    
-    // Keep track of which sounds failed to load
     const failedSounds: string[] = [];
     
-    for (const [name, url] of Object.entries(sounds)) {
-      try {
-        const audio = new Audio(url);
-        
-        // Create a promise that resolves when the audio loads or rejects on error
-        await new Promise((resolve, reject) => {
-          audio.addEventListener('canplaythrough', resolve, { once: true });
-          audio.addEventListener('error', (e) => {
-            console.warn(`Nie można załadować dźwięku: ${name}`, e);
+    await Promise.all(
+      Object.entries(sounds).map(async ([name, url]) => {
+        return new Promise<void>((resolve) => {
+          const audio = new Audio();
+          audioElements.current[name] = audio;
+          
+          audio.addEventListener('canplaythrough', () => {
+            setSoundStatus(prev => ({ ...prev, [name]: 'loaded' }));
+            resolve();
+          });
+          
+          audio.addEventListener('error', (error) => {
+            console.error(`Failed to load sound ${name} from ${url}`, error);
+            setSoundStatus(prev => ({ ...prev, [name]: 'error' }));
+            reportError(`Failed to load sound ${name}`, {
+              category: 'sound-loading',
+              silent: true
+            });
             failedSounds.push(name);
-            reject(e);
-          }, { once: true });
+            resolve();
+          });
           
-          // Start loading
-          audio.load();
-          
-          // Set a timeout to avoid waiting forever
-          setTimeout(() => resolve(null), 5000);
+          audio.src = url;
+          audio.preload = 'auto';
         });
-        
-        audioElements.current[name] = audio;
-        
-      } catch (error) {
-        // Don't show a toast for each failed sound, just log it
-        console.warn(`Nie można załadować dźwięku: ${name}`, error);
-      }
-    }
-    
-    // If multiple sounds failed, show an aggregated error
-    if (failedSounds.length > 0) {
-      console.warn(`Nie udało się załadować ${failedSounds.length} dźwięków: ${failedSounds.join(', ')}`);
-      
-      // Only show a single notification for all failed sounds
-      if (failedSounds.length > 0) {
-        reportError(`Nie udało się załadować ${failedSounds.length} dźwięków.`, 'sound-loading');
-      }
-    }
-    
+      })
+    );
+
     setAvailableSounds(sounds);
     setSoundsPreloaded(true);
     return Object.keys(sounds).filter(name => !failedSounds.includes(name));
   };
 
-  // Add a custom sound
-  const addCustomSound = (name: string, source: string | File) => {
-    const url = typeof source === 'string' ? source : URL.createObjectURL(source);
-    setAvailableSounds(prev => ({
-      ...prev,
-      [name]: url
-    }));
-    
-    // Create an audio element for the new sound
-    try {
-      const audio = new Audio(url);
-      audioElements.current[name] = audio;
-    } catch (error) {
-      reportError(`Nie udało się dodać dźwięku: ${name}`, 'sound-loading');
+  // Function to add a custom sound
+  const addCustomSound = (name: string, url: string | File) => {
+    if (typeof url === 'string') {
+      setAvailableSounds(prev => ({ ...prev, [name]: url }));
+    } else { // If it's a File object
+      const objectURL = URL.createObjectURL(url);
+      setAvailableSounds(prev => ({ ...prev, [name]: objectURL }));
     }
   };
 
-  // Play a sound effect
-  const playSound = (name: string, userVolume?: number) => {
+  // Function to play a sound with optional settings
+  const playSound = (sound: string, volumeOverride?: number) => {
+    playSoundWithOptions(sound, { volume: volumeOverride });
+  };
+  
+  const playSoundWithOptions = (sound: string, options: SoundEffectOptions = {}) => {
     if (!soundsEnabled) return;
     
-    try {
-      // Get or create audio element
-      let audio = audioElements.current[name];
-      
-      if (!audio) {
-        const url = availableSounds[name];
-        if (!url) {
-          // Instead of showing a toast for each missing sound, just log it
-          console.warn(`Dźwięk "${name}" nie jest dostępny`);
-          return;
-        }
-        
-        audio = new Audio(url);
-        audioElements.current[name] = audio;
-      }
-      
-      // Reset the audio to start from beginning if it's already playing
-      audio.currentTime = 0;
-      
-      // Set volume
-      audio.volume = typeof userVolume === 'number' ? userVolume : volume;
-      
-      // Play the sound
-      audio.play().catch(error => {
-        console.warn(`Nie można odtworzyć dźwięku: ${name}`, error);
-      });
-      
-      // Update sound status
-      setSoundStatus(prev => ({
-        ...prev,
-        [name]: {
-          playing: true,
-          timestamp: Date.now()
-        }
-      }));
-      
-    } catch (error) {
-      console.warn(`Błąd odtwarzania dźwięku: ${name}`, error);
+    const url = availableSounds[sound];
+    if (!url) {
+      console.warn(`Sound ${sound} not found in available sounds.`);
+      reportError(`Sound ${sound} not found`, { category: 'sound-playback' });
+      return;
     }
-  };
-
-  // Play a sound with additional options
-  const playSoundWithOptions = (name: string, options: SoundEffectOptions = {}) => {
-    if (!soundsEnabled) return;
     
-    try {
-      const url = availableSounds[name];
-      if (!url) {
-        console.warn(`Dźwięk "${name}" nie jest dostępny`);
-        return;
-      }
-      
-      // Create a new audio instance for this play with options
-      const audio = new Audio(url);
-      
-      // Apply options
-      audio.volume = options.volume !== undefined ? options.volume : volume;
-      audio.loop = options.loop || false;
-      
-      if (options.onEnd) {
-        audio.addEventListener('ended', options.onEnd, { once: true });
-      }
-      
-      // Play the sound
-      audio.play().catch(error => {
-        console.warn(`Nie można odtworzyć dźwięku: ${name}`, error);
-      });
-      
-      // Update sound status
-      setSoundStatus(prev => ({
-        ...prev,
-        [name]: {
-          playing: true,
-          timestamp: Date.now(),
-          options
-        }
-      }));
-      
-      // Return the audio element for more control
-      return audio;
-      
-    } catch (error) {
-      console.warn(`Błąd odtwarzania dźwięku: ${name}`, error);
-      return null;
+    // Use existing audio element or create a new one
+    const audio = audioElements.current[sound] || new Audio(url);
+    audioElements.current[sound] = audio;
+    
+    // Set volume with overall volume and optional override
+    audio.volume = volume * (options.volume !== undefined ? options.volume : 1);
+    
+    // Set loop if specified
+    if (options.loop !== undefined) {
+      audio.loop = options.loop;
     }
+    
+    // Handle onEnd callback
+    if (options.onEnd) {
+      audio.addEventListener('ended', options.onEnd, { once: true });
+    }
+    
+    // Play the sound
+    audio.play().catch(error => {
+      console.error(`Failed to play sound ${sound}:`, error);
+      reportError(`Failed to play sound ${sound}`, { category: 'sound-playback' });
+    });
   };
 
-  // Stop a specific sound
-  const stopSound = (name: string) => {
-    const audio = audioElements.current[name];
+  // Function to stop a specific sound
+  const stopSound = (sound: string) => {
+    const audio = audioElements.current[sound];
     if (audio) {
       audio.pause();
       audio.currentTime = 0;
-      
-      // Update sound status
-      setSoundStatus(prev => ({
-        ...prev,
-        [name]: {
-          playing: false,
-          timestamp: Date.now()
-        }
-      }));
     }
   };
 
-  // Stop all sounds
+  // Function to stop all sounds
   const stopAllSounds = () => {
     Object.values(audioElements.current).forEach(audio => {
       audio.pause();
       audio.currentTime = 0;
     });
-    
-    // Update all sound statuses
-    const newStatus: Record<string, any> = {};
-    Object.keys(audioElements.current).forEach(name => {
-      newStatus[name] = {
-        playing: false,
-        timestamp: Date.now()
-      };
-    });
-    
-    setSoundStatus(newStatus);
   };
 
-  // Cleanup on unmount
+  // Effect to load default sounds on mount
   useEffect(() => {
-    return () => {
-      // Stop all sounds and release resources
-      Object.values(audioElements.current).forEach(audio => {
-        audio.pause();
-        audio.src = '';
-      });
+    const defaultSounds = {
+      'success': '/sounds/success.mp3',
+      'fail': '/sounds/fail.mp3',
+      'timeout': '/sounds/timeout.mp3',
+      'eliminate': '/sounds/eliminate.mp3',
+      'round-start': '/sounds/round-start.mp3',
+      'victory': '/sounds/victory.mp3',
+      'card-reveal': '/sounds/card-reveal.mp3',
+      'wheel-spin': '/sounds/wheel-spin.mp3',
+      'wheel-tick': '/sounds/wheel-tick.mp3',
+      'bonus': '/sounds/bonus.mp3',
+      'intro-music': '/sounds/intro.mp3',
+      'narrator': '/sounds/narrator.mp3'
     };
+    
+    preloadSounds(defaultSounds);
   }, []);
 
   return {
@@ -282,8 +198,8 @@ export function useSoundEffects(config?: SoundEffectConfig) {
     volume,
     setVolume,
     availableSounds,
-    preloadSounds,
     addCustomSound,
+    preloadSounds,
     playSound,
     playSoundWithOptions,
     stopSound,
@@ -292,5 +208,3 @@ export function useSoundEffects(config?: SoundEffectConfig) {
     soundsPreloaded
   };
 }
-
-export default useSoundEffects;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { GameRound, SoundEffect } from '@/types/game-types';
