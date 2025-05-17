@@ -14,6 +14,8 @@ export const useGameLogic = (
   
   // Funkcja do oznaczania pytania jako wykorzystanego
   const markQuestionAsUsed = useCallback((questionId: string) => {
+    if (!questionId) return;
+    
     setUsedQuestionIds(prev => {
       const newSet = new Set(prev);
       newSet.add(questionId);
@@ -28,11 +30,14 @@ export const useGameLogic = (
   
   // Funkcja sprawdzająca czy pytanie było już wykorzystane
   const isQuestionUsed = useCallback((questionId: string) => {
+    if (!questionId) return false;
     return usedQuestionIds.has(questionId);
   }, [usedQuestionIds]);
 
   // Game logic methods
   const awardPoints = useCallback((playerId: string, points: number) => {
+    if (!playerId) return;
+    
     setPlayers((prev) =>
       prev.map((player) =>
         player.id === playerId
@@ -40,9 +45,17 @@ export const useGameLogic = (
           : player
       )
     );
-  }, [setPlayers]);
+    
+    // Show toast feedback
+    const player = players.find(p => p.id === playerId);
+    if (player) {
+      toast.success(`${player.name} zdobywa ${points} punktów!`);
+    }
+  }, [players, setPlayers]);
 
   const deductHealth = useCallback((playerId: string, amount: number) => {
+    if (!playerId) return;
+    
     setPlayers((prev) => {
       // Find the player
       const player = prev.find(p => p.id === playerId);
@@ -71,6 +84,8 @@ export const useGameLogic = (
   }, [setPlayers]);
 
   const deductLife = useCallback((playerId: string) => {
+    if (!playerId) return;
+    
     setPlayers((prev) => {
       // Find the player
       const player = prev.find(p => p.id === playerId);
@@ -99,6 +114,8 @@ export const useGameLogic = (
   }, [setPlayers]);
 
   const eliminatePlayer = useCallback((playerId: string) => {
+    if (!playerId) return;
+    
     setPlayers((prev) => {
       // Find the player
       const playerToEliminate = prev.find(p => p.id === playerId);
@@ -124,7 +141,10 @@ export const useGameLogic = (
       
       // Najpierw rozdzielamy graczy na tych z życiem i bez
       const playersWithHealth = players.filter(player => player.health > 0 && !player.isEliminated);
-      const playersWithoutHealth = players.filter(player => (player.health === 0 || player.isEliminated) && !player.isEliminated);
+      const playersWithoutHealth = players.filter(player => (player.health === 0 || player.isEliminated) && !player.forcedEliminated);
+      
+      // Wartość minimalna punktów dla Lucky Loser (można zrobić konfiguralną)
+      const minPointsForLuckyLoser = 20;
       
       // Sortujemy graczy z życiem według punktów (od najwyższych)
       const sortedPlayersWithHealth = [...playersWithHealth].sort((a, b) => b.points - a.points);
@@ -132,20 +152,23 @@ export const useGameLogic = (
       // Bierzemy top 5 graczy z życiem
       const topPlayers = sortedPlayersWithHealth.slice(0, 5);
       
-      // Sortujemy graczy bez życia według punktów i bierzemy najlepszego jako lucky loser
-      const sortedPlayersWithoutHealth = [...playersWithoutHealth].sort((a, b) => b.points - a.points);
+      // Sortujemy graczy bez życia według punktów i szukamy potencjalnych lucky loserów
+      const potentialLuckyLosers = [...playersWithoutHealth]
+        .sort((a, b) => b.points - a.points)
+        .filter(p => p.points >= minPointsForLuckyLoser); // Filtrujemy tylko tych z min. punktami
+      
       let luckyLoser: Player[] = [];
       
-      if (sortedPlayersWithoutHealth.length > 0) {
-        luckyLoser = [sortedPlayersWithoutHealth[0]];
-        toast.success(`Lucky Loser: ${sortedPlayersWithoutHealth[0].name}`, {
+      if (potentialLuckyLosers.length > 0) {
+        luckyLoser = [potentialLuckyLosers[0]];
+        toast.success(`Lucky Loser: ${potentialLuckyLosers[0].name}`, {
           description: "Gracz z najwyższym wynikiem mimo braku zdrowia przechodzi dalej!"
         });
       }
       
       // Jeśli mamy mniej niż 5 graczy z życiem, dodajemy więcej lucky loserów
-      if (topPlayers.length < 5 && sortedPlayersWithoutHealth.length > luckyLoser.length) {
-        const additionalLuckyLosers = sortedPlayersWithoutHealth
+      if (topPlayers.length < 5 && potentialLuckyLosers.length > luckyLoser.length) {
+        const additionalLuckyLosers = potentialLuckyLosers
           .slice(luckyLoser.length, 5 - topPlayers.length + luckyLoser.length);
         
         if (additionalLuckyLosers.length > 0) {
@@ -209,7 +232,7 @@ export const useGameLogic = (
       // Jeśli mamy mniej niż 3 graczy, sprawdzamy czy możemy kogoś "ożywić"
       if (finalists.length < 3) {
         const eliminatedByLives = players
-          .filter(player => (player.lives === 0 || player.isEliminated) && !player.isEliminated)
+          .filter(player => (player.lives === 0 || player.isEliminated) && !player.forcedEliminated)
           .sort((a, b) => b.points - a.points);
         
         const neededPlayers = 3 - finalists.length;
@@ -260,7 +283,18 @@ export const useGameLogic = (
 
   const finishGame = useCallback((winnerIds: string[]) => {
     try {
+      if (!winnerIds || winnerIds.length === 0) {
+        toast.error("Nie określono zwycięzcy!");
+        return;
+      }
+      
       const winners = players.filter(player => winnerIds.includes(player.id));
+      
+      if (winners.length === 0) {
+        toast.error("Nie znaleziono graczy o podanych ID zwycięzców!");
+        return;
+      }
+      
       const winnerNames = winners.map(w => w.name).join(', ');
       
       toast.success(`Koniec gry! Zwycięzca: ${winnerNames}`, {
@@ -287,7 +321,7 @@ export const useGameLogic = (
         // Jeśli wszyscy stracili życie, zakończ grę
         // Znajdź gracza z największą liczbą punktów jako zwycięzcę
         const sortedByPoints = [...players]
-          .filter(player => !player.isEliminated)
+          .filter(player => !player.forcedEliminated)
           .sort((a, b) => b.points - a.points);
         
         if (sortedByPoints.length > 0) {

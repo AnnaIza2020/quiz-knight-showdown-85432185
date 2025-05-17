@@ -1,4 +1,5 @@
 
+import { toast } from 'sonner';
 import { Player, SpecialCard, SpecialCardAwardRule, SoundEffect } from '@/types/game-types';
 
 export const useSpecialCards = (
@@ -12,7 +13,20 @@ export const useSpecialCards = (
 ) => {
   // Dodaj nową kartę specjalną
   const addSpecialCard = (card: SpecialCard) => {
-    setSpecialCards(prevCards => [...prevCards, card]);
+    // Ensure card has all required fields
+    const validCard: SpecialCard = {
+      id: card.id || crypto.randomUUID(),
+      name: card.name,
+      description: card.description || '',
+      imageUrl: card.imageUrl || '',
+      soundEffect: card.soundEffect || 'card-reveal',
+      iconName: card.iconName || '',
+      animationStyle: card.animationStyle || 'glow',
+      ...card
+    };
+    
+    setSpecialCards(prevCards => [...prevCards, validCard]);
+    return validCard;
   };
 
   // Aktualizuj istniejącą kartę specjalną
@@ -20,10 +34,20 @@ export const useSpecialCards = (
     setSpecialCards(prevCards =>
       prevCards.map(card => (card.id === cardId ? { ...card, ...updates } : card))
     );
+    
+    // Return the updated card for better UI feedback
+    return specialCards.find(card => card.id === cardId);
   };
 
   // Usuń kartę specjalną
   const removeSpecialCard = (cardId: string) => {
+    // Check if card exists before proceeding
+    const cardExists = specialCards.some(c => c.id === cardId);
+    if (!cardExists) {
+      toast.error("Karta nie istnieje");
+      return false;
+    }
+    
     setSpecialCards(prevCards => prevCards.filter(c => c.id !== cardId));
     
     // Usuń również wszystkie reguły związane z tą kartą
@@ -38,11 +62,27 @@ export const useSpecialCards = (
         specialCards: player.specialCards?.filter(id => id !== cardId) || []
       }))
     );
+    
+    return true;
   };
 
   // Dodaj nową regułę przyznawania karty
   const addSpecialCardRule = (rule: SpecialCardAwardRule) => {
-    setSpecialCardRules(prevRules => [...prevRules, rule]);
+    // Ensure rule has all required fields
+    const validRule: SpecialCardAwardRule = {
+      id: rule.id || crypto.randomUUID(),
+      cardId: rule.cardId,
+      condition: rule.condition,
+      probability: rule.probability || 100,
+      roundApplicable: rule.roundApplicable || [],
+      roundType: rule.roundType,
+      description: rule.description || '',
+      isEnabled: rule.isEnabled !== undefined ? rule.isEnabled : true,
+      ...rule
+    };
+    
+    setSpecialCardRules(prevRules => [...prevRules, validRule]);
+    return validRule;
   };
 
   // Aktualizuj istniejącą regułę
@@ -50,24 +90,42 @@ export const useSpecialCards = (
     setSpecialCardRules(prevRules =>
       prevRules.map(rule => (rule.id === ruleId ? { ...rule, ...updates } : rule))
     );
+    
+    // Return the updated rule for better UI feedback
+    return specialCardRules.find(rule => rule.id === ruleId);
   };
 
   // Usuń regułę przyznawania karty
   const removeSpecialCardRule = (ruleId: string) => {
+    // Check if rule exists before proceeding
+    const ruleExists = specialCardRules.some(r => r.id === ruleId);
+    if (!ruleExists) {
+      toast.error("Reguła nie istnieje");
+      return false;
+    }
+    
     setSpecialCardRules(prevRules =>
       prevRules.filter(rule => rule.id !== ruleId)
     );
+    
+    return true;
   };
 
   // Przyznaj kartę graczowi
   const giveCardToPlayer = (playerId: string, cardId: string) => {
     // Znajdź gracza
     const playerIndex = players.findIndex(p => p.id === playerId);
-    if (playerIndex === -1) return;
+    if (playerIndex === -1) {
+      toast.error("Gracz nie istnieje");
+      return false;
+    }
 
     // Sprawdź czy karta istnieje
-    const cardExists = specialCards.some(card => card.id === cardId);
-    if (!cardExists) return;
+    const card = specialCards.find(card => card.id === cardId);
+    if (!card) {
+      toast.error("Karta nie istnieje");
+      return false;
+    }
 
     // Dodaj kartę do gracza
     setPlayers(prevPlayers => {
@@ -82,6 +140,12 @@ export const useSpecialCards = (
       // Dodaj kartę tylko jeśli gracz jej jeszcze nie ma
       if (!player.specialCards.includes(cardId)) {
         player.specialCards = [...player.specialCards, cardId];
+        
+        // Show feedback toast
+        toast.success(`${player.name} otrzymuje kartę "${card.name}"!`);
+      } else {
+        toast.warning(`${player.name} już posiada kartę "${card.name}"`);
+        return prevPlayers; // No change if player already has the card
       }
       
       updatedPlayers[playerIndex] = player;
@@ -89,24 +153,38 @@ export const useSpecialCards = (
     });
 
     // Znajdź kartę aby odegrać dźwięk
-    const card = specialCards.find(c => c.id === cardId);
-    if (card?.soundEffect) {
+    if (card.soundEffect) {
       playSound(card.soundEffect);
     } else {
       // Domyślny dźwięk jeśli karta nie ma własnego
       playSound('card-reveal');
     }
+    
+    return true;
   };
 
   // Użyj karty gracza
   const usePlayerCard = (playerId: string, cardId: string) => {
     // Znajdź gracza
     const playerIndex = players.findIndex(p => p.id === playerId);
-    if (playerIndex === -1) return;
+    if (playerIndex === -1) {
+      toast.error("Gracz nie istnieje");
+      return false;
+    }
 
     // Sprawdź czy gracz ma tę kartę
     const player = players[playerIndex];
-    if (!player.specialCards?.includes(cardId)) return;
+    if (!player.specialCards?.includes(cardId)) {
+      toast.error(`${player.name} nie posiada tej karty`);
+      return false;
+    }
+    
+    // Find the card
+    const card = specialCards.find(c => c.id === cardId);
+    if (!card) {
+      toast.error("Karta nie istnieje");
+      return false;
+    }
 
     // Usuń kartę od gracza (zużycie karty)
     setPlayers(prevPlayers => {
@@ -116,17 +194,31 @@ export const useSpecialCards = (
       updatedPlayer.specialCards = updatedPlayer.specialCards?.filter(id => id !== cardId) || [];
       
       updatedPlayers[playerIndex] = updatedPlayer;
+      
+      // Show feedback toast
+      toast.success(`${player.name} używa karty "${card.name}"!`);
+      
       return updatedPlayers;
     });
 
     // Znajdź kartę aby odegrać dźwięk
-    const card = specialCards.find(c => c.id === cardId);
-    if (card?.soundEffect) {
+    if (card.soundEffect) {
       playSound(card.soundEffect);
+    } else {
+      playSound('card-reveal');
     }
 
-    // Tu można dodać efekty specjalne karty, np. dodanie punktów, życia itp.
-    // Zależy od implementacji konkretnej karty
+    // Return the card details for processing by the game logic
+    return card;
+  };
+
+  const getPlayerCards = (playerId: string): SpecialCard[] => {
+    const player = players.find(p => p.id === playerId);
+    if (!player || !player.specialCards?.length) return [];
+    
+    return specialCards.filter(card => 
+      player.specialCards.includes(card.id)
+    );
   };
 
   return {
@@ -138,5 +230,6 @@ export const useSpecialCards = (
     removeSpecialCardRule,
     giveCardToPlayer,
     usePlayerCard,
+    getPlayerCards
   };
 };

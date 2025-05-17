@@ -25,12 +25,22 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
   const wheelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
+  // Use default categories if none are provided
+  const wheelCategories = categories.length > 0 ? categories : [
+    "Język polskiego internetu",
+    "Polska scena Twitcha",
+    "Zagadki",
+    "Kalambury wizualne",
+    "Gry, które podbiły Polskę",
+    "Technologie i internet w Polsce"
+  ];
+  
   // Prepare the wheel when categories change
   useEffect(() => {
-    if (categories.length > 0 && canvasRef.current) {
+    if (wheelCategories.length > 0 && canvasRef.current) {
       drawWheel();
     }
-  }, [categories]);
+  }, [wheelCategories]);
   
   // Draw the wheel on the canvas
   const drawWheel = () => {
@@ -48,15 +58,16 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Draw sections
-    const numCategories = categories.length;
+    const numCategories = wheelCategories.length;
     const arc = (2 * Math.PI) / numCategories;
     
     for (let i = 0; i < numCategories; i++) {
       const angle = i * arc;
       const endAngle = angle + arc;
       
-      // Set colors alternating
-      ctx.fillStyle = i % 2 === 0 ? '#9b87f5' : '#7E69AB';
+      // Set colors alternating - using more neon colors
+      const colors = ['#9b87f5', '#7E69AB', '#FF3E9D', '#00E0FF', '#00FFA3', '#FFA500'];
+      ctx.fillStyle = colors[i % colors.length] || '#9b87f5';
       
       // Draw section
       ctx.beginPath();
@@ -73,7 +84,33 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
       ctx.textAlign = 'right';
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '14px sans-serif';
-      ctx.fillText(categories[i], radius - 20, 5);
+      
+      // Wrap text if too long
+      const maxWidth = radius - 30;
+      const text = wheelCategories[i];
+      if (ctx.measureText(text).width > maxWidth) {
+        const words = text.split(' ');
+        let line = '';
+        let y = 0;
+        
+        for (const word of words) {
+          const testLine = line + word + ' ';
+          const metrics = ctx.measureText(testLine);
+          
+          if (metrics.width > maxWidth && line !== '') {
+            ctx.fillText(line, radius - 20, y);
+            line = word + ' ';
+            y += 15;
+          } else {
+            line = testLine;
+          }
+        }
+        
+        ctx.fillText(line, radius - 20, y);
+      } else {
+        ctx.fillText(text, radius - 20, 5);
+      }
+      
       ctx.restore();
     }
     
@@ -106,7 +143,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
     // Wait for animation to complete
     setTimeout(() => {
       const selectedIndex = getSelectedCategory(randomRotation);
-      const selected = categories[selectedIndex];
+      const selected = wheelCategories[selectedIndex];
       setSelectedCategory(selected);
       
       // Play success sound
@@ -125,7 +162,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
   // Calculate which category is selected based on final rotation
   const getSelectedCategory = (addedRotation: number) => {
     const totalRotation = rotation + addedRotation;
-    const numCategories = categories.length;
+    const numCategories = wheelCategories.length;
     const degreesPerCategory = 360 / numCategories;
     
     // Calculate how many degrees past 0 the wheel landed on
@@ -155,7 +192,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
           {/* Spinning Wheel */}
           <div 
             ref={wheelRef}
-            className="absolute top-0 left-0 w-full h-full transition-transform duration-[5s] ease-out"
+            className="absolute top-0 left-0 w-full h-full transition-transform duration-[5s] cubic-bezier(0.1, 0.7, 0.1, 1)"
             style={{ transform: `rotate(${rotation}deg)` }}
           />
           
@@ -171,7 +208,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
         
         <Button
           onClick={handleSpin}
-          disabled={spinning || disabled || categories.length === 0}
+          disabled={spinning || disabled || wheelCategories.length === 0}
           className="px-8 py-2"
         >
           {spinning ? 'Kręcenie...' : 'Zakręć kołem'}

@@ -1,17 +1,23 @@
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { useQuestionsContext } from '@/context/QuestionsContext';
 import { Question } from '@/types/game-types';
 import { QuestionFilterOptions, QuestionImportExport } from '@/types/questions-types';
 import { toast } from 'sonner';
 
+/**
+ * Custom hook for managing questions, including filtering, importing, and exporting
+ */
 export const useQuestions = () => {
   const { categories, saveGameData } = useGameContext();
   const { 
     usedQuestionIds, 
     isQuestionUsed, 
-    resetUsedQuestions: contextResetUsedQuestions 
+    resetUsedQuestions: contextResetUsedQuestions,
+    addQuestion,
+    updateQuestion,
+    removeQuestion
   } = useQuestionsContext();
   
   const [filters, setFilters] = useState<QuestionFilterOptions>({
@@ -21,6 +27,19 @@ export const useQuestions = () => {
     difficulty: null,
     searchTerm: ''
   });
+
+  // Helper function to check if a question matches the search term
+  const questionMatchesSearch = useCallback((question: Question, searchTerm: string) => {
+    const term = searchTerm.toLowerCase();
+    const textMatches = question.text?.toLowerCase().includes(term);
+    const optionsMatch = question.options?.some(option => 
+      option.toLowerCase().includes(term)
+    );
+    const answerMatches = question.correctAnswer?.toLowerCase().includes(term);
+    const categoryMatches = question.category?.toLowerCase().includes(term);
+    
+    return textMatches || optionsMatch || answerMatches || categoryMatches;
+  }, []);
 
   // Extract all questions from all categories
   const questions = useMemo(() => {
@@ -63,42 +82,68 @@ export const useQuestions = () => {
       
       return true;
     });
-  }, [questions, filters, categories, isQuestionUsed]);
-
-  // Check if a question matches the search term
-  const questionMatchesSearch = (question: Question, searchTerm: string) => {
-    const term = searchTerm.toLowerCase();
-    const textMatches = question.text?.toLowerCase().includes(term);
-    const optionsMatch = question.options?.some(option => 
-      option.toLowerCase().includes(term)
-    );
-    const answerMatches = question.answer?.toLowerCase().includes(term);
-    const categoryMatches = question.category?.toLowerCase().includes(term);
-    
-    return textMatches || optionsMatch || answerMatches || categoryMatches;
-  };
+  }, [questions, filters, categories, isQuestionUsed, questionMatchesSearch]);
 
   // Reset all questions to unused - use the one from context
-  const resetUsedQuestions = () => {
+  const resetUsedQuestions = useCallback(() => {
     contextResetUsedQuestions();
-  };
+    toast.success('Wszystkie pytania zostały oznaczone jako niewykorzystane');
+  }, [contextResetUsedQuestions]);
 
   // Import questions from JSON
-  const importQuestions = (data: QuestionImportExport): boolean => {
+  const importQuestions = useCallback((data: QuestionImportExport): boolean => {
     try {
-      // Implement import logic
-      // For now, just show a success message
-      toast.success('Pytania zostały zaimportowane');
+      if (!data || !data.questions || !Array.isArray(data.questions)) {
+        toast.error('Nieprawidłowy format danych');
+        return false;
+      }
+      
+      // Track created and updated questions counts
+      let created = 0;
+      let updated = 0;
+      let errors = 0;
+      
+      // Process each question
+      data.questions.forEach((question) => {
+        try {
+          const { categoryId } = question;
+          if (!categoryId) {
+            errors++;
+            return;
+          }
+          
+          const existingQuestion = questions.find(q => q.id === question.id);
+          if (existingQuestion) {
+            updateQuestion(categoryId, question);
+            updated++;
+          } else {
+            addQuestion(categoryId, question);
+            created++;
+          }
+        } catch (e) {
+          console.error("Error processing question:", e);
+          errors++;
+        }
+      });
+      
+      // Save game data after import
+      saveGameData();
+      
+      if (errors > 0) {
+        toast.warning(`Import zakończony: ${created} dodanych, ${updated} zaktualizowanych, ${errors} błędów`);
+      } else {
+        toast.success(`Import zakończony: ${created} dodanych, ${updated} zaktualizowanych`);
+      }
       return true;
     } catch (error) {
       console.error('Error importing questions:', error);
       toast.error('Wystąpił błąd podczas importowania pytań');
       return false;
     }
-  };
+  }, [questions, addQuestion, updateQuestion, saveGameData]);
 
   // Export questions to JSON
-  const exportQuestions = (exportFiltered: boolean = false): QuestionImportExport => {
+  const exportQuestions = useCallback((exportFiltered: boolean = false): QuestionImportExport => {
     try {
       const questionsToExport = exportFiltered ? filteredQuestions : questions;
       
@@ -134,7 +179,7 @@ export const useQuestions = () => {
         version: '1.0.0'
       };
     }
-  };
+  }, [filteredQuestions, questions, categories]);
 
   return {
     questions,

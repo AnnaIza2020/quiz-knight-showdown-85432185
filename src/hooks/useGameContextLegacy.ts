@@ -8,6 +8,8 @@ import { GameContextType } from '@/types/game-types';
  * This hook combines all contexts to maintain backward compatibility
  * with the original useGameContext API while we transition to the new
  * architecture with separate contexts.
+ * 
+ * Use this hook in components that haven't been updated to use the specific contexts yet.
  */
 export const useGameContextLegacy = (): GameContextType => {
   const gameContext = useGameContext();
@@ -21,6 +23,9 @@ export const useGameContextLegacy = (): GameContextType => {
     addQuestion: questionsContext.addQuestion,
     removeQuestion: questionsContext.removeQuestion,
     updateQuestion: questionsContext.updateQuestion,
+    markQuestionAsUsed: questionsContext.markQuestionAsUsed,
+    resetUsedQuestions: questionsContext.resetUsedQuestions,
+    isQuestionUsed: questionsContext.isQuestionUsed,
     
     // Override with functions from SpecialCardsContext
     addSpecialCard: specialCardsContext.addSpecialCard,

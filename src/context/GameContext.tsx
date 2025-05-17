@@ -6,6 +6,7 @@ import { useGameLogic } from '@/hooks/useGameLogic';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { QuestionsProvider } from './QuestionsContext';
 import { SpecialCardsProvider } from './SpecialCardsContext';
+import { toast } from 'sonner';
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
@@ -111,12 +112,20 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     
     if (timerRunning && timerSeconds > 0) {
       interval = setInterval(() => {
-        setTimerSeconds((prev) => prev - 1);
+        setTimerSeconds((prev) => {
+          const newValue = prev - 1;
+          // When we reach 5 seconds, play a tick sound
+          if (newValue <= 5 && newValue > 0) {
+            playSound('wheel-tick', 0.3);
+          }
+          return newValue;
+        });
       }, 1000);
-    } else if (timerSeconds === 0) {
+    } else if (timerSeconds === 0 && timerRunning) {
       setTimerRunning(false);
       // Play timeout sound effect
       playSound('timeout');
+      toast.info("Czas minął!");
     }
     
     return () => {
@@ -133,12 +142,21 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
   // Automatycznie ładujemy dane gry podczas uruchamiania
   useEffect(() => {
-    loadGameData();
+    try {
+      loadGameData();
+    } catch (error) {
+      console.error("Error loading game data:", error);
+      toast.error("Błąd podczas wczytywania danych gry");
+    }
   }, [loadGameData]);
 
   // Automatically save game data when important state changes
   useEffect(() => {
-    saveGameData();
+    try {
+      saveGameData();
+    } catch (error) {
+      console.error("Error saving game data:", error);
+    }
   }, [
     players, 
     round, 
@@ -208,16 +226,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     resetGame,
     setWinnerIds,
     
-    // Special cards methods
-    addSpecialCard: () => {},  // These will be overridden by the provider
-    updateSpecialCard: () => {},
-    removeSpecialCard: () => {},
-    addSpecialCardRule: () => {},
-    updateSpecialCardRule: () => {},
-    removeSpecialCardRule: () => {},
-    giveCardToPlayer: () => {},
-    usePlayerCard: () => {},
-    
     // Settings methods
     setGameLogo,
     setPrimaryColor,
@@ -228,37 +236,47 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     loadGameData,
     saveGameData,
     
-    // Questions methods
-    addQuestion: () => {},  // These will be overridden by the provider
+    // Questions methods - these will be overridden by QuestionsProvider
+    addQuestion: () => {},
     removeQuestion: () => {},
     updateQuestion: () => {},
-    markQuestionAsUsed,
+    markQuestionAsUsed, 
     resetUsedQuestions,
-    isQuestionUsed
+    isQuestionUsed,
+    
+    // Special cards methods - these will be overridden by SpecialCardsProvider
+    addSpecialCard: () => {},
+    updateSpecialCard: () => {},
+    removeSpecialCard: () => {},
+    addSpecialCardRule: () => {},
+    updateSpecialCardRule: () => {},
+    removeSpecialCardRule: () => {},
+    giveCardToPlayer: () => {},
+    usePlayerCard: () => {}
   };
 
   // Return nested providers to ensure all contexts have access to necessary data
   return (
     <GameContext.Provider value={value}>
-      <SpecialCardsProvider
-        players={players}
-        setPlayers={setPlayers}
-        specialCards={specialCards}
-        setSpecialCards={setSpecialCards}
-        specialCardRules={specialCardRules}
-        setSpecialCardRules={setSpecialCardRules}
-        playSound={playSound}
+      <QuestionsProvider
+        gameState={gameState}
+        usedQuestionIds={usedQuestionIds}
+        markQuestionAsUsed={markQuestionAsUsed}
+        resetUsedQuestions={resetUsedQuestions}
+        isQuestionUsed={isQuestionUsed}
       >
-        <QuestionsProvider
-          gameState={gameState}
-          usedQuestionIds={usedQuestionIds}
-          markQuestionAsUsed={markQuestionAsUsed}
-          resetUsedQuestions={resetUsedQuestions}
-          isQuestionUsed={isQuestionUsed}
+        <SpecialCardsProvider
+          players={players}
+          setPlayers={setPlayers}
+          specialCards={specialCards}
+          setSpecialCards={setSpecialCards}
+          specialCardRules={specialCardRules}
+          setSpecialCardRules={setSpecialCardRules}
+          playSound={playSound}
         >
           {children}
-        </QuestionsProvider>
-      </SpecialCardsProvider>
+        </SpecialCardsProvider>
+      </QuestionsProvider>
     </GameContext.Provider>
   );
 };

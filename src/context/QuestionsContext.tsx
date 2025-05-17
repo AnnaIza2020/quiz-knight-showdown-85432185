@@ -1,7 +1,8 @@
 
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 import { Question, Category } from '@/types/game-types';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
+import { toast } from 'sonner';
 
 // Define the Questions Context type
 interface QuestionsContextType {
@@ -18,6 +19,10 @@ interface QuestionsContextType {
   markQuestionAsUsed: (questionId: string) => void;
   resetUsedQuestions: () => void;
   isQuestionUsed: (questionId: string) => boolean;
+  
+  // Helper methods
+  findQuestionById: (questionId: string) => Question | null;
+  findCategoryByQuestionId: (questionId: string) => Category | null;
 }
 
 const QuestionsContext = createContext<QuestionsContextType | undefined>(undefined);
@@ -49,8 +54,36 @@ export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({
 }) => {
   const { categories, setCategories, currentQuestion, selectQuestion } = gameState;
 
+  // Helper to find a question by id across all categories
+  const findQuestionById = useCallback((questionId: string): Question | null => {
+    for (const category of categories) {
+      const question = category.questions.find(q => q.id === questionId);
+      if (question) return question;
+    }
+    return null;
+  }, [categories]);
+
+  // Helper to find category containing a specific question
+  const findCategoryByQuestionId = useCallback((questionId: string): Category | null => {
+    const category = categories.find(cat => 
+      cat.questions.some(q => q.id === questionId)
+    );
+    return category || null;
+  }, [categories]);
+
   // Question management
-  const addQuestion = (categoryId: string, question: Question) => {
+  const addQuestion = useCallback((categoryId: string, question: Question) => {
+    const categoryExists = categories.some(cat => cat.id === categoryId);
+    if (!categoryExists) {
+      toast.error(`Kategoria o ID ${categoryId} nie istnieje`);
+      return;
+    }
+
+    // Make sure the question has required fields
+    if (!question.id) {
+      question.id = crypto.randomUUID();
+    }
+
     setCategories(prevCategories => {
       return prevCategories.map(category => {
         if (category.id === categoryId) {
@@ -62,9 +95,11 @@ export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({
         return category;
       });
     });
-  };
 
-  const removeQuestion = (categoryId: string, questionId: string) => {
+    toast.success(`Dodano pytanie do kategorii "${categories.find(c => c.id === categoryId)?.name}"`);
+  }, [categories, setCategories]);
+
+  const removeQuestion = useCallback((categoryId: string, questionId: string) => {
     setCategories(prevCategories => {
       return prevCategories.map(category => {
         if (category.id === categoryId) {
@@ -76,9 +111,9 @@ export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({
         return category;
       });
     });
-  };
+  }, [setCategories]);
 
-  const updateQuestion = (categoryId: string, updatedQuestion: Question) => {
+  const updateQuestion = useCallback((categoryId: string, updatedQuestion: Question) => {
     setCategories(prevCategories => {
       return prevCategories.map(category => {
         if (category.id === categoryId) {
@@ -92,7 +127,7 @@ export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({
         return category;
       });
     });
-  };
+  }, [setCategories]);
 
   const value: QuestionsContextType = {
     categories,
@@ -105,7 +140,9 @@ export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({
     updateQuestion,
     markQuestionAsUsed,
     resetUsedQuestions,
-    isQuestionUsed
+    isQuestionUsed,
+    findQuestionById,
+    findCategoryByQuestionId
   };
 
   return <QuestionsContext.Provider value={value}>{children}</QuestionsContext.Provider>;
