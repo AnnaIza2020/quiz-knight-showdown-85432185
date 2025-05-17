@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -274,7 +273,7 @@ const SettingsQuestions = () => {
             {/* Filters */}
             <QuestionFilters 
               filters={filters}
-              setFilters={setFilters}
+              onFilterChange={setFilters}
               categories={categories}
               totalQuestions={questions.length}
               filteredCount={filteredQuestions.length}

@@ -21,3 +21,12 @@ export interface QuestionImportExport {
   exportDate: string;
   version: string;
 }
+
+// Interface for QuestionFilters component props
+export interface QuestionFiltersProps {
+  filters: QuestionFilterOptions;
+  onFilterChange: (filters: QuestionFilterOptions) => void;
+  categories: { id: string; name: string }[];
+  totalQuestions?: number;
+  filteredCount?: number;
+}
