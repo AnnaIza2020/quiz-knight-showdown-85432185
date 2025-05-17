@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { Player, SpecialCard, SpecialCardAwardRule, SoundEffect } from '@/types/game-types';
 
 export const useSpecialCards = (
@@ -17,9 +16,9 @@ export const useSpecialCards = (
   };
 
   // Aktualizuj istniejącą kartę specjalną
-  const updateSpecialCard = (card: SpecialCard) => {
+  const updateSpecialCard = (cardId: string, updates: Partial<SpecialCard>) => {
     setSpecialCards(prevCards =>
-      prevCards.map(c => (c.id === card.id ? card : c))
+      prevCards.map(card => (card.id === cardId ? { ...card, ...updates } : card))
     );
   };
 
@@ -47,9 +46,9 @@ export const useSpecialCards = (
   };
 
   // Aktualizuj istniejącą regułę
-  const updateSpecialCardRule = (rule: SpecialCardAwardRule) => {
+  const updateSpecialCardRule = (ruleId: string, updates: Partial<SpecialCardAwardRule>) => {
     setSpecialCardRules(prevRules =>
-      prevRules.map(r => (r.id === rule.id ? rule : r))
+      prevRules.map(rule => (rule.id === ruleId ? { ...rule, ...updates } : rule))
     );
   };
 
@@ -61,7 +60,7 @@ export const useSpecialCards = (
   };
 
   // Przyznaj kartę graczowi
-  const giveCardToPlayer = (cardId: string, playerId: string) => {
+  const giveCardToPlayer = (playerId: string, cardId: string) => {
     // Znajdź gracza
     const playerIndex = players.findIndex(p => p.id === playerId);
     if (playerIndex === -1) return;
@@ -100,7 +99,7 @@ export const useSpecialCards = (
   };
 
   // Użyj karty gracza
-  const usePlayerCard = (cardId: string, playerId: string) => {
+  const usePlayerCard = (playerId: string, cardId: string) => {
     // Znajdź gracza
     const playerIndex = players.findIndex(p => p.id === playerId);
     if (playerIndex === -1) return;

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
 import { GameContextType, GameRound, SpecialCard, SpecialCardAwardRule, SoundEffect, Question } from '@/types/game-types';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
@@ -102,16 +103,43 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   });
   
   // Special cards management
+  // We will not use the original hook functions, but create new functions with the correct signature
+  const specialCardsHook = useSpecialCards(
+    players, 
+    setPlayers, 
+    specialCards, 
+    setSpecialCards, 
+    specialCardRules, 
+    setSpecialCardRules, 
+    playSound
+  );
+  
+  // Extract base functions from the hook
   const {
     addSpecialCard,
-    updateSpecialCard,
     removeSpecialCard,
     addSpecialCardRule,
-    updateSpecialCardRule,
     removeSpecialCardRule,
     giveCardToPlayer,
     usePlayerCard,
-  } = useSpecialCards(players, setPlayers, specialCards, setSpecialCards, specialCardRules, setSpecialCardRules, playSound);
+  } = specialCardsHook;
+  
+  // Create correctly typed functions to match the GameContextType
+  const updateSpecialCard = (cardId: string, updates: Partial<SpecialCard>) => {
+    setSpecialCards(prevCards => 
+      prevCards.map(card => 
+        card.id === cardId ? { ...card, ...updates } : card
+      )
+    );
+  };
+
+  const updateSpecialCardRule = (ruleId: string, updates: Partial<SpecialCardAwardRule>) => {
+    setSpecialCardRules(prevRules => 
+      prevRules.map(rule => 
+        rule.id === ruleId ? { ...rule, ...updates } : rule
+      )
+    );
+  };
 
   // Question management
   const addQuestion = (categoryId: string, question: Question) => {
@@ -156,24 +184,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         return category;
       });
     });
-  };
-
-  // Fix the function signature to accept cardId and updates
-  const updateSpecialCard = (cardId: string, updates: Partial<SpecialCard>) => {
-    setSpecialCards(prevCards => 
-      prevCards.map(card => 
-        card.id === cardId ? { ...card, ...updates } : card
-      )
-    );
-  };
-
-  // Fix the function signature to accept ruleId and updates
-  const updateSpecialCardRule = (ruleId: string, updates: Partial<SpecialCardAwardRule>) => {
-    setSpecialCardRules(prevRules => 
-      prevRules.map(rule => 
-        rule.id === ruleId ? { ...rule, ...updates } : rule
-      )
-    );
   };
 
   // Timer effect

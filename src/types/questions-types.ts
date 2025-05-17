@@ -2,7 +2,7 @@
 import { Question, GameRound } from '@/types/game-types';
 
 // Filter options for questions
-export interface QuestionFilters {
+export interface QuestionFilterOptions {
   round?: GameRound | null;
   category?: string | null;
   used?: boolean | null;
