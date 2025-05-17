@@ -30,7 +30,7 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
     "Język polskiego internetu",
     "Polska scena Twitcha",
     "Zagadki",
-    "Kalambury wizualne",
+    "Czy jesteś mądrzejszy od 8-klasisty",
     "Gry, które podbiły Polskę",
     "Technologie i internet w Polsce"
   ];
