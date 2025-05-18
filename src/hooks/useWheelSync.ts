@@ -54,8 +54,11 @@ export const useWheelSync = (options?: WheelSyncOptions) => {
     subscribe();
     
     return () => {
-      // Pass false to disable subscription on cleanup, but don't pass an object argument
-      subscribe(false);
+      // Properly handle unsubscription without passing arguments
+      const unsubscribe = subscribe();
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
     };
   }, [subscribe]);
   

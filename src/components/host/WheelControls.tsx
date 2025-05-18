@@ -47,8 +47,12 @@ const WheelControls: React.FC<WheelControlsProps> = ({
     subscribe();
     
     return () => {
-      // Cleanup subscription when component unmounts - don't pass any arguments here
-      subscribe(false);
+      // Cleanup subscription when component unmounts
+      // We need to unsubscribe without passing arguments
+      const unsubscribe = subscribe();
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
     };
   }, [subscribe]);
 
