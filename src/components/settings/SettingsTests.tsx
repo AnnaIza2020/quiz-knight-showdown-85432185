@@ -23,6 +23,13 @@ interface TestResult {
   duration?: number;
 }
 
+// Type definition for memory info from performance API
+interface MemoryInfo {
+  jsHeapSizeLimit?: number;
+  totalJSHeapSize?: number;
+  usedJSHeapSize?: number;
+}
+
 const SettingsTests = () => {
   const { players, playSound, categories, saveGameData } = useGameContext();
   const [testResults, setTestResults] = useState<TestResult[]>([
@@ -284,11 +291,13 @@ const SettingsTests = () => {
       
       // Sprawdź, czy mamy dostęp do API wydajności przeglądarki
       let performanceMetrics: string[] = [];
-      if (window.performance && window.performance.memory) {
-        const memory = (window.performance as any).memory;
+      
+      // Safely check for memory info (only available in Chrome)
+      if (window.performance && 'memory' in window.performance) {
+        const memory = (window.performance as any).memory as MemoryInfo;
         if (memory) {
-          const usedHeapMB = Math.round(memory.usedJSHeapSize / (1024 * 1024));
-          const totalHeapMB = Math.round(memory.totalJSHeapSize / (1024 * 1024));
+          const usedHeapMB = memory.usedJSHeapSize ? Math.round(memory.usedJSHeapSize / (1024 * 1024)) : 0;
+          const totalHeapMB = memory.totalJSHeapSize ? Math.round(memory.totalJSHeapSize / (1024 * 1024)) : 0;
           performanceMetrics.push(`Pamięć JS: ${usedHeapMB}MB / ${totalHeapMB}MB`);
         }
       }
