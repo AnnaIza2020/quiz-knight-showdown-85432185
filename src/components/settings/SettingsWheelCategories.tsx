@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { PlusCircle, Trash2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useGameContext } from '@/context/GameContext';
+import { Category, GameRound } from '@/types/game-types';
 
 const SettingsWheelCategories = () => {
-  const { categories, addCategory, removeCategory, saveCategories } = useGameContext();
+  const { categories, addCategory, removeCategory, saveGameData } = useGameContext();
   const [newCategory, setNewCategory] = useState<string>('');
 
   const handleAddCategory = () => {
@@ -22,12 +23,15 @@ const SettingsWheelCategories = () => {
       return;
     }
 
-    addCategory({
+    // Create a new category for round 3 (wheel)
+    const newCategoryObj: Category = {
       id: crypto.randomUUID(),
       name: newCategory.trim(),
-      round: 3, // Always round 3 for wheel categories
-      created_at: new Date().toISOString()
-    });
+      round: GameRound.ROUND_THREE,
+      questions: []
+    };
+    
+    addCategory(newCategoryObj);
     
     setNewCategory('');
     toast.success(`Dodano kategorię: ${newCategory.trim()}`);
@@ -39,9 +43,12 @@ const SettingsWheelCategories = () => {
   };
 
   const handleSaveCategories = () => {
-    saveCategories();
+    saveGameData();
     toast.success('Kategorie zostały zapisane');
   };
+
+  // Filter categories for round 3 only (wheel)
+  const wheelCategories = categories.filter(c => c.round === GameRound.ROUND_THREE);
 
   return (
     <Card className="mb-6">
@@ -63,7 +70,7 @@ const SettingsWheelCategories = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-          {categories.map((category) => (
+          {wheelCategories.map((category) => (
             <div
               key={category.id}
               className="flex items-center justify-between bg-muted p-2 rounded"
@@ -80,7 +87,7 @@ const SettingsWheelCategories = () => {
           ))}
         </div>
 
-        {categories.length > 0 && (
+        {wheelCategories.length > 0 && (
           <Button 
             onClick={handleSaveCategories} 
             className="mt-4"
@@ -91,7 +98,7 @@ const SettingsWheelCategories = () => {
           </Button>
         )}
 
-        {categories.length === 0 && (
+        {wheelCategories.length === 0 && (
           <p className="text-center text-muted-foreground mt-4">
             Brak kategorii. Dodaj kategorię, aby używać koła fortuny.
           </p>

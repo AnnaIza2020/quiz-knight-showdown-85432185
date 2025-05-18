@@ -189,7 +189,6 @@ const WheelControls: React.FC<WheelControlsProps> = ({
         <FortuneWheel 
           categories={categories}
           onCategorySelected={handleCategorySelected}
-          disabled={isSpinning}
         />
         
         {selectedCategory && (

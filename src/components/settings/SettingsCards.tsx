@@ -1,960 +1,539 @@
 
-import React, { useState, useEffect } from 'react';
-import { useGameContext } from '@/context/GameContext';
+import React, { useState } from 'react';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Lightbulb, SkipForward, Zap, Clock, ArrowDown, Repeat, Target, Copy, Shield, RotateCcw, Plus, Pencil, Trash2, Check, X, Upload, ImageIcon } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { useSpecialCardsContext } from '@/context/SpecialCardsContext';
 import { SpecialCard, SpecialCardAwardRule, GameRound } from '@/types/game-types';
+import { Plus, Edit, Trash2, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import CardDisplay from '../cards/CardDisplay';
 
-const iconMap: Record<string, React.ElementType> = {
-  Lightbulb,
-  SkipForward,
-  Zap,
-  Clock,
-  ArrowDown,
-  Repeat,
-  Target,
-  Copy,
-  Shield,
-  RotateCcw
+const defaultCard: SpecialCard = {
+  id: '',
+  name: '',
+  description: '',
+  imageUrl: '',
+  soundEffect: 'card-reveal',
+  iconName: '',
+  animationStyle: 'glow'
+};
+
+const defaultRule: SpecialCardAwardRule = {
+  id: '',
+  cardId: '',
+  condition: 'correct_answer',
+  probability: 100,
+  roundApplicable: [GameRound.ROUND_ONE, GameRound.ROUND_TWO, GameRound.ROUND_THREE],
+  roundType: GameRound.ROUND_ONE,
+  description: '',
+  isEnabled: true
 };
 
 const SettingsCards = () => {
-  const { 
-    specialCards, 
-    addSpecialCard, 
-    updateSpecialCard, 
-    removeSpecialCard,
-    specialCardRules,
-    addSpecialCardRule,
-    updateSpecialCardRule,
-    removeSpecialCardRule,
-    players,
-    giveCardToPlayer,
-    playSound
-  } = useGameContext();
-  
-  const [activeTab, setActiveTab] = useState("karty");
+  const { specialCards, specialCardRules, addSpecialCard, updateSpecialCard, removeSpecialCard, 
+          addSpecialCardRule, updateSpecialCardRule, removeSpecialCardRule } = useSpecialCardsContext();
+
+  const [activeTab, setActiveTab] = useState('cards');
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false);
   const [isRuleDialogOpen, setIsRuleDialogOpen] = useState(false);
-  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
-  const [isImageUploadDialogOpen, setIsImageUploadDialogOpen] = useState(false);
-  const [currentCardForImage, setCurrentCardForImage] = useState<string>('');
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  
-  const [editingCard, setEditingCard] = useState<SpecialCard | null>(null);
-  const [editingRule, setEditingRule] = useState<SpecialCardAwardRule | null>(null);
-  
-  const [newCard, setNewCard] = useState<SpecialCard>({
-    id: '',
-    name: '',
-    description: '',
-    iconName: 'SkipForward',
-    imageUrl: ''
-  });
-  
-  const [newRule, setNewRule] = useState<SpecialCardAwardRule>({
-    id: '',
-    condition: 'correct_answer',
-    cardId: '',
-    probability: 100,
-    description: '',
-    isEnabled: true
-  });
-  
-  const [selectedCardForAssign, setSelectedCardForAssign] = useState<string>('');
-  const [selectedPlayerForAssign, setSelectedPlayerForAssign] = useState<string>('');
+  const [currentCard, setCurrentCard] = useState<SpecialCard>(defaultCard);
+  const [currentRule, setCurrentRule] = useState<SpecialCardAwardRule>(defaultRule);
+  const [isEditing, setIsEditing] = useState(false);
+  const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{type: 'card' | 'rule', id: string}>({ type: 'card', id: '' });
 
-  // Add the missing openImageUploadDialog function
-  const openImageUploadDialog = (cardId: string) => {
-    setCurrentCardForImage(cardId);
-    setImagePreview(null);
-    setIsImageUploadDialogOpen(true);
-  };
-
-  // Init with predefined cards if none exist
-  useEffect(() => {
-    if (specialCards.length === 0) {
-      const defaultCards: SpecialCard[] = [
-        {
-          id: 'dejavu',
-          name: 'Dejavu',
-          description: 'Użyj tej karty, aby otrzymać drugą szansę na odpowiedź na to samo pytanie.',
-          iconName: 'Repeat'
-        },
-        {
-          id: 'kontra',
-          name: 'Kontra',
-          description: 'Po usłyszeniu pytania, użyj tej karty, aby wskazać innego uczestnika, który musi odpowiedzieć.',
-          iconName: 'Target'
-        },
-        {
-          id: 'reanimacja',
-          name: 'Reanimacja',
-          description: 'Ta karta daje Ci dodatkowe życie! Jeśli odpowiesz błędnie, nie odpadasz.',
-          iconName: 'Shield'
-        },
-        {
-          id: 'skip',
-          name: 'Skip',
-          description: 'Zaskoczyło Cię pytanie? Użyj Skip, aby pominąć pytanie bez konsekwencji.',
-          iconName: 'SkipForward'
-        },
-        {
-          id: 'turbo',
-          name: 'Turbo',
-          description: 'Aktywuj Turbo przed odpowiedzią. Jeśli odpowiedź jest poprawna, otrzymasz podwójną liczbę punktów!',
-          iconName: 'Zap'
-        },
-        {
-          id: 'refleks2',
-          name: 'Refleks x2',
-          description: 'Użyj Refleks x2, aby podwoić czas na odpowiedź.',
-          iconName: 'Clock'
-        },
-        {
-          id: 'refleks3',
-          name: 'Refleks x3',
-          description: 'Użyj Refleks x3, aby potroić czas na odpowiedź.',
-          iconName: 'Clock'
-        },
-        {
-          id: 'lustro',
-          name: 'Lustro',
-          description: 'Aktywuj Lustro, aby usunąć jedną błędną opcję odpowiedzi.',
-          iconName: 'Copy'
-        },
-        {
-          id: 'oswiecenie',
-          name: 'Oświecenie',
-          description: 'Skorzystaj z Oświecenia, aby otrzymać krótką podpowiedź do pytania.',
-          iconName: 'Lightbulb'
-        }
-      ];
-      
-      defaultCards.forEach(card => addSpecialCard(card));
-    }
-    
-    if (specialCardRules.length === 0) {
-      const defaultRules: SpecialCardAwardRule[] = [
-        {
-          id: 'seria-poprawne',
-          condition: 'correct_answer',
-          cardId: 'dejavu',
-          description: 'Otrzymujesz kartę za 3 poprawne odpowiedzi z rzędu',
-          probability: 100,
-          isEnabled: true
-        },
-        {
-          id: 'punkty-r1',
-          condition: 'round_end',
-          cardId: 'turbo',
-          roundType: GameRound.ROUND_ONE,
-          description: 'Otrzymujesz kartę za zdobycie 50 punktów w Rundzie 1',
-          probability: 100,
-          isEnabled: true
-        },
-        {
-          id: 'bez-utraty-zycia',
-          condition: 'round_end',
-          cardId: 'refleks2',
-          description: 'Otrzymujesz kartę za ukończenie rundy bez utraty życia',
-          probability: 100,
-          isEnabled: true
-        },
-        {
-          id: 'najwiecej-pkt-r1',
-          condition: 'round_end',
-          cardId: 'refleks3',
-          roundType: GameRound.ROUND_ONE,
-          description: 'Otrzymujesz kartę za zdobycie największej liczby punktów w Rundzie 1',
-          probability: 100,
-          isEnabled: true
-        },
-        {
-          id: 'ratunek-r1',
-          condition: 'round_end',
-          cardId: 'reanimacja',
-          roundType: GameRound.ROUND_ONE,
-          description: 'Karta ratunkowa dla gracza z najmniejszą liczbą punktów po Rundzie 1',
-          probability: 100,
-          isEnabled: true
-        }
-      ];
-      
-      defaultRules.forEach(rule => addSpecialCardRule(rule));
-    }
-  }, [specialCards.length, specialCardRules.length, addSpecialCard, addSpecialCardRule]);
-
-  // Obsługa przesyłania obrazu karty
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Sprawdź typ pliku (tylko PNG)
-    if (file.type !== 'image/png') {
-      toast.error('Dozwolone są tylko pliki PNG');
-      return;
-    }
-
-    // Stwórz podgląd obrazu
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setImagePreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Zapisz obraz do karty
-  const handleSaveCardImage = () => {
-    if (!imagePreview || !currentCardForImage) return;
-
-    // Znajdź kartę do aktualizacji
-    const cardToUpdate = specialCards.find(card => card.id === currentCardForImage);
-    if (!cardToUpdate) return;
-
-    // Aktualizuj kartę z nowym obrazem
-    updateSpecialCard(currentCardForImage, { imageUrl: imagePreview });
-
-    toast.success(`Obraz dla karty "${cardToUpdate.name}" został dodany`);
-    setIsImageUploadDialogOpen(false);
-    setImagePreview(null);
-    setCurrentCardForImage('');
-    playSound('card-reveal');
-  };
-
-  // Handle adding/editing a card
-  const handleCardSubmit = () => {
-    if (!newCard.name || !newCard.description) {
-      toast.error('Wypełnij wszystkie wymagane pola!');
-      return;
-    }
-    
-    const cardToSave = {
-      ...newCard,
-      id: newCard.id || `card-${Date.now()}`
-    };
-    
-    if (editingCard) {
-      updateSpecialCard(cardToSave.id, cardToSave);
-      toast.success(`Karta "${cardToSave.name}" została zaktualizowana`);
-    } else {
-      addSpecialCard(cardToSave);
-      toast.success(`Karta "${cardToSave.name}" została dodana`);
-    }
-    
-    setIsCardDialogOpen(false);
-    setNewCard({
-      id: '',
-      name: '',
-      description: '',
-      iconName: 'SkipForward',
-      imageUrl: ''
-    });
-    setEditingCard(null);
-    playSound('bonus');
-  };
-
-  // Handle adding/editing a rule
-  const handleRuleSubmit = () => {
-    if (!newRule.condition || !newRule.cardId) {
-      toast.error('Wypełnij wszystkie wymagane pola!');
-      return;
-    }
-    
-    const ruleToSave = {
-      ...newRule,
-      id: newRule.id || `rule-${Date.now()}`
-    };
-    
-    if (editingRule) {
-      updateSpecialCardRule(ruleToSave.id, ruleToSave);
-      toast.success(`Zasada "${ruleToSave.condition}" została zaktualizowana`);
-    } else {
-      addSpecialCardRule(ruleToSave);
-      toast.success(`Zasada "${ruleToSave.condition}" została dodana`);
-    }
-    
-    setIsRuleDialogOpen(false);
-    setNewRule({
-      id: '',
-      condition: '',
-      cardId: '',
-      description: '',
-      isEnabled: true
-    });
-    setEditingRule(null);
-    playSound('success');
-  };
-
-  // Handle assigning a card to player
-  const handleAssignCard = () => {
-    if (!selectedCardForAssign || !selectedPlayerForAssign) {
-      toast.error('Wybierz kartę i gracza!');
-      return;
-    }
-    
-    giveCardToPlayer(selectedPlayerForAssign, selectedCardForAssign);
-    
-    const player = players.find(p => p.id === selectedPlayerForAssign);
-    const card = specialCards.find(c => c.id === selectedCardForAssign);
-    
-    if (player && card) {
-      toast.success(`Karta "${card.name}" przyznana graczowi ${player.name}`);
-      playSound('card-reveal');
-    }
-    
-    setIsAssignDialogOpen(false);
-    setSelectedCardForAssign('');
-    setSelectedPlayerForAssign('');
-  };
-
-  // Set up editing card
-  const handleEditCard = (card: SpecialCard) => {
-    setEditingCard(card);
-    setNewCard({ ...card });
+  // Card form handlers
+  const handleAddCard = () => {
+    setCurrentCard(defaultCard);
+    setIsEditing(false);
     setIsCardDialogOpen(true);
   };
 
-  // Set up editing rule
-  const handleEditRule = (rule: SpecialCardAwardRule) => {
-    setEditingRule(rule);
-    setNewRule({ ...rule });
+  const handleEditCard = (card: SpecialCard) => {
+    setCurrentCard({...card});
+    setIsEditing(true);
+    setIsCardDialogOpen(true);
+  };
+
+  const handleSaveCard = () => {
+    try {
+      const cardToSave = {...currentCard};
+      
+      if (!cardToSave.name.trim()) {
+        toast.error('Nazwa karty jest wymagana');
+        return;
+      }
+      
+      if (isEditing) {
+        updateSpecialCard(cardToSave.id, cardToSave);
+        toast.success(`Karta "${cardToSave.name}" została zaktualizowana`);
+      } else {
+        cardToSave.id = crypto.randomUUID();
+        addSpecialCard(cardToSave);
+        toast.success(`Karta "${cardToSave.name}" została dodana`);
+      }
+      
+      setIsCardDialogOpen(false);
+    } catch (error) {
+      toast.error('Wystąpił błąd podczas zapisywania karty');
+      console.error('Error saving card:', error);
+    }
+  };
+
+  // Rule form handlers
+  const handleAddRule = () => {
+    setCurrentRule({...defaultRule});
+    setIsEditing(false);
     setIsRuleDialogOpen(true);
   };
-  
-  // Test card animation
-  const handleTestCardAnimation = (cardId: string) => {
+
+  const handleEditRule = (rule: SpecialCardAwardRule) => {
+    setCurrentRule({...rule});
+    setIsEditing(true);
+    setIsRuleDialogOpen(true);
+  };
+
+  const handleSaveRule = () => {
+    try {
+      const ruleToSave = {...currentRule};
+      
+      if (!ruleToSave.cardId) {
+        toast.error('Wybierz kartę, której dotyczy reguła');
+        return;
+      }
+      
+      if (!ruleToSave.condition) {
+        toast.error('Wybierz warunek przyznawania karty');
+        return;
+      }
+      
+      if (isEditing) {
+        updateSpecialCardRule(ruleToSave.id, ruleToSave);
+        toast.success(`Reguła dla karty została zaktualizowana`);
+      } else {
+        ruleToSave.id = crypto.randomUUID();
+        addSpecialCardRule(ruleToSave);
+        toast.success(`Nowa reguła dla karty została dodana`);
+      }
+      
+      setIsRuleDialogOpen(false);
+    } catch (error) {
+      toast.error('Wystąpił błąd podczas zapisywania reguły');
+      console.error('Error saving rule:', error);
+    }
+  };
+
+  // Delete confirmation handlers
+  const handleConfirmDelete = () => {
+    try {
+      if (itemToDelete.type === 'card') {
+        removeSpecialCard(itemToDelete.id);
+        toast.success('Karta została usunięta');
+      } else {
+        removeSpecialCardRule(itemToDelete.id);
+        toast.success('Reguła została usunięta');
+      }
+      setDeleteConfirmDialog(false);
+    } catch (error) {
+      toast.error('Wystąpił błąd podczas usuwania');
+      console.error('Error deleting item:', error);
+    }
+  };
+
+  const promptDelete = (type: 'card' | 'rule', id: string) => {
+    setItemToDelete({ type, id });
+    setDeleteConfirmDialog(true);
+  };
+
+  const getCardNameById = (cardId: string) => {
     const card = specialCards.find(c => c.id === cardId);
-    if (card) {
-      toast.info(`Animacja karty: ${card.name}`, {
-        description: card.description,
-        icon: card.iconName in iconMap ? React.createElement(iconMap[card.iconName]) : null
-      });
-      playSound('card-reveal');
+    return card ? card.name : 'Nieznana karta';
+  };
+
+  const translateCondition = (condition: string) => {
+    const conditions: Record<string, string> = {
+      'correct_answer': 'Poprawna odpowiedź',
+      'incorrect_answer': 'Błędna odpowiedź',
+      'round_start': 'Start rundy',
+      'round_end': 'Koniec rundy',
+      'random': 'Losowo'
+    };
+    
+    return conditions[condition] || condition;
+  };
+
+  const translateRound = (round: GameRound) => {
+    switch(round) {
+      case GameRound.SETUP: return 'Przygotowanie';
+      case GameRound.ROUND_ONE: return 'Runda 1';
+      case GameRound.ROUND_TWO: return 'Runda 2';
+      case GameRound.ROUND_THREE: return 'Runda 3';
+      case GameRound.FINISHED: return 'Koniec gry';
+      default: return `Runda ${round}`;
     }
   };
 
   return (
-    <div className="bg-[#0c0e1a] rounded-lg p-6 shadow-lg border border-gray-800">
-      <h2 className="text-xl font-bold mb-2 text-white">Karty Specjalne</h2>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-        <TabsList className="bg-black/30 w-full justify-start overflow-x-auto border-b border-gray-800">
-          <TabsTrigger value="karty" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-neon-green data-[state=active]:shadow-none">
-            Karty specjalne
-          </TabsTrigger>
-          <TabsTrigger value="zasady" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-neon-green data-[state=active]:shadow-none">
-            Zasady przyznawania
-          </TabsTrigger>
-          <TabsTrigger value="przydziel" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-neon-green data-[state=active]:shadow-none">
-            Przydziel kartę
-          </TabsTrigger>
-          <TabsTrigger value="test" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-neon-green data-[state=active]:shadow-none">
-            Test animacji
-          </TabsTrigger>
-          <TabsTrigger value="obrazy" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-neon-green data-[state=active]:shadow-none">
-            Obrazy kart
-          </TabsTrigger>
-        </TabsList>
-        
-        {/* Karty specjalne */}
-        <TabsContent value="karty" className="mt-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Lista kart specjalnych</h3>
-            <Dialog open={isCardDialogOpen} onOpenChange={setIsCardDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-neon-green hover:bg-neon-green/80 gap-2" onClick={() => {
-                  setEditingCard(null);
-                  setNewCard({
-                    id: '',
-                    name: '',
-                    description: '',
-                    iconName: 'SkipForward',
-                    imageUrl: ''
-                  });
-                }}>
-                  <Plus size={16} /> Nowa karta
+    <div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Karty Specjalne (Boostery)</CardTitle>
+          <CardDescription>
+            Zarządzaj kartami specjalnymi i regułami ich przyznawania
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="cards">Karty</TabsTrigger>
+              <TabsTrigger value="rules">Reguły przyznawania</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="cards">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Lista kart</h3>
+                <Button onClick={handleAddCard} className="gap-1">
+                  <Plus size={16} /> Dodaj kartę
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-[#0c0e1a] border-gray-800">
-                <DialogHeader>
-                  <DialogTitle className="text-white">{editingCard ? 'Edytuj kartę' : 'Dodaj nową kartę'}</DialogTitle>
-                  <DialogDescription>
-                    {editingCard ? 'Zmodyfikuj istniejącą kartę specjalną' : 'Utwórz nową kartę specjalną dla graczy'}
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="card-name" className="text-right">Nazwa</Label>
-                    <Input
-                      id="card-name"
-                      className="col-span-3 bg-black/50 border-gray-700"
-                      value={newCard.name}
-                      onChange={(e) => setNewCard({...newCard, name: e.target.value})}
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="card-description" className="text-right">Opis</Label>
-                    <Input
-                      id="card-description"
-                      className="col-span-3 bg-black/50 border-gray-700"
-                      value={newCard.description}
-                      onChange={(e) => setNewCard({...newCard, description: e.target.value})}
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="card-icon" className="text-right">Ikona</Label>
-                    <Select
-                      value={newCard.iconName}
-                      onValueChange={(value) => setNewCard({...newCard, iconName: value})}
-                    >
-                      <SelectTrigger className="col-span-3 bg-black/50 border-gray-700">
-                        <SelectValue placeholder="Wybierz ikonę" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#0c0e1a] border-gray-800">
-                        {Object.keys(iconMap).map((icon) => {
-                          const IconComponent = iconMap[icon];
-                          return (
-                            <SelectItem key={icon} value={icon}>
-                              <div className="flex items-center gap-2">
-                                <IconComponent size={16} />
-                                <span>{icon}</span>
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <DialogFooter className="flex space-x-2">
-                  <Button variant="outline" onClick={() => setIsCardDialogOpen(false)}>Anuluj</Button>
-                  <Button className="bg-neon-green hover:bg-neon-green/80" onClick={handleCardSubmit}>
-                    {editingCard ? 'Zapisz zmiany' : 'Dodaj kartę'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {specialCards.map((card) => {
-              const IconComponent = iconMap[card.iconName] || SkipForward;
-              return (
-                <Card key={card.id} className="bg-black/30 border-gray-800">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="flex items-center gap-2 text-neon-green">
-                        <IconComponent size={18} />
-                        {card.name}
-                      </CardTitle>
-                      <div className="flex gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-gray-400 hover:text-white hover:bg-black/50"
-                          onClick={() => handleEditCard(card)}
-                        >
-                          <Pencil size={16} />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-gray-400 hover:text-white hover:bg-black/50"
-                          onClick={() => openImageUploadDialog(card.id)}
-                          title="Dodaj obraz karty"
-                        >
-                          <ImageIcon size={16} />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-black/50"
-                          onClick={() => {
-                            if (window.confirm(`Czy na pewno chcesz usunąć kartę "${card.name}"?`)) {
-                              removeSpecialCard(card.id);
-                              toast.success(`Karta "${card.name}" została usunięta`);
-                            }
-                          }}
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
-                    </div>
-                    <CardDescription className="text-gray-400">
-                      {card.description}
-                    </CardDescription>
-                  </CardHeader>
-                  {card.imageUrl && (
-                    <CardContent className="pt-0">
-                      <div className="relative w-full aspect-[3/4] rounded-md overflow-hidden border border-gray-700">
-                        <img 
-                          src={card.imageUrl} 
-                          alt={`Karta ${card.name}`}
-                          className="object-contain w-full h-full"
-                        />
-                      </div>
-                    </CardContent>
-                  )}
-                </Card>
-              );
-            })}
-          </div>
-          
-          {specialCards.length === 0 && (
-            <div className="flex justify-center items-center p-12 border border-dashed border-gray-700 rounded-lg">
-              <p className="text-white/60">Brak zdefiniowanych kart specjalnych. Dodaj pierwszą kartę!</p>
-            </div>
-          )}
-        </TabsContent>
-        
-        {/* Zasady przyznawania kart */}
-        <TabsContent value="zasady" className="mt-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Automatyczne przyznawanie kart</h3>
-            <Dialog open={isRuleDialogOpen} onOpenChange={setIsRuleDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-neon-green hover:bg-neon-green/80 gap-2" onClick={() => {
-                  setEditingRule(null);
-                  setNewRule({
-                    id: '',
-                    condition: 'correct_answer',
-                    cardId: '',
-                    description: '',
-                    isEnabled: true,
-                    probability: 100
-                  });
-                  setIsRuleDialogOpen(true);
-                }}>
-                  <Plus size={16} /> Nowa zasada
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-[#0c0e1a] border-gray-800">
-                <DialogHeader>
-                  <DialogTitle className="text-white">{editingRule ? 'Edytuj zasadę' : 'Dodaj nową zasadę'}</DialogTitle>
-                  <DialogDescription>
-                    {editingRule 
-                      ? 'Zmodyfikuj zasadę przyznawania karty specjalnej' 
-                      : 'Utwórz nową zasadę przyznawania karty specjalnej'
-                    }
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="rule-condition" className="text-right">Warunek</Label>
-                    <Input
-                      id="rule-condition"
-                      className="col-span-3 bg-black/50 border-gray-700"
-                      value={typeof newRule.condition === 'string' ? newRule.condition : 'correct_answer'}
-                      onChange={(e) => setNewRule({...newRule, condition: e.target.value as 'correct_answer' | 'incorrect_answer' | 'round_start' | 'round_end' | 'random' | string})}
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="rule-card" className="text-right">Karta</Label>
-                    <Select
-                      value={newRule.cardId}
-                      onValueChange={(value) => setNewRule({...newRule, cardId: value})}
-                    >
-                      <SelectTrigger className="col-span-3 bg-black/50 border-gray-700">
-                        <SelectValue placeholder="Wybierz kartę" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#0c0e1a] border-gray-800">
-                        {specialCards.map(card => (
-                          <SelectItem key={card.id} value={card.id}>
-                            <div className="flex items-center gap-2">
-                              {card.iconName && iconMap[card.iconName] && React.createElement(iconMap[card.iconName], { size: 16 })}
-                              <span>{card.name}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="rule-round" className="text-right">Runda</Label>
-                    <Select
-                      value={newRule.roundType?.toString() || ''}
-                      onValueChange={(value) => setNewRule({
-                        ...newRule, 
-                        roundType: value ? Number(value) as GameRound : undefined
-                      })}
-                    >
-                      <SelectTrigger className="col-span-3 bg-black/50 border-gray-700">
-                        <SelectValue placeholder="Wszystkie rundy" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#0c0e1a] border-gray-800">
-                        <SelectItem value="">Wszystkie rundy</SelectItem>
-                        <SelectItem value={GameRound.ROUND_ONE.toString()}>Runda 1</SelectItem>
-                        <SelectItem value={GameRound.ROUND_TWO.toString()}>Runda 2</SelectItem>
-                        <SelectItem value={GameRound.ROUND_THREE.toString()}>Runda 3</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="rule-description" className="text-right">Opis</Label>
-                    <Input
-                      id="rule-description"
-                      className="col-span-3 bg-black/50 border-gray-700"
-                      value={newRule.description || ''}
-                      onChange={(e) => setNewRule({...newRule, description: e.target.value})}
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="rule-enabled" className="text-right">Aktywna</Label>
-                    <div className="col-span-3 flex items-center">
-                      <Switch 
-                        id="rule-enabled" 
-                        checked={newRule.isEnabled} 
-                        onCheckedChange={(checked) => setNewRule({...newRule, isEnabled: checked})}
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <DialogFooter className="flex space-x-2">
-                  <Button variant="outline" onClick={() => setIsRuleDialogOpen(false)}>Anuluj</Button>
-                  <Button className="bg-neon-green hover:bg-neon-green/80" onClick={handleRuleSubmit}>
-                    {editingRule ? 'Zapisz zmiany' : 'Dodaj zasadę'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">Status</TableHead>
-                  <TableHead>Warunek</TableHead>
-                  <TableHead>Karta</TableHead>
-                  <TableHead>Runda</TableHead>
-                  <TableHead>Opis</TableHead>
-                  <TableHead className="text-right">Akcje</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {specialCardRules.map((rule) => {
-                  const card = specialCards.find(c => c.id === rule.cardId);
-                  return (
-                    <TableRow key={rule.id}>
-                      <TableCell>
-                        {rule.isEnabled ? (
-                          <Badge variant="outline" className="bg-green-900/20 text-green-500 border-green-500">
-                            Aktywna
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-gray-900/20 text-gray-500 border-gray-500">
-                            Nieaktywna
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>{rule.condition}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {card && card.iconName && iconMap[card.iconName] && React.createElement(iconMap[card.iconName], { size: 16 })}
-                          <span>{card?.name || 'Nieznana karta'}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {rule.roundType !== undefined
-                          ? `Runda ${rule.roundType}`
-                          : "Wszystkie rundy"}
-                      </TableCell>
-                      <TableCell>{rule.description}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-gray-400 hover:text-neon-yellow hover:bg-black/50"
-                            title="Edytuj zasadę"
+              </div>
+              
+              {specialCards.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {specialCards.map((card) => (
+                    <Card key={card.id} className="overflow-hidden">
+                      <CardContent className="pt-4 flex flex-col items-center">
+                        <CardDisplay card={card} size="medium" showDescription={true} />
+                        <div className="mt-4 w-full flex justify-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditCard(card)}
                           >
-                            <Pencil size={16} />
+                            <Edit size={16} />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-gray-400 hover:text-neon-red hover:bg-black/50"
-                            title="Usuń zasadę"
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => promptDelete('card', card.id)}
+                            className="text-destructive hover:text-destructive"
                           >
                             <Trash2 size={16} />
                           </Button>
                         </div>
-                      </TableCell>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Nie ma jeszcze zdefiniowanych kart specjalnych.</p>
+                  <p className="text-sm mt-2">Kliknij "Dodaj kartę" aby stworzyć pierwszą.</p>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="rules">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Reguły przyznawania kart</h3>
+                <Button onClick={handleAddRule} className="gap-1">
+                  <Plus size={16} /> Dodaj regułę
+                </Button>
+              </div>
+              
+              {specialCardRules.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Karta</TableHead>
+                      <TableHead>Warunek</TableHead>
+                      <TableHead>Rundy</TableHead>
+                      <TableHead>Szansa</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Akcje</TableHead>
                     </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-          
-          {specialCardRules.length === 0 && (
-            <div className="flex justify-center items-center p-12 border border-dashed border-gray-700 rounded-lg">
-              <p className="text-white/60">Brak zdefiniowanych zasad przyznawania kart. Dodaj pierwszą zasadę!</p>
-            </div>
-          )}
-        </TabsContent>
-        
-        {/* Przydzielanie kart graczom */}
-        <TabsContent value="przydziel" className="mt-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Przydziel kartę graczowi</h3>
-            <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-neon-blue hover:bg-neon-blue/80 gap-2">
-                  <Plus size={16} /> Przydziel kartę
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-[#0c0e1a] border-gray-800">
-                <DialogHeader>
-                  <DialogTitle className="text-white">Przydziel kartę graczowi</DialogTitle>
-                  <DialogDescription>
-                    Wybierz kartę i gracza, któremu chcesz ją przydzielić
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="player-select" className="text-right">Gracz</Label>
-                    <Select
-                      value={selectedPlayerForAssign}
-                      onValueChange={setSelectedPlayerForAssign}
-                    >
-                      <SelectTrigger className="col-span-3 bg-black/50 border-gray-700">
-                        <SelectValue placeholder="Wybierz gracza" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#0c0e1a] border-gray-800">
-                        {players.filter(p => !p.isEliminated).map((player) => (
-                          <SelectItem key={player.id} value={player.id}>
-                            {player.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="card-select" className="text-right">Karta</Label>
-                    <Select
-                      value={selectedCardForAssign}
-                      onValueChange={setSelectedCardForAssign}
-                    >
-                      <SelectTrigger className="col-span-3 bg-black/50 border-gray-700">
-                        <SelectValue placeholder="Wybierz kartę" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#0c0e1a] border-gray-800">
-                        {specialCards.map((card) => (
-                          <SelectItem key={card.id} value={card.id}>
-                            <div className="flex items-center gap-2">
-                              {card.iconName in iconMap ? React.createElement(iconMap[card.iconName], { size: 16 }) : null}
-                              <span>{card.name}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <DialogFooter className="flex space-x-2">
-                  <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>Anuluj</Button>
-                  <Button className="bg-neon-blue hover:bg-neon-blue/80" onClick={handleAssignCard}>
-                    Przydziel kartę
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <Card className="bg-black/30 border-gray-800">
-            <CardHeader>
-              <CardTitle>Lista graczy i ich karty</CardTitle>
-              <CardDescription>
-                Przeglądaj, którzy gracze mają które karty specjalne oraz przydzielaj karty manualnie do poszczególnych graczy.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                {players.filter(p => !p.isEliminated).map((player) => {
-                  const playerCards = player.specialCards?.map(
-                    cardId => specialCards.find(c => c.id === cardId)
-                  ).filter(Boolean) || [];
-                  
-                  return (
-                    <div key={player.id} className="border border-gray-800 rounded-md p-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="font-medium text-lg">{player.name}</div>
-                        <Badge variant="outline" className="bg-purple-900/20 text-purple-400 border-purple-500">
-                          {playerCards.length} kart
-                        </Badge>
-                      </div>
-                      
-                      {playerCards.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {playerCards.map((card) => card && (
-                            <div 
-                              key={card.id} 
-                              className="flex items-center gap-1 px-2 py-1 bg-black/30 rounded-md border border-gray-800"
-                              title={card.description}
+                  </TableHeader>
+                  <TableBody>
+                    {specialCardRules.map((rule) => (
+                      <TableRow key={rule.id}>
+                        <TableCell>{getCardNameById(rule.cardId)}</TableCell>
+                        <TableCell>{translateCondition(rule.condition)}</TableCell>
+                        <TableCell>{rule.roundApplicable?.map(r => translateRound(r)).join(', ')}</TableCell>
+                        <TableCell>{rule.probability}%</TableCell>
+                        <TableCell>
+                          {rule.isEnabled ? (
+                            <span className="text-green-500">Aktywna</span>
+                          ) : (
+                            <span className="text-gray-400">Nieaktywna</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleEditRule(rule)}
                             >
-                              {card.iconName && iconMap[card.iconName] && React.createElement(iconMap[card.iconName], { size: 14 })}
-                              <span className="text-sm">{card.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-gray-400">Gracz nie posiada żadnych kart</div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Test animacji kart */}
-        <TabsContent value="test" className="mt-6">
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-2">Test animacji kart</h3>
-            <p className="text-sm text-gray-400 mb-4">
-              Wybierz kartę, aby zobaczyć jak wygląda jej animacja dla gracza
-            </p>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {specialCards.map((card) => {
-                const IconComponent = iconMap[card.iconName] || SkipForward;
-                return (
-                  <Button 
-                    key={card.id}
-                    variant="outline"
-                    className="flex items-center justify-start gap-2 px-3 py-6 h-auto bg-black/20 border-gray-800 hover:bg-black/40"
-                    onClick={() => handleTestCardAnimation(card.id)}
-                  >
-                    <IconComponent className="text-neon-green" size={20} />
-                    <div className="text-left">
-                      <div className="font-medium">{card.name}</div>
-                      <div className="text-xs text-gray-400 truncate max-w-[200px]">{card.description}</div>
-                    </div>
-                  </Button>
-                );
-              })}
+                              <Edit size={16} />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => promptDelete('rule', rule.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Nie ma jeszcze zdefiniowanych reguł przyznawania kart.</p>
+                  <p className="text-sm mt-2">Kliknij "Dodaj regułę" aby stworzyć pierwszą.</p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+      
+      {/* Card Form Dialog */}
+      <Dialog open={isCardDialogOpen} onOpenChange={setIsCardDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? 'Edytuj kartę' : 'Dodaj nową kartę'}</DialogTitle>
+            <DialogDescription>
+              Wypełnij poniższy formularz, aby {isEditing ? 'edytować' : 'dodać'} kartę specjalną.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Nazwa karty</Label>
+              <Input 
+                id="name" 
+                value={currentCard.name} 
+                onChange={(e) => setCurrentCard({...currentCard, name: e.target.value})}
+                placeholder="np. Dejavu"
+              />
             </div>
-          </div>
-        </TabsContent>
-
-        {/* Obrazy kart */}
-        <TabsContent value="obrazy" className="mt-6">
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-2">Zarządzanie obrazami kart</h3>
-            <p className="text-sm text-gray-400 mb-4">
-              Dodaj lub zastąp obrazy dla kart specjalnych (tylko pliki PNG)
-            </p>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {specialCards.map((card) => (
-                <Card key={card.id} className="bg-black/30 border-gray-800">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      {card.iconName && iconMap[card.iconName] && React.createElement(iconMap[card.iconName], { size: 16 })}
-                      {card.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3">
-                    {card.imageUrl ? (
-                      <div className="relative aspect-[3/4] bg-black/50 rounded-md overflow-hidden border border-gray-700">
-                        <img 
-                          src={card.imageUrl} 
-                          alt={`Karta ${card.name}`} 
-                          className="w-full h-full object-contain" 
-                        />
-                        <Button 
-                          size="icon"
-                          variant="ghost"
-                          className="absolute top-2 right-2 h-8 w-8 bg-black/60 hover:bg-black/80"
-                          onClick={() => openImageUploadDialog(card.id)}
-                        >
-                          <Pencil size={14} className="text-white" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div 
-                        className="flex flex-col items-center justify-center aspect-[3/4] bg-black/50 rounded-md border border-gray-700 border-dashed p-4 cursor-pointer hover:bg-black/60"
-                        onClick={() => openImageUploadDialog(card.id)}
-                      >
-                        <Upload className="text-gray-500 mb-2" size={24} />
-                        <span className="text-sm text-center text-gray-500">Dodaj obraz</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="grid gap-2">
+              <Label htmlFor="description">Opis</Label>
+              <Textarea 
+                id="description" 
+                value={currentCard.description} 
+                onChange={(e) => setCurrentCard({...currentCard, description: e.target.value})}
+                placeholder="Krótki opis działania karty..."
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="iconName">Ikona</Label>
+              <Select 
+                value={currentCard.iconName || currentCard.name} 
+                onValueChange={(value) => setCurrentCard({...currentCard, iconName: value})}
+              >
+                <SelectTrigger id="iconName">
+                  <SelectValue placeholder="Wybierz ikonę" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dejavu">Dejavu</SelectItem>
+                  <SelectItem value="kontra">Kontra</SelectItem>
+                  <SelectItem value="reanimacja">Reanimacja</SelectItem>
+                  <SelectItem value="skip">Skip</SelectItem>
+                  <SelectItem value="turbo">Turbo</SelectItem>
+                  <SelectItem value="refleks">Refleks</SelectItem>
+                  <SelectItem value="lustro">Lustro</SelectItem>
+                  <SelectItem value="oświecenie">Oświecenie</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="soundEffect">Dźwięk</Label>
+              <Select 
+                value={currentCard.soundEffect || 'card-reveal'} 
+                onValueChange={(value) => setCurrentCard({...currentCard, soundEffect: value})}
+              >
+                <SelectTrigger id="soundEffect">
+                  <SelectValue placeholder="Wybierz dźwięk" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="card-reveal">Domyślny</SelectItem>
+                  <SelectItem value="success">Success</SelectItem>
+                  <SelectItem value="bonus">Bonus</SelectItem>
+                  <SelectItem value="fail">Fail</SelectItem>
+                  <SelectItem value="wheel-tick">Tick</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="animationStyle">Styl animacji</Label>
+              <Select 
+                value={currentCard.animationStyle || 'glow'} 
+                onValueChange={(value) => setCurrentCard({...currentCard, animationStyle: value})}
+              >
+                <SelectTrigger id="animationStyle">
+                  <SelectValue placeholder="Wybierz styl animacji" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="glow">Domyślny (Glow)</SelectItem>
+                  <SelectItem value="neon-blue">Neon niebieski</SelectItem>
+                  <SelectItem value="neon-green">Neon zielony</SelectItem>
+                  <SelectItem value="neon-red">Neon czerwony</SelectItem>
+                  <SelectItem value="neon-purple">Neon fioletowy</SelectItem>
+                  <SelectItem value="rainbow">Tęczowy</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           
-          {/* Dialog do przesyłania obrazu */}
-          <Dialog open={isImageUploadDialogOpen} onOpenChange={setIsImageUploadDialogOpen}>
-            <DialogContent className="bg-[#0c0e1a] border-gray-800">
-              <DialogHeader>
-                <DialogTitle className="text-white">Dodaj obraz karty</DialogTitle>
-                <DialogDescription>
-                  Wybierz plik PNG z obrazem karty
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="card-image">Obraz karty</Label>
-                  <Input
-                    id="card-image"
-                    type="file"
-                    accept="image/png"
-                    className="bg-black/50 border-gray-700"
-                    onChange={handleImageUpload}
-                  />
-                  <p className="text-xs text-gray-400">Dozwolone są tylko pliki PNG</p>
-                </div>
-                
-                {imagePreview && (
-                  <div className="border border-gray-700 rounded-md p-2 bg-black/30">
-                    <div className="aspect-[3/4] max-h-[300px] flex items-center justify-center">
-                      <img 
-                        src={imagePreview} 
-                        alt="Podgląd obrazu" 
-                        className="max-w-full max-h-full object-contain"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <DialogFooter className="flex space-x-2">
-                <Button variant="outline" onClick={() => setIsImageUploadDialogOpen(false)}>Anuluj</Button>
-                <Button 
-                  className="bg-neon-green hover:bg-neon-green/80" 
-                  onClick={handleSaveCardImage}
-                  disabled={!imagePreview}
-                >
-                  Zapisz obraz
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </TabsContent>
-      </Tabs>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCardDialogOpen(false)}>
+              Anuluj
+            </Button>
+            <Button onClick={handleSaveCard}>
+              <Save className="mr-2 h-4 w-4" />
+              {isEditing ? 'Zapisz zmiany' : 'Dodaj kartę'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Rule Form Dialog */}
+      <Dialog open={isRuleDialogOpen} onOpenChange={setIsRuleDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? 'Edytuj regułę' : 'Dodaj nową regułę'}</DialogTitle>
+            <DialogDescription>
+              Określ warunki przyznawania karty specjalnej.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="cardId">Karta</Label>
+              <Select 
+                value={currentRule.cardId} 
+                onValueChange={(value) => setCurrentRule({...currentRule, cardId: value})}
+              >
+                <SelectTrigger id="cardId">
+                  <SelectValue placeholder="Wybierz kartę" />
+                </SelectTrigger>
+                <SelectContent>
+                  {specialCards.map(card => (
+                    <SelectItem key={card.id} value={card.id}>{card.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="condition">Warunek</Label>
+              <Select 
+                value={currentRule.condition} 
+                onValueChange={(value) => setCurrentRule({...currentRule, condition: value})}
+              >
+                <SelectTrigger id="condition">
+                  <SelectValue placeholder="Wybierz warunek" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="correct_answer">Poprawna odpowiedź</SelectItem>
+                  <SelectItem value="incorrect_answer">Błędna odpowiedź</SelectItem>
+                  <SelectItem value="round_start">Start rundy</SelectItem>
+                  <SelectItem value="round_end">Koniec rundy</SelectItem>
+                  <SelectItem value="random">Losowo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="probability">Szansa (%):</Label>
+              <Input 
+                id="probability" 
+                type="number"
+                min="1"
+                max="100"
+                value={currentRule.probability || 100} 
+                onChange={(e) => setCurrentRule({
+                  ...currentRule, 
+                  probability: Math.max(1, Math.min(100, parseInt(e.target.value) || 100))
+                })}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="roundType">Runda</Label>
+              <Select 
+                value={String(currentRule.roundType || GameRound.ROUND_ONE)} 
+                onValueChange={(value) => setCurrentRule({...currentRule, roundType: parseInt(value) as GameRound})}
+              >
+                <SelectTrigger id="roundType">
+                  <SelectValue placeholder="Wybierz rundę" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={String(GameRound.ROUND_ONE)}>Runda 1</SelectItem>
+                  <SelectItem value={String(GameRound.ROUND_TWO)}>Runda 2</SelectItem>
+                  <SelectItem value={String(GameRound.ROUND_THREE)}>Runda 3</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Switch 
+                id="isEnabled"
+                checked={currentRule.isEnabled !== false} 
+                onCheckedChange={(checked) => setCurrentRule({...currentRule, isEnabled: checked})}
+              />
+              <Label htmlFor="isEnabled">Aktywna</Label>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRuleDialogOpen(false)}>
+              Anuluj
+            </Button>
+            <Button onClick={handleSaveRule}>
+              <Save className="mr-2 h-4 w-4" />
+              {isEditing ? 'Zapisz zmiany' : 'Dodaj regułę'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmDialog} onOpenChange={setDeleteConfirmDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Potwierdź usunięcie</DialogTitle>
+            <DialogDescription>
+              Czy na pewno chcesz usunąć {itemToDelete.type === 'card' ? 'kartę' : 'regułę'}? 
+              Ta operacja jest nieodwracalna.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmDialog(false)}>
+              Anuluj
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete}>
+              Usuń
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
