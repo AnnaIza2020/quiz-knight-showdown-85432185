@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -98,7 +97,7 @@ const SettingsTests = () => {
       };
       
       // Zapisz testowe dane
-      saveGameData(testData, 'test_persistence');
+      saveGameData(testData);
       
       // Odczytaj testowe dane
       const loaded = JSON.parse(localStorage.getItem('test_persistence') || 'null');
