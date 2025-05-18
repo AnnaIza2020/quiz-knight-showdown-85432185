@@ -3,6 +3,32 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSubscription } from './useSubscription';
 import { toast } from 'sonner';
 
+// Define the wheel event payload types
+interface WheelEventBase {
+  type: string;
+  timestamp: number;
+}
+
+interface WheelSpinEvent extends WheelEventBase {
+  type: 'wheel_spin';
+}
+
+interface WheelStopEvent extends WheelEventBase {
+  type: 'wheel_stop';
+}
+
+interface WheelCategorySelectedEvent extends WheelEventBase {
+  type: 'category_selected';
+  category: string;
+}
+
+interface WheelResetEvent extends WheelEventBase {
+  type: 'wheel_reset';
+}
+
+// Union type for all wheel events
+type WheelEvent = WheelSpinEvent | WheelStopEvent | WheelCategorySelectedEvent | WheelResetEvent;
+
 interface WheelSyncOptions {
   onCategorySelected?: (category: string) => void;
   onSpinStart?: () => void;
@@ -18,10 +44,10 @@ export const useWheelSync = (options?: WheelSyncOptions) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const spinTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  const { broadcast, subscribe } = useSubscription(
+  const { broadcast, subscribe } = useSubscription<WheelEvent>(
     'wheel_events',
     'sync',
-    useCallback((payload) => {
+    useCallback((payload: WheelEvent) => {
       switch (payload.type) {
         case 'wheel_spin':
           setIsSpinning(true);
@@ -73,10 +99,10 @@ export const useWheelSync = (options?: WheelSyncOptions) => {
     }
     
     setIsSpinning(true);
-    broadcast({ 
+    broadcast({
       type: 'wheel_spin',
       timestamp: Date.now()
-    });
+    } as WheelSpinEvent);
     
     if (options?.onSpinStart) options.onSpinStart();
   }, [isSpinning, broadcast, options]);
@@ -89,13 +115,13 @@ export const useWheelSync = (options?: WheelSyncOptions) => {
     broadcast({
       type: 'wheel_stop',
       timestamp: Date.now()
-    });
+    } as WheelStopEvent);
     
     broadcast({
       type: 'category_selected',
       category,
       timestamp: Date.now()
-    });
+    } as WheelCategorySelectedEvent);
     
     if (options?.onCategorySelected) options.onCategorySelected(category);
     if (options?.onSpinComplete) options.onSpinComplete();
@@ -108,7 +134,7 @@ export const useWheelSync = (options?: WheelSyncOptions) => {
     broadcast({
       type: 'wheel_reset',
       timestamp: Date.now()
-    });
+    } as WheelResetEvent);
     
     if (options?.onReset) options.onReset();
   }, [broadcast, options]);

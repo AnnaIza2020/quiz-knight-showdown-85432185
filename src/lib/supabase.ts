@@ -33,14 +33,23 @@ export const checkTableExists = async (tableName: string) => {
       return { exists: false, error: 'Supabase not configured' };
     }
     
-    const { data, error } = await supabaseClient.rpc('table_exists', { table_name: tableName });
-    
-    if (error) {
-      console.error(`Error checking if table ${tableName} exists:`, error);
-      return { exists: false, error: error.message };
+    // Use a different approach to check if a table exists since we don't have direct access to the table_exists function
+    try {
+      // Try to get a single row from the table
+      const { count } = await supabaseClient
+        .from(tableName)
+        .select('*', { count: 'exact', head: true });
+      
+      // If we get here without error, the table exists
+      return { exists: true, error: null };
+    } catch (err: any) {
+      // If the error is about the table not existing
+      if (err.message && err.message.includes('relation') && err.message.includes('does not exist')) {
+        return { exists: false, error: null };
+      }
+      throw err; // Re-throw other errors
     }
     
-    return { exists: !!data, error: null };
   } catch (error) {
     console.error(`Error checking if table ${tableName} exists:`, error);
     return { exists: false, error: 'Unknown error checking table' };
@@ -185,10 +194,8 @@ export const generatePlayerLink = async (playerId: string) => {
       return { success: true, data: { link: playerLink, token: player.unique_link_token } };
     }
     
-    // Generate a new token using the database function
-    const { data: token, error: tokenError } = await supabaseClient.rpc('generate_unique_player_token');
-    
-    if (tokenError) throw tokenError;
+    // Generate a random token instead of using Supabase function
+    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     
     // Update the player with the new token
     const { error: updateError } = await supabaseClient
@@ -223,21 +230,21 @@ export const getGameWinners = async () => {
       return { success: true, data: [], error: null };
     }
     
-    // Jeśli tabela istnieje, pobierz dane
-    const { data, error } = await supabaseClient
-      .from('game_winners')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // Use the Supabase JS client to access custom tables
+    // This approach avoids TypeScript limitations
+    const result = await supabaseClient.rpc('custom_get_winners');
     
-    if (error) throw error;
+    if (result.error) {
+      throw result.error;
+    }
     
-    return { success: true, data: data || [], error: null };
-  } catch (error) {
+    return { success: true, data: result.data || [], error: null };
+  } catch (error: any) {
     console.error('Error fetching game winners:', error);
     return { 
       success: false, 
       data: [], 
-      error: 'Wystąpił błąd podczas pobierania zwycięzców. Tabela może nie istnieć.' 
+      error: `Wystąpił błąd podczas pobierania zwycięzców: ${error.message || 'Nieznany błąd'}` 
     };
   }
 };

@@ -15,13 +15,17 @@ interface FortuneWheelProps {
   onCategorySelected?: (category: string) => void;
   disabled?: boolean;
   className?: string;
+  isSpinning?: boolean; // Add the isSpinning prop
+  selectedCategory?: string | null; // Add the selectedCategory prop
 }
 
 const FortuneWheel: React.FC<FortuneWheelProps> = ({
   categories = [],
   onCategorySelected = () => {},
   disabled = false,
-  className = ''
+  className = '',
+  isSpinning: externalSpinning, // Receive external spinning state
+  selectedCategory: externalSelectedCategory // Receive external selected category
 }) => {
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -30,6 +34,19 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
   const wheelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const spinSoundTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Sync with external state if provided
+  useEffect(() => {
+    if (externalSpinning !== undefined) {
+      setSpinning(externalSpinning);
+    }
+  }, [externalSpinning]);
+
+  useEffect(() => {
+    if (externalSelectedCategory !== undefined) {
+      setSelectedCategory(externalSelectedCategory);
+    }
+  }, [externalSelectedCategory]);
   
   // Define default categories according to the production checklist
   const defaultCategories = [
@@ -109,6 +126,11 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
   
   // Spin the wheel with improved animation and error handling
   const handleSpin = () => {
+    // Don't allow spinning if controlled externally
+    if (externalSpinning !== undefined) {
+      return;
+    }
+
     if (spinning || disabled) return;
     
     try {
@@ -192,6 +214,9 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
     }
   };
   
+  // Only show the spin button if not controlled externally
+  const showSpinButton = externalSpinning === undefined;
+  
   return (
     <Card className={`w-full overflow-hidden ${className}`}>
       <CardHeader>
@@ -224,13 +249,15 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
           </div>
         )}
         
-        <Button
-          onClick={handleSpin}
-          disabled={spinning || disabled || wheelCategories.length === 0}
-          className="px-8 py-2"
-        >
-          {spinning ? 'Kręcenie...' : 'Zakręć kołem'}
-        </Button>
+        {showSpinButton && (
+          <Button
+            onClick={handleSpin}
+            disabled={spinning || disabled || wheelCategories.length === 0}
+            className="px-8 py-2"
+          >
+            {spinning ? 'Kręcenie...' : 'Zakręć kołem'}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

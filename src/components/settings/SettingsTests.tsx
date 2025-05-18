@@ -232,7 +232,7 @@ const SettingsTests = () => {
                     size="sm" 
                     onClick={testGameDataIntegrity}
                     className="w-full"
-                    colSpan={2}
+                    // Removed colSpan prop as it doesn't exist on Button
                   >
                     <Gamepad2 className="mr-2 h-4 w-4" />
                     Test danych gry
