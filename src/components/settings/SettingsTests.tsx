@@ -1,355 +1,306 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { PlayCircle, Headphones, Eye, Shield, Zap, Cog, Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { useGameContext } from '@/context/GameContext';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { toast } from 'sonner';
-
-interface TestResult {
-  name: string;
-  status: 'passed' | 'failed' | 'running' | 'idle';
-  message?: string;
-  details?: string[];
-}
+import { useGameContext } from '@/context/GameContext';
+import { useQuestions } from '@/hooks/useQuestions';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Bug, Zap, RotateCw, Database, Gamepad2, Headphones } from 'lucide-react';
+import { getGameWinners } from '@/lib/supabase';
 
 const SettingsTests = () => {
-  const [activeTab, setActiveTab] = useState('overlay');
-  const [testResults, setTestResults] = useState<Record<string, TestResult[]>>({});
-  const [isRunningTest, setIsRunningTest] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const { playSound, stopSound } = useGameContext();
-
-  // Test categories
-  const testCategories = [
-    { id: 'overlay', name: 'Testy Overlayu', icon: <Eye className="h-4 w-4" /> },
-    { id: 'cards', name: 'Testy Kart', icon: <Shield className="h-4 w-4" /> },
-    { id: 'sounds', name: 'Testy Dźwięków', icon: <Headphones className="h-4 w-4" /> },
-    { id: 'performance', name: 'Testy Wydajności', icon: <Zap className="h-4 w-4" /> },
-    { id: 'integration', name: 'Testy Integracji', icon: <Cog className="h-4 w-4" /> }
-  ];
-
-  // Mock test functions
-  const runOverlayTests = async () => {
-    // Symulacja testów overlayu
-    setIsRunningTest(true);
-    setProgress(0);
-    
-    const results: TestResult[] = [];
-    
-    // Test 1: Podstawowy render komponentów
-    setProgress(10);
-    results.push({
-      name: 'Podstawowy render komponentów',
-      status: 'running',
-    });
-    
-    await delay(500);
-    setProgress(20);
-    results[0].status = 'passed';
-    results[0].message = 'Wszystkie komponenty zostały wyrenderowane poprawnie';
-    setTestResults(prev => ({ ...prev, overlay: [...results] }));
-    
-    // Test 2: Responsywność UI
-    results.push({
-      name: 'Responsywność UI',
-      status: 'running',
-    });
-    setTestResults(prev => ({ ...prev, overlay: [...results] }));
-    
-    await delay(700);
-    setProgress(40);
-    results[1].status = 'passed';
-    results[1].message = 'UI działa poprawnie w różnych rozmiarach ekranu';
-    setTestResults(prev => ({ ...prev, overlay: [...results] }));
-    
-    // Test 3: Animacje przejść
-    results.push({
-      name: 'Animacje przejść',
-      status: 'running',
-    });
-    setTestResults(prev => ({ ...prev, overlay: [...results] }));
-    
-    await delay(800);
-    setProgress(70);
-    results[2].status = 'passed';
-    results[2].message = 'Animacje działają zgodnie z oczekiwaniami';
-    setTestResults(prev => ({ ...prev, overlay: [...results] }));
-    
-    // Test 4: Synchronizacja z panelem hosta
-    results.push({
-      name: 'Synchronizacja z panelem hosta',
-      status: 'running',
-    });
-    setTestResults(prev => ({ ...prev, overlay: [...results] }));
-    
-    await delay(900);
-    setProgress(90);
-    results[3].status = 'passed';
-    results[3].message = 'Synchronizacja działa poprawnie';
-    setTestResults(prev => ({ ...prev, overlay: [...results] }));
-    
-    setProgress(100);
-    await delay(200);
-    
-    toast.success('Testy overlayu zakończone pomyślnie!');
-    setIsRunningTest(false);
-  };
+  const [winners, setWinners] = useState([]);
+  const [winnerError, setWinnerError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [dbStatus, setDbStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
   
-  const runCardTests = async () => {
-    // Symulacja testów kart
-    setIsRunningTest(true);
-    setProgress(0);
-    
-    const results: TestResult[] = [];
-    
-    // Test 1: Renderowanie kart
-    setProgress(10);
-    results.push({
-      name: 'Renderowanie kart',
-      status: 'running',
-    });
-    
-    await delay(300);
-    setProgress(25);
-    results[0].status = 'passed';
-    results[0].message = 'Wszystkie karty renderują się poprawnie';
-    setTestResults(prev => ({ ...prev, cards: [...results] }));
-    
-    // Test 2: Efekty kart
-    results.push({
-      name: 'Efekty kart',
-      status: 'running',
-    });
-    setTestResults(prev => ({ ...prev, cards: [...results] }));
-    
-    await delay(500);
-    setProgress(50);
-    results[1].status = 'passed';
-    results[1].message = 'Efekty kart działają poprawnie';
-    setTestResults(prev => ({ ...prev, cards: [...results] }));
-    
-    // Test 3: Przydzielanie kart
-    results.push({
-      name: 'Przydzielanie kart',
-      status: 'running',
-    });
-    setTestResults(prev => ({ ...prev, cards: [...results] }));
-    
-    await delay(400);
-    setProgress(80);
-    results[2].status = 'passed';
-    results[2].message = 'System przydzielania kart działa poprawnie';
-    setTestResults(prev => ({ ...prev, cards: [...results] }));
-    
-    setProgress(100);
-    await delay(200);
-    
-    toast.success('Testy kart zakończone pomyślnie!');
-    setIsRunningTest(false);
-  };
+  const { players, categories, saveGameData, loadGameData } = useGameContext();
+  const { questions } = useQuestions();
   
-  const runSoundTests = async () => {
-    // Symulacja testów dźwięków
-    setIsRunningTest(true);
-    setProgress(0);
-    const results: TestResult[] = [];
+  // Funkcja do pobrania zwycięzców gry
+  const fetchWinners = async () => {
+    setIsLoading(true);
+    setWinnerError(null);
     
-    // Test poszczególnych dźwięków
-    const sounds: Array<{name: string, id: string}> = [
-      { name: 'Dźwięk sukcesu', id: 'success' },
-      { name: 'Dźwięk porażki', id: 'fail' },
-      { name: 'Dźwięk eliminacji', id: 'eliminate' },
-      { name: 'Dźwięk końca czasu', id: 'timeout' },
-      { name: 'Dźwięk startu rundy', id: 'round-start' },
-      { name: 'Dźwięk koła', id: 'wheel-spin' },
-      { name: 'Dźwięk karty', id: 'card-reveal' }
-    ];
-    
-    let testProgress = 0;
-    const progressStep = 100 / sounds.length;
-    
-    for (const sound of sounds) {
-      // Dodaj nowy test dla dźwięku
-      const currentIndex = results.length;
-      results.push({
-        name: `Odtwarzanie: ${sound.name}`,
-        status: 'running'
-      });
-      setTestResults(prev => ({ ...prev, sounds: [...results] }));
+    try {
+      const { success, data, error } = await getGameWinners();
       
-      // Odtwórz dźwięk
-      playSound(sound.id);
+      if (success && data) {
+        setWinners(data);
+        if (data.length === 0) {
+          setWinnerError('Brak zapisanych zwycięzców w bazie danych');
+        }
+      } else {
+        setWinnerError(error as string || 'Wystąpił błąd podczas pobierania zwycięzców');
+        setWinners([]);
+      }
       
-      // Czekaj i zaktualizuj status
-      await delay(800);
-      testProgress += progressStep;
-      setProgress(Math.min(100, Math.round(testProgress)));
-      
-      // Zaktualizuj wynik
-      results[currentIndex].status = 'passed';
-      results[currentIndex].message = `Dźwięk ${sound.name} odtworzony poprawnie`;
-      setTestResults(prev => ({ ...prev, sounds: [...results] }));
-      
-      // Zatrzymaj dźwięk przed przejściem do następnego
-      stopSound(sound.id);
-      await delay(200);
-    }
-    
-    // Finalny rezultat
-    setProgress(100);
-    await delay(200);
-    
-    toast.success('Testy dźwięków zakończone pomyślnie!');
-    setIsRunningTest(false);
-  };
-  
-  // Helper function to delay execution for UI simulation
-  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-  // Run test based on category
-  const runTest = async (category: string) => {
-    if (isRunningTest) {
-      toast.info('Test jest już w toku, poczekaj na jego zakończenie');
-      return;
-    }
-    
-    setTestResults(prev => ({ ...prev, [category]: [] }));
-    
-    switch(category) {
-      case 'overlay':
-        await runOverlayTests();
-        break;
-      case 'cards':
-        await runCardTests();
-        break;
-      case 'sounds':
-        await runSoundTests();
-        break;
-      case 'performance':
-      case 'integration':
-      default:
-        toast.info('Te testy będą dostępne w przyszłej aktualizacji');
-        setIsRunningTest(false);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching winners:', error);
+      setWinnerError('Wystąpił błąd podczas pobierania zwycięzców');
+      setWinners([]);
+      setIsLoading(false);
     }
   };
-
+  
+  // Sprawdzanie połączenia z bazą danych
+  const checkDatabaseConnection = async () => {
+    setDbStatus('checking');
+    
+    try {
+      // Użyjemy funkcji getGameWinners jako prostego testu połączenia
+      const { success } = await getGameWinners();
+      
+      if (success) {
+        setDbStatus('connected');
+        toast.success('Połączenie z bazą danych jest aktywne');
+      } else {
+        setDbStatus('disconnected');
+        toast.error('Nie można połączyć się z bazą danych');
+      }
+    } catch (error) {
+      console.error('Database connection error:', error);
+      setDbStatus('disconnected');
+      toast.error('Nie można połączyć się z bazą danych');
+    }
+  };
+  
+  // Testowanie odtwarzania dźwięków
+  const testSounds = () => {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    
+    // Krótki beep jako test dźwięku
+    const oscillator = audioContext.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4 note
+    
+    const gainNode = audioContext.createGain();
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1);
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 1);
+    
+    toast.success('Test dźwięku wykonany');
+  };
+  
+  // Testowanie zapisywania i ładowania stanu gry
+  const testStatePersistence = () => {
+    try {
+      const testData = {
+        test: true,
+        timestamp: Date.now()
+      };
+      
+      // Zapisz testowe dane
+      saveGameData(testData, 'test_persistence');
+      
+      // Odczytaj testowe dane
+      const loaded = JSON.parse(localStorage.getItem('test_persistence') || 'null');
+      
+      if (loaded && loaded.test === true && loaded.timestamp) {
+        toast.success('Test zapisywania i ładowania stanu zakończony sukcesem');
+        
+        // Usuń testowe dane
+        localStorage.removeItem('test_persistence');
+      } else {
+        toast.error('Test zapisywania i ładowania stanu nie powiódł się');
+      }
+    } catch (error) {
+      console.error('State persistence test error:', error);
+      toast.error('Wystąpił błąd podczas testu zapisywania stanu');
+    }
+  };
+  
+  // Testowanie integralności danych gry
+  const testGameDataIntegrity = () => {
+    const issues = [];
+    
+    // Sprawdź graczy
+    if (!players || players.length === 0) {
+      issues.push('Nie znaleziono żadnych graczy');
+    }
+    
+    // Sprawdź kategorie
+    if (!categories || categories.length === 0) {
+      issues.push('Nie znaleziono żadnych kategorii');
+    }
+    
+    // Sprawdź pytania
+    if (!questions || questions.length === 0) {
+      issues.push('Nie znaleziono żadnych pytań');
+    } else {
+      // Sprawdź czy każde pytanie ma kategorię
+      const questionsWithoutCategory = questions.filter(q => !q.categoryId);
+      if (questionsWithoutCategory.length > 0) {
+        issues.push(`${questionsWithoutCategory.length} pytań nie ma przypisanej kategorii`);
+      }
+      
+      // Sprawdź czy każde pytanie ma poprawną odpowiedź
+      const questionsWithoutAnswer = questions.filter(q => !q.correctAnswer);
+      if (questionsWithoutAnswer.length > 0) {
+        issues.push(`${questionsWithoutAnswer.length} pytań nie ma poprawnej odpowiedzi`);
+      }
+    }
+    
+    if (issues.length === 0) {
+      toast.success('Integralność danych gry jest poprawna');
+    } else {
+      toast.error(`Znaleziono problemy z danymi gry: ${issues.join(', ')}`);
+    }
+  };
+  
+  // Pobierz zwycięzców przy pierwszym renderowaniu
+  useEffect(() => {
+    fetchWinners();
+    checkDatabaseConnection();
+  }, []);
+  
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Testy aplikacji Discord Game Show</CardTitle>
-        <CardDescription>
-          Uruchamiaj i monitoruj testy różnych modułów aplikacji
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-4 w-full flex overflow-x-auto space-x-1 pb-1">
-            {testCategories.map(category => (
-              <TabsTrigger 
-                key={category.id} 
-                value={category.id}
-                className="flex items-center gap-1"
-              >
-                {category.icon}
-                {category.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          
-          {testCategories.map(category => (
-            <TabsContent key={category.id} value={category.id}>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">{category.name}</h3>
+    <div className="space-y-8">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Bug className="mr-2 h-5 w-5" /> Panel Diagnostyczny
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Status Bazy Danych</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2">
+                  <div className={`h-3 w-3 rounded-full ${
+                    dbStatus === 'connected' ? 'bg-green-500' : 
+                    dbStatus === 'disconnected' ? 'bg-red-500' : 'bg-yellow-500'
+                  }`}></div>
+                  <span>
+                    {dbStatus === 'connected' ? 'Połączono' : 
+                     dbStatus === 'disconnected' ? 'Rozłączono' : 'Sprawdzanie...'}
+                  </span>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={checkDatabaseConnection}
+                  disabled={dbStatus === 'checking'}
+                  className="w-full"
+                >
+                  <Database className="mr-2 h-4 w-4" />
+                  {dbStatus === 'checking' ? 'Sprawdzanie...' : 'Sprawdź połączenie'}
+                </Button>
+              </CardFooter>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Testy Systemu</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-2">
                   <Button 
-                    onClick={() => runTest(category.id)} 
-                    disabled={isRunningTest}
+                    variant="outline" 
+                    size="sm" 
+                    onClick={testSounds}
+                    className="w-full"
                   >
-                    {isRunningTest ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Uruchamianie...
-                      </>
-                    ) : (
-                      <>
-                        <PlayCircle className="mr-2 h-4 w-4" />
-                        Uruchom testy
-                      </>
-                    )}
+                    <Headphones className="mr-2 h-4 w-4" />
+                    Test dźwięku
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={testStatePersistence}
+                    className="w-full"
+                  >
+                    <RotateCw className="mr-2 h-4 w-4" />
+                    Test zapisu
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={testGameDataIntegrity}
+                    className="w-full"
+                    colSpan={2}
+                  >
+                    <Gamepad2 className="mr-2 h-4 w-4" />
+                    Test danych gry
                   </Button>
                 </div>
-                
-                {isRunningTest && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Postęp testów:</p>
-                    <Progress value={progress} className="h-2 w-full" />
-                  </div>
-                )}
-                
-                {testResults[category.id] && testResults[category.id].length > 0 && (
-                  <div className="border rounded-lg p-4 space-y-4">
-                    <h4 className="font-medium">Wyniki testów:</h4>
-                    
-                    <Accordion type="single" collapsible className="w-full">
-                      {testResults[category.id].map((result, index) => (
-                        <AccordionItem key={index} value={`item-${index}`}>
-                          <AccordionTrigger className="text-sm">
-                            <div className="flex items-center gap-2">
-                              {result.status === 'passed' && (
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                              )}
-                              {result.status === 'failed' && (
-                                <XCircle className="h-4 w-4 text-red-500" />
-                              )}
-                              {result.status === 'running' && (
-                                <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                              )}
-                              <span>{result.name}</span>
-                              <Badge variant={result.status === 'passed' ? 'outline' : 'secondary'}>
-                                {result.status === 'passed' ? 'PASS' : 
-                                 result.status === 'failed' ? 'FAIL' : 'RUNNING'}
-                              </Badge>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            {result.message && (
-                              <Alert>
-                                <AlertTitle>Informacja</AlertTitle>
-                                <AlertDescription>{result.message}</AlertDescription>
-                              </Alert>
-                            )}
-                            {result.details && result.details.length > 0 && (
-                              <div className="mt-2 pl-4 border-l-2 border-muted">
-                                {result.details.map((detail, i) => (
-                                  <p key={i} className="text-sm text-muted-foreground">{detail}</p>
-                                ))}
-                              </div>
-                            )}
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  </div>
-                )}
-                
-                {(!testResults[category.id] || testResults[category.id].length === 0) && !isRunningTest && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>Nie uruchomiono jeszcze testów dla tej kategorii.</p>
-                    <p className="text-sm mt-2">Kliknij "Uruchom testy" aby rozpocząć.</p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
-      </CardContent>
-    </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Zap className="mr-2 h-5 w-5" /> Historia Zwycięzców
+            </div>
+            <Button 
+              size="sm" 
+              onClick={fetchWinners}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Ładowanie...' : 'Odśwież'}
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {winnerError ? (
+            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-md text-center">
+              <p className="text-yellow-500">{winnerError}</p>
+            </div>
+          ) : winners.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Gracz</TableHead>
+                  <TableHead>Punkty</TableHead>
+                  <TableHead>Edycja</TableHead>
+                  <TableHead>Data</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {winners.map((winner: any) => (
+                  <TableRow key={winner.id}>
+                    <TableCell>{winner.player_name}</TableCell>
+                    <TableCell>{winner.score}</TableCell>
+                    <TableCell>{winner.game_edition || 'Standardowa'}</TableCell>
+                    <TableCell>
+                      {new Date(winner.created_at).toLocaleDateString('pl-PL', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="p-4 text-center text-gray-500">
+              {isLoading ? 'Ładowanie zwycięzców...' : 'Brak zapisanych zwycięzców'}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

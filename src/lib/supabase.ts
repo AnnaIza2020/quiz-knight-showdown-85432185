@@ -26,6 +26,27 @@ export const addPlayerTokenToRequests = () => {
 // Initialize token from localStorage on load
 addPlayerTokenToRequests();
 
+// Safe query to check if a table exists
+export const checkTableExists = async (tableName: string) => {
+  try {
+    if (!isSupabaseConfigured()) {
+      return { exists: false, error: 'Supabase not configured' };
+    }
+    
+    const { data, error } = await supabaseClient.rpc('table_exists', { table_name: tableName });
+    
+    if (error) {
+      console.error(`Error checking if table ${tableName} exists:`, error);
+      return { exists: false, error: error.message };
+    }
+    
+    return { exists: !!data, error: null };
+  } catch (error) {
+    console.error(`Error checking if table ${tableName} exists:`, error);
+    return { exists: false, error: 'Unknown error checking table' };
+  }
+};
+
 // Save game data to local storage
 export const saveGameData = async (gameData: any, key: string = 'gameData') => {
   try {
@@ -184,5 +205,39 @@ export const generatePlayerLink = async (playerId: string) => {
   } catch (error) {
     console.error('Error generating player link:', error);
     return { success: false, error, data: null };
+  }
+};
+
+// Funkcja do bezpiecznego pobierania listy zwycięzców
+export const getGameWinners = async () => {
+  try {
+    if (!isSupabaseConfigured()) {
+      return { success: false, data: [], error: 'Supabase nie jest skonfigurowany' };
+    }
+    
+    // Najpierw sprawdź czy tabela istnieje
+    const { exists } = await checkTableExists('game_winners');
+    
+    if (!exists) {
+      console.log('Tabela game_winners nie istnieje, zwracanie pustej listy');
+      return { success: true, data: [], error: null };
+    }
+    
+    // Jeśli tabela istnieje, pobierz dane
+    const { data, error } = await supabaseClient
+      .from('game_winners')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    return { success: true, data: data || [], error: null };
+  } catch (error) {
+    console.error('Error fetching game winners:', error);
+    return { 
+      success: false, 
+      data: [], 
+      error: 'Wystąpił błąd podczas pobierania zwycięzców. Tabela może nie istnieć.' 
+    };
   }
 };

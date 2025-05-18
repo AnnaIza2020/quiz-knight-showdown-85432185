@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSubscription } from './useSubscription';
 import { toast } from 'sonner';
 
@@ -16,6 +16,7 @@ interface WheelSyncOptions {
 export const useWheelSync = (options?: WheelSyncOptions) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const spinTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const { broadcast, subscribe } = useSubscription(
     'wheel_events',
@@ -50,14 +51,16 @@ export const useWheelSync = (options?: WheelSyncOptions) => {
   
   // Initialize subscription when component mounts
   useEffect(() => {
-    // Just call subscribe without arguments to enable subscription
-    subscribe();
+    const unsubscribeFunc = subscribe();
     
     return () => {
-      // Properly handle unsubscription without passing arguments
-      const unsubscribe = subscribe();
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
+      if (typeof unsubscribeFunc === 'function') {
+        unsubscribeFunc();
+      }
+      
+      // Clear any pending timeouts on unmount
+      if (spinTimeoutRef.current) {
+        clearTimeout(spinTimeoutRef.current);
       }
     };
   }, [subscribe]);

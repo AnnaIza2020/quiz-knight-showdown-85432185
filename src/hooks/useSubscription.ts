@@ -1,80 +1,103 @@
 
-import { useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { RealtimeChannel } from '@supabase/supabase-js';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
-interface UseSubscriptionOptions {
+type SubscriptionHandler<T> = (payload: T) => void;
+
+interface SubscribeOptions {
   immediate?: boolean;
 }
 
 /**
- * Hook for subscribing to Supabase realtime events
+ * Custom hook for subscribing to and broadcasting events in a global event system
+ * 
+ * @param channel The event channel to subscribe to
+ * @param event The specific event to listen for
+ * @param handler The function to call when the event is received
+ * @param options Options for the subscription behavior
+ * @returns Object with subscribe and broadcast methods
  */
-export function useSubscription<T>(
-  channelName: string,
-  eventName: string,
-  callback: (payload: T) => void,
-  options: UseSubscriptionOptions = {}
+export function useSubscription<T = any>(
+  channel: string,
+  event: string,
+  handler: SubscriptionHandler<T>,
+  options?: SubscribeOptions
 ) {
-  // Default to immediate subscription
-  const { immediate = true } = options;
+  const handlerRef = useRef<SubscriptionHandler<T>>(handler);
+  const subscribedRef = useRef<boolean>(false);
   
-  // Create subscription on mount
+  // Update the handler reference whenever it changes
   useEffect(() => {
-    if (immediate) {
-      const channel = supabase.channel(channelName);
-      
-      // Set up the event handler
-      channel.on('broadcast', { event: eventName }, (payload) => {
-        callback(payload.payload as T);
-      });
-      
-      // Subscribe to the channel
-      const subscription = channel.subscribe();
-      
-      // Cleanup on unmount
-      return () => {
-        supabase.removeChannel(channel);
-      };
+    handlerRef.current = handler;
+  }, [handler]);
+  
+  // Create a unique ID for this subscriber
+  const subscriberId = useRef<string>(Math.random().toString(36).substring(2, 15));
+  
+  // Get the global events object or create it if it doesn't exist
+  const getEvents = useCallback(() => {
+    if (!(window as any).__gameEvents) {
+      (window as any).__gameEvents = {};
     }
-  }, [channelName, eventName, callback, immediate]);
-
-  // Function to manually subscribe to events
+    return (window as any).__gameEvents;
+  }, []);
+  
+  // Subscribe to events (returns unsubscribe function)
   const subscribe = useCallback(() => {
-    const channel = supabase.channel(channelName);
+    const events = getEvents();
     
-    // Set up the event handler
-    channel.on('broadcast', { event: eventName }, (payload) => {
-      callback(payload.payload as T);
-    });
-    
-    // Subscribe to the channel
-    const subscription = channel.subscribe();
-    
-    // Return cleanup function
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [channelName, eventName, callback]);
-  
-  // Function to broadcast an event
-  const broadcast = useCallback((payload: any) => {
-    try {
-      const channel = supabase.channel(channelName);
-      channel.send({
-        type: 'broadcast',
-        event: eventName,
-        payload
-      });
-      return { success: true };
-    } catch (error) {
-      console.error('Error broadcasting event:', error);
-      return { success: false, error };
+    if (!events[channel]) {
+      events[channel] = {};
     }
-  }, [channelName, eventName]);
+    
+    if (!events[channel][event]) {
+      events[channel][event] = {};
+    }
+    
+    // Register this subscriber
+    events[channel][event][subscriberId.current] = (payload: T) => {
+      if (handlerRef.current) {
+        handlerRef.current(payload);
+      }
+    };
+    
+    subscribedRef.current = true;
+    
+    // Return unsubscribe function
+    return () => {
+      if (events[channel] && events[channel][event]) {
+        delete events[channel][event][subscriberId.current];
+        subscribedRef.current = false;
+      }
+    };
+  }, [channel, event, getEvents]);
   
-  return {
-    subscribe,
-    broadcast
-  };
+  // Broadcast an event to all subscribers
+  const broadcast = useCallback((payload: T) => {
+    const events = getEvents();
+    
+    if (!events[channel] || !events[channel][event]) {
+      return;
+    }
+    
+    // Call all subscriber handlers
+    Object.values(events[channel][event]).forEach((handler: any) => {
+      try {
+        handler(payload);
+      } catch (error) {
+        console.error(`Error in subscription handler for ${channel}.${event}:`, error);
+      }
+    });
+  }, [channel, event, getEvents]);
+  
+  // Auto-subscribe if immediate option is true (default)
+  useEffect(() => {
+    const immediate = options?.immediate !== false;
+    
+    if (immediate && !subscribedRef.current) {
+      const unsubscribe = subscribe();
+      return unsubscribe;
+    }
+  }, [options?.immediate, subscribe]);
+  
+  return { subscribe, broadcast };
 }

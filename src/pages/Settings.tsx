@@ -21,7 +21,7 @@ import { pathToTab } from '@/components/settings/SettingsTabsMapping';
 const Settings = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { handleExportSettings } = useSettingsExport();
+  const { handleExportSettings, handleImportSettings } = useSettingsExport();
   
   // Determine active tab based on current path
   const getCurrentTab = () => {
@@ -50,7 +50,10 @@ const Settings = () => {
   return (
     <div className="min-h-screen bg-black text-white p-4 pb-24">
       {/* Header */}
-      <SettingsHeader onExportSettings={handleExportSettings} />
+      <SettingsHeader 
+        onExportSettings={handleExportSettings} 
+        onImportSettings={handleImportSettings}
+      />
       
       {/* Tabs */}
       <div className="mb-6">

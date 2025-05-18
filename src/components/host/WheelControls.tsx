@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import FortuneWheel from '@/components/FortuneWheel';
@@ -7,6 +7,7 @@ import { useGameContext } from '@/context/GameContext';
 import { toast } from 'sonner';
 import { useSubscription } from '@/hooks/useSubscription';
 import { RotateCcw, Check, XCircle } from 'lucide-react';
+import { useWheelSync } from '@/hooks/useWheelSync';
 
 interface WheelControlsProps {
   categories: string[];
@@ -14,50 +15,38 @@ interface WheelControlsProps {
   className?: string;
 }
 
-interface WheelEventPayload {
-  type: string;
-  category?: string;
-  timestamp: number;
-}
-
-const WheelControls: React.FC<WheelControlsProps> = ({
+const WheelControls: React.FC<WheelControlsProps> = memo(({
   categories = [],
   onCategorySelected,
   className = ''
 }) => {
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [lastSpinTime, setLastSpinTime] = useState<number>(0);
   const { playSound } = useGameContext();
-  const { broadcast, subscribe } = useSubscription('wheel_events', 'category_selected', 
-    (payload: unknown) => {
-      const wheelPayload = payload as WheelEventPayload;
-      if (wheelPayload.category) {
-        handleCategorySelected(wheelPayload.category);
+  
+  // Use the optimized wheel sync hook
+  const { 
+    isSpinning, 
+    selectedCategory, 
+    triggerSpin: startSpin, 
+    resetWheel 
+  } = useWheelSync({
+    onCategorySelected: (category) => {
+      if (onCategorySelected) {
+        onCategorySelected(category);
       }
-    }, 
-    { immediate: false }
-  );
+      playSound('success');
+      toast.success(`Wybrano kategorię: ${category}`);
+    },
+    onSpinStart: () => {
+      playSound('wheel-spin');
+    }
+  });
 
   // Anti-bounce for wheel spin (prevent accidental double clicks)
   const SPIN_COOLDOWN_MS = 3000;
 
-  useEffect(() => {
-    // Initialize subscription
-    subscribe();
-    
-    return () => {
-      // Cleanup subscription when component unmounts
-      // We need to unsubscribe without passing arguments
-      const unsubscribe = subscribe();
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
-    };
-  }, [subscribe]);
-
   // Handler for manual spin trigger from host panel
-  const handleSpin = () => {
+  const handleSpin = useCallback(() => {
     if (isSpinning) return;
     
     // Check spin cooldown
@@ -74,59 +63,9 @@ const WheelControls: React.FC<WheelControlsProps> = ({
       return;
     }
     
-    setIsSpinning(true);
     setLastSpinTime(now);
-    playSound('wheel-spin');
-    
-    // Broadcast the spin event to all listeners
-    broadcast({
-      type: 'wheel_spin',
-      timestamp: now
-    });
-    
-    // After a timeout, simulate the wheel stopping
-    const spinDuration = 3000 + Math.random() * 1000; // 3-4 seconds
-    setTimeout(() => {
-      setIsSpinning(false);
-      
-      // Pick a random category
-      const randomIndex = Math.floor(Math.random() * categories.length);
-      const category = categories[randomIndex];
-      
-      handleCategorySelected(category);
-    }, spinDuration);
-  };
-
-  // Handler for category selection (whether from wheel component or manual selection)
-  const handleCategorySelected = (category: string) => {
-    setSelectedCategory(category);
-    
-    if (onCategorySelected) {
-      onCategorySelected(category);
-    }
-    
-    // Broadcast the category selection to all listeners
-    broadcast({
-      type: 'category_selected',
-      category,
-      timestamp: Date.now()
-    });
-    
-    playSound('success');
-    toast.success(`Wybrano kategorię: ${category}`);
-  };
-
-  const handleResetWheel = () => {
-    setSelectedCategory(null);
-    
-    // Broadcast the reset event to all listeners
-    broadcast({
-      type: 'wheel_reset',
-      timestamp: Date.now()
-    });
-    
-    toast.info('Koło fortuny zresetowane');
-  };
+    startSpin();
+  }, [isSpinning, lastSpinTime, categories, startSpin]);
 
   return (
     <Card className={`w-full ${className}`}>
@@ -136,7 +75,7 @@ const WheelControls: React.FC<WheelControlsProps> = ({
           <div className="flex gap-2">
             <Button 
               size="sm" 
-              onClick={handleResetWheel}
+              onClick={resetWheel}
               variant="outline"
               disabled={isSpinning}
               className="flex items-center gap-1"
@@ -192,7 +131,8 @@ const WheelControls: React.FC<WheelControlsProps> = ({
       <CardContent className="flex flex-col items-center">
         <FortuneWheel 
           categories={categories}
-          onCategorySelected={handleCategorySelected}
+          isSpinning={isSpinning}
+          selectedCategory={selectedCategory}
         />
         
         {selectedCategory && (
@@ -215,6 +155,8 @@ const WheelControls: React.FC<WheelControlsProps> = ({
       </CardContent>
     </Card>
   );
-};
+});
+
+WheelControls.displayName = 'WheelControls';
 
 export default WheelControls;
