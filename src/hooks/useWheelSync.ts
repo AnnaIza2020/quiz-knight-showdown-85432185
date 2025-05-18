@@ -54,7 +54,7 @@ export const useWheelSync = (options?: WheelSyncOptions) => {
     subscribe();
     
     return () => {
-      // Pass false to disable subscription on cleanup
+      // Pass false to disable subscription on cleanup, but don't pass an object argument
       subscribe(false);
     };
   }, [subscribe]);

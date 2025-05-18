@@ -47,7 +47,7 @@ const WheelControls: React.FC<WheelControlsProps> = ({
     subscribe();
     
     return () => {
-      // Cleanup subscription when component unmounts
+      // Cleanup subscription when component unmounts - don't pass any arguments here
       subscribe(false);
     };
   }, [subscribe]);
