@@ -36,9 +36,9 @@ export const checkTableExists = async (tableName: string) => {
     // Use a different approach to check if a table exists since we don't have direct access to the table_exists function
     try {
       // Try to get a single row from the table
-      const { count } = await supabaseClient
-        .from(tableName)
-        .select('*', { count: 'exact', head: true });
+      // Use any as a type annotation to bypass TypeScript's strict checking for dynamic table names
+      const { count } = await (supabaseClient.from(tableName as any)
+        .select('*', { count: 'exact', head: true }));
       
       // If we get here without error, the table exists
       return { exists: true, error: null };
@@ -231,8 +231,8 @@ export const getGameWinners = async () => {
     }
     
     // Use the Supabase JS client to access custom tables
-    // This approach avoids TypeScript limitations
-    const result = await supabaseClient.rpc('custom_get_winners');
+    // This approach avoids TypeScript limitations by using rpc with a more generic type
+    const result = await supabaseClient.rpc('custom_get_winners' as any);
     
     if (result.error) {
       throw result.error;

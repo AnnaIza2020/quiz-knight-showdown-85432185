@@ -10,12 +10,12 @@ import { Bug, Zap, RotateCw, Database, Gamepad2, Headphones } from 'lucide-react
 import { getGameWinners } from '@/lib/supabase';
 
 const SettingsTests = () => {
-  const [winners, setWinners] = useState([]);
+  const [winners, setWinners] = useState<any[]>([]);
   const [winnerError, setWinnerError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [dbStatus, setDbStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
   
-  const { players, categories, saveGameData, loadGameData } = useGameContext();
+  const { players, categories, saveGameData } = useGameContext();
   const { questions } = useQuestions();
   
   // Funkcja do pobrania zwycięzców gry
@@ -27,8 +27,8 @@ const SettingsTests = () => {
       const { success, data, error } = await getGameWinners();
       
       if (success && data) {
-        setWinners(data);
-        if (data.length === 0) {
+        setWinners(Array.isArray(data) ? data : []);
+        if (Array.isArray(data) && data.length === 0) {
           setWinnerError('Brak zapisanych zwycięzców w bazie danych');
         }
       } else {
@@ -232,7 +232,7 @@ const SettingsTests = () => {
                     size="sm" 
                     onClick={testGameDataIntegrity}
                     className="w-full"
-                    // Removed colSpan prop as it doesn't exist on Button
+                    // Removed the colSpan prop as it doesn't exist on Button component
                   >
                     <Gamepad2 className="mr-2 h-4 w-4" />
                     Test danych gry
