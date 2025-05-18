@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -196,7 +195,7 @@ const SettingsTests = () => {
       issues.push('Nie znaleziono żadnych graczy');
     } else {
       // Sprawdź czy każdy gracz ma wymagane pola
-      const invalidPlayers = players.filter(p => !p.id || !p.nickname);
+      const invalidPlayers = players.filter(p => !p.id || !p.name);
       if (invalidPlayers.length > 0) {
         issues.push(`${invalidPlayers.length} graczy ma niepełne dane`);
       }
