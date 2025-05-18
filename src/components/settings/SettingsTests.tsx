@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -96,8 +97,8 @@ const SettingsTests = () => {
         timestamp: Date.now()
       };
       
-      // Zapisz testowe dane
-      saveGameData(testData);
+      // Zapisz testowe dane do specjalnej lokalizacji dla testów
+      localStorage.setItem('test_persistence', JSON.stringify(testData));
       
       // Odczytaj testowe dane
       const loaded = JSON.parse(localStorage.getItem('test_persistence') || 'null');
@@ -231,7 +232,7 @@ const SettingsTests = () => {
                     size="sm" 
                     onClick={testGameDataIntegrity}
                     className="w-full"
-                    // Removed the colSpan prop as it doesn't exist on Button component
+                    // Removed colSpan prop as it doesn't exist on Button component
                   >
                     <Gamepad2 className="mr-2 h-4 w-4" />
                     Test danych gry
