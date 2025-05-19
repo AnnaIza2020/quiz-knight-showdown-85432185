@@ -9,6 +9,7 @@ import PlayerActions from '@/components/host/PlayerActions';
 import GameSaveManager from '@/components/host/GameSaveManager';
 import { useGameWinners } from '@/hooks/useGameWinners';
 import { toast } from 'sonner';
+import RoundStatus from '@/components/host/RoundStatus';
 
 const Host = () => {
   const { 
@@ -30,7 +31,12 @@ const Host = () => {
     currentQuestion,
     resetGame,
     playSound,
-    winnerIds
+    winnerIds,
+    undoLastAction,
+    hasUndoHistory,
+    roundSettings,
+    addManualPoints,
+    adjustHealthManually,
   } = useGameContext();
   
   // Winners management
@@ -49,7 +55,7 @@ const Host = () => {
     }
   }, [round, winnerIds, players, recordWinner]);
   
-  // Memo-izujemy listy graczy aby uniknąć niepotrzebnych renderów
+  // Memoize active player list to avoid unnecessary renders
   const activePlayers = useMemo(() => {
     return players.filter(p => !p.isEliminated);
   }, [players]);
@@ -58,7 +64,12 @@ const Host = () => {
     return players.filter(p => p.isEliminated);
   }, [players]);
   
-  // Callback zamiast zwykłej funkcji dla optymalizacji
+  // Get active player object
+  const activePlayer = useMemo(() => {
+    return players.find(p => p.id === activePlayerId) || null;
+  }, [players, activePlayerId]);
+  
+  // Player selection callback
   const handleSelectPlayer = useCallback((player: Player) => {
     if (player.isEliminated) return;
     
@@ -70,82 +81,108 @@ const Host = () => {
     }
   }, [activePlayerId, setActivePlayer]);
   
+  // Award points for correct answer
   const handleAwardPoints = useCallback(() => {
     if (!activePlayerId || !currentQuestion) return;
     
     awardPoints(activePlayerId, currentQuestion.difficulty);
     
-    // Play success sound using the new hook
+    // Play success sound
     playSound('success');
   }, [activePlayerId, currentQuestion, awardPoints, playSound]);
   
+  // Deduct health for wrong answer
   const handleDeductHealth = useCallback(() => {
     if (!activePlayerId) return;
     
-    // W zależności od rundy, różne zachowanie
+    // Different behavior based on round
     if (round === GameRound.ROUND_ONE) {
-      deductHealth(activePlayerId, 20);
-    } else if (round === GameRound.ROUND_TWO) {
-      deductLife(activePlayerId);
+      // In Round 1, deduct health percentage
+      const penaltyAmount = roundSettings.lifePenalties.round1;
+      deductHealth(activePlayerId, penaltyAmount);
       
-      // Sprawdź czy gracz ma życia
+      // Check if player reached 0 health
       const player = players.find(p => p.id === activePlayerId);
-      if (player && player.lives <= 1) {
-        eliminatePlayer(activePlayerId);
-      }
-    } else if (round === GameRound.ROUND_THREE) {
-      deductLife(activePlayerId);
-      
-      // Sprawdź czy gracz ma życia
-      const player = players.find(p => p.id === activePlayerId);
-      if (player && player.lives <= 1) {
+      if (player && player.health <= 0) {
         eliminatePlayer(activePlayerId);
         
-        // Sprawdź czy wszyscy zostali wyeliminowani
+        // Check if we have 5 eliminated players (time to advance to Round 2)
+        const eliminatedCount = players.filter(p => p.health <= 0 || p.isEliminated).length;
+        if (eliminatedCount >= 5) {
+          toast.info("5 graczy zostało wyeliminowanych! Możesz przejść do Rundy 2.");
+        }
+      }
+    } else if (round === GameRound.ROUND_TWO) {
+      // In Round 2, deduct a life
+      deductLife(activePlayerId);
+      
+      // Check if player has no lives left
+      const player = players.find(p => p.id === activePlayerId);
+      if (player && player.lives <= 0) {
+        eliminatePlayer(activePlayerId);
+        
+        // Count remaining players
+        const remainingPlayers = players.filter(p => !p.isEliminated && p.lives > 0).length;
+        
+        // If only 3 players remain, suggest advancing to Round 3
+        if (remainingPlayers <= 3) {
+          toast.info(`Pozostało ${remainingPlayers} graczy! Możesz przejść do Rundy 3.`);
+        }
+      }
+    } else if (round === GameRound.ROUND_THREE) {
+      // In Round 3, deduct a life
+      deductLife(activePlayerId);
+      
+      // Check if player has no lives left
+      const player = players.find(p => p.id === activePlayerId);
+      if (player && player.lives <= 0) {
+        eliminatePlayer(activePlayerId);
+        
+        // Check if Round 3 has ended (all but one lost all lives)
         checkRoundThreeEnd();
       }
     }
     
-    // Play fail sound using the new hook
+    // Play fail sound
     playSound('fail');
-  }, [activePlayerId, round, players, deductHealth, deductLife, eliminatePlayer, checkRoundThreeEnd, playSound]);
+  }, [activePlayerId, round, players, deductHealth, deductLife, eliminatePlayer, checkRoundThreeEnd, playSound, roundSettings]);
   
+  // Add bonus points
   const handleBonusPoints = useCallback(() => {
     if (!activePlayerId) return;
     
     // Add 5 bonus points
-    awardPoints(activePlayerId, 5);
+    addManualPoints(activePlayerId, 5);
     
-    // Play bonus sound using the new hook
+    // Play bonus sound
     playSound('bonus');
-  }, [activePlayerId, awardPoints, playSound]);
+  }, [activePlayerId, addManualPoints, playSound]);
   
+  // Eliminate player manually
   const handleEliminatePlayer = useCallback(() => {
     if (!activePlayerId) return;
     
     eliminatePlayer(activePlayerId);
     
-    // Sprawdź czy runda 3 się zakończyła (wszyscy stracili życie)
+    // Check if Round 3 has ended (all lost life)
     if (round === GameRound.ROUND_THREE) {
       checkRoundThreeEnd();
     }
     
-    // Play eliminate sound using the new hook
+    // Play eliminate sound
     playSound('eliminate');
   }, [activePlayerId, eliminatePlayer, round, checkRoundThreeEnd, playSound]);
   
+  // End the game and determine winner
   const handleFinishGame = useCallback(() => {
-    // Sprawdź czy runda 3 się zakończyła (wszyscy stracili życie)
+    // Check if Round 3 has ended automatically first
     if (round === GameRound.ROUND_THREE) {
-      // Zmieniamy porównanie, żeby uniknąć problemu z typami
-      // Metoda checkRoundThreeEnd może zwrócić boolean lub void
       const isRoundEnded = checkRoundThreeEnd();
-      // Only return if the round has ended automatically
-      // Zmieniamy porównanie do formy bezpiecznej typowo
+      // Don't proceed if round ended automatically
       if (isRoundEnded === true) return;
     }
     
-    // Sort players by points to determine the winner
+    // Sort players by points to determine winner
     const sortedPlayers = [...activePlayers].sort((a, b) => b.points - a.points);
     if (sortedPlayers.length > 0) {
       const winnerIds = [sortedPlayers[0].id];
@@ -161,6 +198,18 @@ const Host = () => {
     }
   }, [round, activePlayers, checkRoundThreeEnd, finishGame, playSound]);
   
+  // Handle manual point changes
+  const handleManualPoints = useCallback((points: number) => {
+    if (!activePlayerId) return;
+    addManualPoints(activePlayerId, points);
+  }, [activePlayerId, addManualPoints]);
+  
+  // Handle manual health changes
+  const handleManualHealth = useCallback((healthPercent: number) => {
+    if (!activePlayerId) return;
+    adjustHealthManually(activePlayerId, healthPercent);
+  }, [activePlayerId, adjustHealthManually]);
+  
   // Helper to get numerical round for recording winners
   const getRoundNumber = (round: GameRound): number => {
     switch(round) {
@@ -171,16 +220,21 @@ const Host = () => {
     }
   };
   
-  // Obliczamy te flagi tylko gdy zmieniają się odpowiednie zależności
+  // Calculate flags only when dependencies change
   const canAdvanceToRoundTwo = useMemo(() => {
-    return round === GameRound.ROUND_ONE && players.length >= 6;
-  }, [round, players.length]);
+    // Can advance if at least 5 players are eliminated in Round 1
+    const eliminatedCount = players.filter(p => p.health <= 0 || p.isEliminated).length;
+    return round === GameRound.ROUND_ONE && eliminatedCount >= 5;
+  }, [round, players]);
   
   const canAdvanceToRoundThree = useMemo(() => {
-    return round === GameRound.ROUND_TWO && activePlayers.length >= 3;
-  }, [round, activePlayers.length]);
+    // Can advance if only 3 or fewer players remain active in Round 2
+    const remainingPlayers = players.filter(p => !p.isEliminated && p.lives > 0).length;
+    return round === GameRound.ROUND_TWO && remainingPlayers <= 3;
+  }, [round, players]);
   
   const canFinishGame = useMemo(() => {
+    // Can finish if in Round 3 and at least one player is active
     return round === GameRound.ROUND_THREE && activePlayers.length > 0;
   }, [round, activePlayers.length]);
   
@@ -207,7 +261,15 @@ const Host = () => {
             onSelectPlayer={handleSelectPlayer}
           />
           
-          {/* Add GameSaveManager component */}
+          {/* Round status */}
+          <RoundStatus
+            round={round}
+            activePlayers={activePlayers}
+            eliminatedPlayers={eliminatedPlayers}
+            roundSettings={roundSettings}
+          />
+          
+          {/* Game save manager */}
           <GameSaveManager />
         </div>
         
@@ -219,17 +281,24 @@ const Host = () => {
             timerRunning={timerRunning}
             startTimer={startTimer}
             stopTimer={stopTimer}
+            roundSettings={roundSettings}
           />
           
           {/* Player actions */}
           <PlayerActions 
             activePlayerId={activePlayerId}
+            activePlayer={activePlayer}
             currentQuestion={currentQuestion}
             round={round}
+            roundSettings={roundSettings}
+            hasUndoHistory={hasUndoHistory}
             handleAwardPoints={handleAwardPoints}
             handleDeductHealth={handleDeductHealth}
             handleBonusPoints={handleBonusPoints}
             handleEliminatePlayer={handleEliminatePlayer}
+            handleUndoLastAction={undoLastAction}
+            handleManualPoints={handleManualPoints}
+            handleManualHealth={handleManualHealth}
           />
         </div>
       </div>

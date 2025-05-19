@@ -15,6 +15,7 @@ import SettingsCards from '@/components/settings/SettingsCards';
 import GamePasswordSettings from '@/components/settings/GamePasswordSettings';
 import SettingsTests from '@/components/settings/SettingsTests';
 import SettingsWheelCategories from '@/components/settings/SettingsWheelCategories';
+import RoundSettingsPanel from '@/components/settings/RoundSettingsPanel';
 import { useSettingsExport } from '@/hooks/useSettingsExport';
 import { pathToTab } from '@/components/settings/SettingsTabsMapping';
 
@@ -74,6 +75,10 @@ const Settings = () => {
           
           <TabsContent value="karty">
             <SettingsCards />
+          </TabsContent>
+          
+          <TabsContent value="rundy">
+            <RoundSettingsPanel />
           </TabsContent>
           
           <TabsContent value="motywy">

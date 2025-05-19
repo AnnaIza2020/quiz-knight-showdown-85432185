@@ -1,11 +1,9 @@
 
-import React, { createContext, useContext, ReactNode, useEffect } from 'react';
-import { GameContextType, GameRound, SoundEffect, Question } from '@/types/game-types';
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import { GameRound, Player, Category, Question, GameContextType } from '@/types/game-types';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
-import { useGameLogic } from '@/hooks/useGameLogic';
+import { useGameLogic, RoundSettings, DEFAULT_ROUND_SETTINGS } from '@/hooks/useGameLogic';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
-import { QuestionsProvider } from './QuestionsContext';
-import { SpecialCardsProvider } from './SpecialCardsContext';
 import { toast } from 'sonner';
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -18,159 +16,214 @@ export const useGameContext = () => {
   return context;
 };
 
-// Re-export the types from the types file for convenience
-export * from '@/types/game-types';
-
 interface GameProviderProps {
   children: ReactNode;
 }
 
-export const GameProvider = ({ children }: GameProviderProps) => {
+export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
+  // Game state from the state management hook
   const gameState = useGameStateManagement();
-  
-  const {
-    // State
-    round,
-    setRound,
-    players,
-    setPlayers,
-    categories,
-    setCategories,
-    currentQuestion,
-    activePlayerId,
-    timerRunning,
-    setTimerRunning,
-    timerSeconds,
-    setTimerSeconds,
-    winnerIds,
-    setWinnerIds,
-    gameLogo,
-    setGameLogo,
-    primaryColor,
-    setPrimaryColor,
-    secondaryColor,
-    setSecondaryColor,
-    hostCameraUrl,
-    setHostCameraUrl,
-    specialCards,
-    setSpecialCards,
-    specialCardRules,
-    setSpecialCardRules,
-    
-    // Methods
-    addPlayer,
-    updatePlayer,
-    removePlayer,
-    addCategory,
-    removeCategory,
-    selectQuestion,
-    setActivePlayer,
-    startTimer,
-    stopTimer,
-    loadGameData,
-    saveGameData,
-  } = gameState;
-
-  const {
-    awardPoints,
-    deductHealth,
-    deductLife,
-    eliminatePlayer,
-    advanceToRoundTwo,
-    advanceToRoundThree,
-    finishGame,
-    checkRoundThreeEnd,
-    resetGame,
-    markQuestionAsUsed,
-    resetUsedQuestions,
-    isQuestionUsed,
-    usedQuestionIds
-  } = useGameLogic(players, setPlayers, setRound, setWinnerIds);
-
-  // Initialize sound effects with options properly
   const { 
-    playSound,
+    round, setRound, 
+    players, setPlayers, 
+    categories, setCategories, 
+    currentQuestion, 
+    activePlayerId, 
+    timerRunning, setTimerRunning, 
+    timerSeconds, setTimerSeconds,
+    winnerIds, setWinnerIds,
+    gameLogo, setGameLogo,
+    primaryColor, setPrimaryColor,
+    secondaryColor, setSecondaryColor,
+    hostCameraUrl, setHostCameraUrl,
+    specialCards, setSpecialCards,
+    specialCardRules, setSpecialCardRules,
+    addPlayer, updatePlayer, removePlayer,
+    addCategory, removeCategory, 
+    selectQuestion, setActivePlayer,
+    loadGameData, saveGameData
+  } = gameState;
+  
+  // Round settings
+  const [roundSettings, setRoundSettings] = useState<RoundSettings>(DEFAULT_ROUND_SETTINGS);
+  
+  // Error reporting
+  const reportError = (message: string, settings?: any) => {
+    console.error(message);
+    toast.error(message, settings);
+  };
+
+  // Game logic from the game logic hook
+  const gameLogic = useGameLogic(players, setPlayers, setRound, setWinnerIds);
+  const {
+    awardPoints, deductHealth, deductLife, eliminatePlayer,
+    advanceToRoundTwo, advanceToRoundThree, finishGame,
+    checkRoundThreeEnd, resetGame, markQuestionAsUsed,
+    resetUsedQuestions, isQuestionUsed, usedQuestionIds,
+    undoLastAction, hasUndoHistory, addManualPoints, adjustHealthManually,
+    updateRoundSettings: updateGameRoundSettings
+  } = gameLogic;
+  
+  // Sound effects
+  const { 
+    playSound, 
+    stopSound, 
+    stopAllSounds, 
+    soundsEnabled, 
+    setSoundsEnabled, 
     playSoundWithOptions,
-    stopSound,
-    stopAllSounds,
-    soundsEnabled,
-    setSoundsEnabled,
-    volume,
     setVolume,
-    soundsPreloaded,
-    addCustomSound,
+    volume,
+    soundStatus,
     availableSounds,
-    soundStatus
-  } = useSoundEffects({ 
+    addCustomSound
+  } = useSoundEffects({
     enabled: true,
-    useLocalStorage: true
+    useLocalStorage: true,
+    defaultVolume: 0.7
   });
 
-  // Timer effect
+  // Timer functionality
+  const startTimer = (seconds: number) => {
+    setTimerSeconds(seconds);
+    setTimerRunning(true);
+  };
+
+  const stopTimer = () => {
+    setTimerRunning(false);
+  };
+
+  // Countdown timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
+    let timerId: NodeJS.Timeout;
+
     if (timerRunning && timerSeconds > 0) {
-      interval = setInterval(() => {
-        setTimerSeconds((prev) => {
-          const newValue = prev - 1;
-          // When we reach 5 seconds, play a tick sound
-          if (newValue <= 5 && newValue > 0) {
-            playSound('wheel-tick', 0.3);
-          }
-          return newValue;
-        });
+      timerId = setTimeout(() => {
+        setTimerSeconds(prev => prev - 1);
+        
+        // Play timer sound for last 5 seconds
+        if (timerSeconds <= 6 && timerSeconds > 1) {
+          playSound('wheel-tick', 0.3);
+        }
       }, 1000);
-    } else if (timerSeconds === 0 && timerRunning) {
+    } else if (timerRunning && timerSeconds === 0) {
       setTimerRunning(false);
-      // Play timeout sound effect
       playSound('timeout');
-      toast.info("Czas minął!");
+    }
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [timerRunning, timerSeconds, playSound]);
+
+  // Special card methods
+  const addSpecialCard = (card: any) => {
+    setSpecialCards(prev => [...prev, { ...card, id: crypto.randomUUID() }]);
+  };
+
+  const updateSpecialCard = (cardId: string, updates: any) => {
+    setSpecialCards(prev => 
+      prev.map(card => card.id === cardId ? { ...card, ...updates } : card)
+    );
+  };
+
+  const removeSpecialCard = (cardId: string) => {
+    setSpecialCards(prev => prev.filter(card => card.id !== cardId));
+  };
+
+  const addSpecialCardRule = (rule: any) => {
+    setSpecialCardRules(prev => [...prev, { ...rule, id: crypto.randomUUID() }]);
+  };
+
+  const updateSpecialCardRule = (ruleId: string, updates: any) => {
+    setSpecialCardRules(prev => 
+      prev.map(rule => rule.id === ruleId ? { ...rule, ...updates } : rule)
+    );
+  };
+
+  const removeSpecialCardRule = (ruleId: string) => {
+    setSpecialCardRules(prev => prev.filter(rule => rule.id !== ruleId));
+  };
+
+  const giveCardToPlayer = (playerId: string, cardId: string) => {
+    updatePlayer({
+      id: playerId,
+      specialCards: [...(players.find(p => p.id === playerId)?.specialCards || []), cardId]
+    });
+  };
+
+  const usePlayerCard = (playerId: string, cardId: string) => {
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
+    
+    updatePlayer({
+      id: playerId,
+      specialCards: player.specialCards.filter(id => id !== cardId)
+    });
+  };
+
+  // Update round settings
+  const handleUpdateRoundSettings = (newSettings: Partial<RoundSettings>) => {
+    setRoundSettings(prev => {
+      const updated = {
+        ...prev,
+        ...newSettings
+      };
+      updateGameRoundSettings(updated);
+      return updated;
+    });
+  };
+  
+  // Question management
+  const addQuestion = (categoryId: string, question: Question) => {
+    // Find the category
+    const category = categories.find(c => c.id === categoryId);
+    if (!category) {
+      reportError(`Kategoria o ID ${categoryId} nie istnieje`);
+      return;
     }
     
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [timerRunning, timerSeconds, setTimerSeconds, setTimerRunning, playSound]);
-
-  // Check end of round 3 when player is eliminated
-  useEffect(() => {
-    if (round === GameRound.ROUND_THREE) {
-      checkRoundThreeEnd();
+    // Make sure question has all required fields
+    if (!question.id) {
+      question.id = crypto.randomUUID();
     }
-  }, [players, round, checkRoundThreeEnd]);
+    
+    // Add question to category
+    setCategories(prev => 
+      prev.map(c => 
+        c.id === categoryId 
+          ? { ...c, questions: [...c.questions, question] } 
+          : c
+      )
+    );
+  };
+  
+  const removeQuestion = (categoryId: string, questionId: string) => {
+    setCategories(prev => 
+      prev.map(c => 
+        c.id === categoryId 
+          ? { ...c, questions: c.questions.filter(q => q.id !== questionId) } 
+          : c
+      )
+    );
+  };
+  
+  const updateQuestion = (categoryId: string, updatedQuestion: Question) => {
+    setCategories(prev => 
+      prev.map(c => 
+        c.id === categoryId 
+          ? { 
+              ...c, 
+              questions: c.questions.map(q => 
+                q.id === updatedQuestion.id ? updatedQuestion : q
+              ) 
+            } 
+          : c
+      )
+    );
+  };
 
-  // Automatycznie ładujemy dane gry podczas uruchamiania
-  useEffect(() => {
-    try {
-      loadGameData();
-    } catch (error) {
-      console.error("Error loading game data:", error);
-      toast.error("Błąd podczas wczytywania danych gry");
-    }
-  }, [loadGameData]);
-
-  // Automatically save game data when important state changes
-  useEffect(() => {
-    try {
-      saveGameData();
-    } catch (error) {
-      console.error("Error saving game data:", error);
-    }
-  }, [
-    players, 
-    round, 
-    activePlayerId, 
-    winnerIds, 
-    specialCards, 
-    specialCardRules, 
-    gameLogo,
-    primaryColor,
-    secondaryColor,
-    saveGameData
-  ]);
-
-  // Create combined context value
+  // Context value
   const value: GameContextType = {
     // State
     round,
@@ -188,27 +241,31 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     specialCards,
     specialCardRules,
     usedQuestionIds,
+    roundSettings,
     
-    // Sound-related properties
-    volume,
-    setVolume,
-    availableSounds,
-    addCustomSound,
+    // Sound settings
     playSound,
-    playSoundWithOptions,
     stopSound,
     stopAllSounds,
     soundsEnabled,
     setSoundsEnabled,
+    playSoundWithOptions,
+    volume,
+    setVolume,
     soundStatus,
+    availableSounds,
+    addCustomSound,
+    
+    // Error reporting
+    reportError,
     
     // Methods
     setRound,
+    setPlayers,
+    setCategories,
     addPlayer,
     updatePlayer,
     removePlayer,
-    setPlayers,
-    setCategories,
     addCategory,
     removeCategory,
     selectQuestion,
@@ -226,57 +283,45 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     resetGame,
     setWinnerIds,
     
+    // Special card methods
+    addSpecialCard,
+    updateSpecialCard,
+    removeSpecialCard,
+    addSpecialCardRule,
+    updateSpecialCardRule,
+    removeSpecialCardRule,
+    giveCardToPlayer,
+    usePlayerCard,
+    
     // Settings methods
     setGameLogo,
     setPrimaryColor,
     setSecondaryColor,
     setHostCameraUrl,
     
-    // Data persistence methods
+    // Data persistence
     loadGameData,
     saveGameData,
     
-    // Questions methods - these will be overridden by QuestionsProvider
-    addQuestion: () => {},
-    removeQuestion: () => {},
-    updateQuestion: () => {},
-    markQuestionAsUsed, 
+    // Question methods
+    addQuestion,
+    removeQuestion,
+    updateQuestion,
+    markQuestionAsUsed,
     resetUsedQuestions,
     isQuestionUsed,
     
-    // Special cards methods - these will be overridden by SpecialCardsProvider
-    addSpecialCard: () => {},
-    updateSpecialCard: () => {},
-    removeSpecialCard: () => {},
-    addSpecialCardRule: () => {},
-    updateSpecialCardRule: () => {},
-    removeSpecialCardRule: () => {},
-    giveCardToPlayer: () => {},
-    usePlayerCard: () => {}
+    // Round settings
+    updateRoundSettings: handleUpdateRoundSettings,
+    
+    // Undo functionality
+    undoLastAction,
+    hasUndoHistory,
+    
+    // Manual overrides
+    addManualPoints,
+    adjustHealthManually,
   };
 
-  // Return nested providers to ensure all contexts have access to necessary data
-  return (
-    <GameContext.Provider value={value}>
-      <QuestionsProvider
-        gameState={gameState}
-        usedQuestionIds={usedQuestionIds}
-        markQuestionAsUsed={markQuestionAsUsed}
-        resetUsedQuestions={resetUsedQuestions}
-        isQuestionUsed={isQuestionUsed}
-      >
-        <SpecialCardsProvider
-          players={players}
-          setPlayers={setPlayers}
-          specialCards={specialCards}
-          setSpecialCards={setSpecialCards}
-          specialCardRules={specialCardRules}
-          setSpecialCardRules={setSpecialCardRules}
-          playSound={playSound}
-        >
-          {children}
-        </SpecialCardsProvider>
-      </QuestionsProvider>
-    </GameContext.Provider>
-  );
+  return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 };
