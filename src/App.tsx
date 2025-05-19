@@ -1,48 +1,46 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './components/ThemeProvider';
+import MainLayout from './layouts/MainLayout';
+import HomePage from './pages/HomePage';
+import Home from './pages/Home';
+import About from './pages/About';
+import Host from './pages/Host';
+import Overlay from './pages/Overlay';
+import PlayerView from './pages/PlayerView';
+import Settings from './pages/Settings';
+import Setup from './pages/Setup';
+import NotFound from './pages/NotFound';
+import SoundPreloader from './components/SoundPreloader';
+import PlayerAvailabilityCalendar from './components/settings/player/PlayerAvailabilityCalendar';
 
-import { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Home from '@/pages/Home';
-import Setup from '@/pages/Setup';
-import Host from '@/pages/Host';
-import Settings from '@/pages/Settings';
-import About from '@/pages/About';
-import HostPanel from '@/pages/HostPanel';
-import PlayerView from '@/pages/PlayerView';
-import NotFound from '@/pages/NotFound';
-import MainLayout from '@/components/MainLayout';
-import { Loader } from 'lucide-react';
-
-// Lazy-loaded components
-const Overlay = lazy(() => import('@/pages/Overlay'));
-const UnifiedHostPanel = lazy(() => import('@/components/UnifiedHostPanel'));
-
-const LoadingFallback = () => (
-  <div className="flex items-center justify-center h-screen bg-black">
-    <div className="flex flex-col items-center">
-      <Loader className="w-12 h-12 text-primary animate-spin mb-4" />
-      <div className="text-white text-xl">Ładowanie...</div>
-    </div>
-  </div>
-);
+import HostAvailability from './pages/HostAvailability';
+import { AvailabilityProvider } from './context/AvailabilityContext';
 
 function App() {
+  const isMobile = /Mobile|iP(hone|od|ad)|Android|BlackBerry|IEMobile|Windows Phone|webOS/i.test(navigator.userAgent);
+
   return (
-    <Suspense fallback={<LoadingFallback />}>
-      <Routes>
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/setup" element={<Setup />} />
-          <Route path="/host" element={<Host />} />
-          <Route path="/settings/*" element={<Settings />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/hostpanel" element={<HostPanel />} />
-          <Route path="/host-panel" element={<UnifiedHostPanel />} />
-          <Route path="/overlay" element={<Overlay />} />
-          <Route path="/player/:playerToken" element={<PlayerView />} />
-          <Route path="*" element={<NotFound />} />
-        </Route>
-      </Routes>
-    </Suspense>
+    <ThemeProvider>
+      <AvailabilityProvider>
+        <BrowserRouter>
+          <SoundPreloader />
+          <Routes>
+            <Route path="/" element={<MainLayout><HomePage /></MainLayout>} />
+            <Route path="/home" element={<MainLayout><Home /></MainLayout>} />
+            <Route path="/about" element={<MainLayout><About /></MainLayout>} />
+            <Route path="/host" element={<Host />} />
+            <Route path="/host/availability" element={<HostAvailability />} />
+            <Route path="/overlay" element={<Overlay />} />
+            <Route path="/player" element={<PlayerView />} />
+            <Route path="/player/calendar" element={<MainLayout><PlayerAvailabilityCalendar players={[]} /></MainLayout>} />
+            <Route path="/settings/*" element={<Settings />} />
+            <Route path="/setup" element={<Setup />} />
+            <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />
+          </Routes>
+        </BrowserRouter>
+      </AvailabilityProvider>
+    </ThemeProvider>
   );
 }
 

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -9,26 +9,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Player } from '@/types/game-types';
 import { CalendarDays, Calendar as CalendarIcon, Clock, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useAvailabilityContext } from '@/context/AvailabilityContext';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
+import { toast } from 'sonner';
+import { PlayerAvailabilitySlot, AvailabilityStatus } from '@/types/availability-types';
 
 // Time slots from 16:00 to 23:00
 const TIME_SLOTS = [
   '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
 ];
 
-type AvailabilityStatus = 'available' | 'unavailable' | 'maybe' | '';
-
-interface PlayerAvailability {
-  playerId: string;
-  date: string; // ISO date string
-  timeSlots: Record<string, AvailabilityStatus>; // Key: time slot, Value: availability status
-}
-
 interface PlayerAvailabilityCalendarProps {
   players: Player[];
   isHost?: boolean;
   currentPlayerId?: string;
-  onSaveAvailability?: (availability: PlayerAvailability) => void;
-  existingAvailability?: PlayerAvailability[];
+  onSaveAvailability?: (availability: PlayerAvailabilitySlot) => void;
+  existingAvailability?: PlayerAvailabilitySlot[];
 }
 
 const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
@@ -38,10 +35,20 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
   onSaveAvailability,
   existingAvailability = []
 }) => {
+  const { updateAvailability } = useAvailabilityContext();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedPlayer, setSelectedPlayer] = useState<string>(currentPlayerId || '');
-  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
-  const [availabilityData, setAvailabilityData] = useState<PlayerAvailability[]>(existingAvailability);
+  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  const [availabilityData, setAvailabilityData] = useState<PlayerAvailabilitySlot[]>(existingAvailability);
+  
+  // Ustaw domyślnie wybranego gracza na podstawie currentPlayerId
+  useEffect(() => {
+    if (currentPlayerId) {
+      setSelectedPlayer(currentPlayerId);
+    } else if (players.length > 0 && !selectedPlayer) {
+      setSelectedPlayer(players[0].id);
+    }
+  }, [currentPlayerId, players, selectedPlayer]);
   
   // Get week days for the current selected date
   const getWeekDays = (date: Date) => {
@@ -65,12 +72,17 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
   
   // Format date for display
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'numeric' });
+    return format(date, 'EEEE, dd MMMM', { locale: pl });
+  };
+  
+  // Format short date for display
+  const formatShortDate = (date: Date) => {
+    return format(date, 'EEE, dd.MM', { locale: pl });
   };
   
   // Format date for storage
   const formatDateForStorage = (date: Date) => {
-    return date.toISOString().split('T')[0];
+    return format(date, 'yyyy-MM-dd');
   };
   
   // Get player availability for a specific date and time
@@ -84,7 +96,7 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
   };
   
   // Set player availability for a specific date and time
-  const setAvailability = (playerId: string, date: Date, timeSlot: string, status: AvailabilityStatus) => {
+  const setAvailability = async (playerId: string, date: Date, timeSlot: string, status: AvailabilityStatus) => {
     const dateStr = formatDateForStorage(date);
     
     setAvailabilityData(prev => {
@@ -127,6 +139,30 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
           [timeSlot]: status
         }
       });
+    }
+    
+    // Call the API to update availability
+    const playerAvailability = availabilityData.find(
+      a => a.playerId === playerId && a.date === dateStr
+    ) || { playerId, date: dateStr, timeSlots: {} };
+    
+    const updatedSlot: PlayerAvailabilitySlot = {
+      playerId,
+      date: dateStr,
+      timeSlots: {
+        ...playerAvailability.timeSlots,
+        [timeSlot]: status
+      }
+    };
+    
+    try {
+      const success = await updateAvailability(playerId, updatedSlot);
+      if (success) {
+        // Toast już jest wyświetlany w hook'u updateAvailability
+      }
+    } catch (error) {
+      console.error("Error updating availability:", error);
+      toast.error("Nie udało się zaktualizować dostępności");
     }
   };
   
@@ -226,12 +262,7 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
         <CardHeader className="pb-3">
           <CardTitle>Dostępność: {playerToRender.name}</CardTitle>
           <CardDescription>
-            {selectedDate.toLocaleDateString('pl-PL', { 
-              weekday: 'long', 
-              day: 'numeric', 
-              month: 'long', 
-              year: 'numeric' 
-            })}
+            {formatDate(selectedDate)}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -292,7 +323,7 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
             </div>
           </div>
           <CardDescription>
-            Tydzień: {formatDate(weekDays[0])} - {formatDate(weekDays[6])}
+            Tydzień: {formatShortDate(weekDays[0])} - {formatShortDate(weekDays[6])}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -301,8 +332,11 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
               <TableRow>
                 <TableHead className="w-[100px]">Godzina</TableHead>
                 {weekDays.map(day => (
-                  <TableHead key={day.toISOString()}>
-                    {formatDate(day)}
+                  <TableHead key={day.toISOString()} className="text-center">
+                    {format(day, 'EEE', { locale: pl })}
+                    <div className="text-xs font-normal">
+                      {format(day, 'dd.MM')}
+                    </div>
                   </TableHead>
                 ))}
               </TableRow>
@@ -349,12 +383,7 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
             </Button>
           </div>
           <CardDescription>
-            {selectedDate.toLocaleDateString('pl-PL', { 
-              weekday: 'long', 
-              day: 'numeric', 
-              month: 'long', 
-              year: 'numeric' 
-            })}
+            {formatDate(selectedDate)}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -378,7 +407,8 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
                     return (
                       <TableCell
                         key={timeSlot}
-                        className={`text-center ${statusClass}`}
+                        className={`text-center ${statusClass} cursor-pointer`}
+                        onClick={() => handleCellClick(player.id, selectedDate, timeSlot)}
                       >
                         {status === 'available' && '✓'}
                         {status === 'maybe' && '?'}

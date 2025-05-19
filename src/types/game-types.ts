@@ -1,6 +1,7 @@
-
 import { SoundEffectOptions } from '@/hooks/useSoundEffects';
 import type { SpecialCard, SpecialCardAwardRule, CardSize } from './card-types';
+import type { CardDeck, CardInDeck } from '@/components/settings/cards/CardDecksManager';
+import type { PlayerAvailabilitySlot } from './availability-types';
 
 // Game rounds
 export enum GameRound {
@@ -198,4 +199,8 @@ export interface GameContextType {
   markQuestionAsUsed?: (questionId: string) => void;
   resetUsedQuestions?: () => void;
   isQuestionUsed?: (questionId: string) => boolean;
+  
+  // Nowe funkcje do obsługi dostępności graczy
+  fetchAvailability?: () => Promise<PlayerAvailabilitySlot[]>;
+  updateAvailability?: (playerId: string, slot: PlayerAvailabilitySlot) => Promise<boolean>;
 }

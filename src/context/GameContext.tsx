@@ -1,10 +1,10 @@
-
-import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import { GameRound, Player, Category, Question, GameContextType, RoundSettings } from '@/types/game-types';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useGameState } from '@/hooks/useGameState';
+import { useGameLogic } from '@/hooks/useGameLogic';
+import { useGamePersistence } from '@/hooks/useGamePersistence';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
-import { useGameLogic, DEFAULT_ROUND_SETTINGS } from '@/hooks/useGameLogic';
-import { useSoundEffects } from '@/hooks/useSoundEffects';
-import { toast } from 'sonner';
+import { useAvailabilityContext } from './AvailabilityContext';
+import { GameContextType } from '@/types/game-types';
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
@@ -226,8 +226,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     );
   };
 
-  // Context value
-  const value: GameContextType = {
+  // Pobierz funkcje związane z dostępnością
+  const { fetchAvailability, updateAvailability } = useAvailabilityContext();
+
+  // Wartość kontekstu z uwzględnieniem nowych funkcji dostępności
+  const contextValue: GameContextType = {
     // State
     round,
     players,
@@ -322,7 +325,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     markQuestionAsUsed,
     resetUsedQuestions,
     isQuestionUsed,
+    
+    // Dodaj funkcje dostępności
+    fetchAvailability,
+    updateAvailability
   };
 
-  return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
+  return <GameContext.Provider value={contextValue}>{children}</GameContext.Provider>;
 };
