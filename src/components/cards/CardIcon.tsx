@@ -8,7 +8,8 @@ import {
   Zap, 
   Clock, 
   Eye, 
-  Lightbulb 
+  Lightbulb,
+  ShieldCheck
 } from 'lucide-react';
 
 interface CardIconProps {
@@ -27,17 +28,24 @@ const CardIcon: React.FC<CardIconProps> = ({ name, className = '', size = 20 }) 
     case 'reanimacja':
       return <Heart className={className} size={size} />;
     case 'skip':
+    case 'pomiń':
       return <SkipForward className={className} size={size} />;
     case 'turbo':
+    case 'boost':
       return <Zap className={className} size={size} />;
+    case 'refleks':
     case 'refleks 2':
     case 'refleks 3':
-    case 'refleks':
       return <Clock className={className} size={size} />;
     case 'lustro':
+    case 'mirror':
       return <Eye className={className} size={size} />;
     case 'oświecenie':
+    case 'enlightenment':
       return <Lightbulb className={className} size={size} />;
+    case 'tarcza':
+    case 'shield':
+      return <ShieldCheck className={className} size={size} />;
     default:
       // Default icon for unknown cards
       return <Zap className={className} size={size} />;
