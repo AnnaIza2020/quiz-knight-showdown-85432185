@@ -1,6 +1,6 @@
 
 import { SoundEffectOptions } from '@/hooks/useSoundEffects';
-import { SpecialCard, SpecialCardAwardRule, CardSize } from './card-types';
+import type { SpecialCard, SpecialCardAwardRule, CardSize } from './card-types';
 
 // Game rounds
 export enum GameRound {
@@ -52,7 +52,7 @@ export interface Question {
 }
 
 // Re-export types from card-types.ts for backward compatibility
-export { SpecialCard, SpecialCardAwardRule, CardSize };
+export type { SpecialCard, SpecialCardAwardRule, CardSize };
 
 // Sound effects
 export type SoundEffect = 

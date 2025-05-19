@@ -4,7 +4,7 @@ import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Users, FileQuestion, Layers, Palette, Volume2, 
   UserCog, Trophy, PieChart, BotIcon, Lock, 
-  TestTube, Gauge, BarChart, Calendar
+  TestTube, BarChart, Calendar
 } from 'lucide-react';
 
 interface SettingsTabsProps {

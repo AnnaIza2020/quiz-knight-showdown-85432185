@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 interface CardIconProps {
-  name: string;  // The component expects 'name', not 'iconName'
+  name: string;  // This is the prop we're using
   className?: string;
   size?: number;
 }
