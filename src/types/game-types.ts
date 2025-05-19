@@ -1,5 +1,6 @@
 
 import { SoundEffectOptions } from '@/hooks/useSoundEffects';
+import { SpecialCard, SpecialCardAwardRule, CardSize } from './card-types';
 
 // Game rounds
 export enum GameRound {
@@ -50,34 +51,8 @@ export interface Question {
   answer?: string; // For backward compatibility
 }
 
-// Special Card interface - Updated with the missing properties
-export interface SpecialCard {
-  id: string;
-  name: string;
-  description: string;
-  imageUrl?: string;
-  soundEffect?: string;
-  iconName?: string;
-  animationStyle?: string;
-  // New properties causing TypeScript errors:
-  effectHook?: string;
-  effectType?: string;
-  effectParams?: Record<string, any>;
-}
-
-// Special Card Award Rule interface - Updated with the missing properties
-export interface SpecialCardAwardRule {
-  id: string;
-  cardId: string;
-  condition: 'correct_answer' | 'incorrect_answer' | 'round_start' | 'round_end' | 'random' | string;
-  probability?: number; // 0-100
-  roundApplicable?: GameRound[];
-  roundType?: GameRound;
-  description?: string;
-  isEnabled?: boolean;
-  // New property causing TypeScript errors:
-  params?: Record<string, any>;
-}
+// Re-export types from card-types.ts for backward compatibility
+export { SpecialCard, SpecialCardAwardRule, CardSize };
 
 // Sound effects
 export type SoundEffect = 
@@ -224,6 +199,3 @@ export interface GameContextType {
   resetUsedQuestions?: () => void;
   isQuestionUsed?: (questionId: string) => boolean;
 }
-
-// Define a type for card sizes to fix the error in CardDecksManager
-export type CardSize = "tiny" | "small" | "medium" | "large";

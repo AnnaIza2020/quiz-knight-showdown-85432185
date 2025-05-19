@@ -1,39 +1,20 @@
 
 import { useState, useCallback } from 'react';
 import { SpecialCard, Player, Question } from '@/types/game-types';
+import { CardEffectType, CardEffect } from '@/types/card-types';
 import { toast } from 'sonner';
 import { useSubscription } from './useSubscription';
 
-export type CardEffectType = 
-  | 'shield'    // Blocks one incorrect answer
-  | 'reflect'   // Sends question to another player
-  | 'counter'   // Returns negative effects back to sender
-  | 'wildcard'  // Allows a choice of answer options
-  | 'bonus'     // Gives extra points
-  | 'life'      // Gives an extra life
-  | 'skip'      // Skips a question
-  | string;     // For custom effects
-
-export interface CardEffect {
-  type: CardEffectType;
-  sourcePlayerId: string;
-  targetPlayerId?: string;
-  question?: Question;
-  points?: number;
-  animationDuration?: number;
-  soundEffect?: string;
+export interface CardEffectOptions {
+  broadcast?: boolean;
+  showToast?: boolean;
+  playSound?: (sound: string) => void;
 }
 
 interface CardEffectPayload {
   type: string;
   effect: CardEffect;
   timestamp: number;
-}
-
-export interface CardEffectOptions {
-  broadcast?: boolean;
-  showToast?: boolean;
-  playSound?: (sound: string) => void;
 }
 
 /**

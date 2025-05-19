@@ -96,7 +96,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
     )}>
       <div className="absolute inset-0 flex items-center justify-center">
         <CardIcon 
-          iconName={card.iconName || 'default'} 
+          name={card.iconName || 'default'} 
           size={iconSize} 
           className="opacity-80"
         />
