@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Users, FileQuestion, Layers, Palette, Volume2, 
   UserCog, Trophy, PieChart, BotIcon, Lock, 
-  TestTube, Gauge, BarChart
+  TestTube, Gauge, BarChart, Calendar
 } from 'lucide-react';
 
 interface SettingsTabsProps {
@@ -120,6 +121,15 @@ const SettingsTabs: React.FC<SettingsTabsProps> = ({ activeTab, setActiveTab }) 
         }`}
       >
         <TestTube size={16} className="mr-2" /> Testy
+      </TabsTrigger>
+      
+      <TabsTrigger
+        value="kalendarz"
+        className={`flex items-center ${
+          activeTab === 'kalendarz' ? 'bg-neon-yellow/40 text-black' : 'text-white/70'
+        }`}
+      >
+        <Calendar size={16} className="mr-2" /> Kalendarz
       </TabsTrigger>
     </TabsList>
   );

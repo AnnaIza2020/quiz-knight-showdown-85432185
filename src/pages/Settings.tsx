@@ -16,13 +16,16 @@ import GamePasswordSettings from '@/components/settings/GamePasswordSettings';
 import SettingsTests from '@/components/settings/SettingsTests';
 import SettingsWheelCategories from '@/components/settings/SettingsWheelCategories';
 import RoundSettingsPanel from '@/components/settings/RoundSettingsPanel';
+import PlayerAvailabilityCalendar from '@/components/settings/player/PlayerAvailabilityCalendar';
 import { useSettingsExport } from '@/hooks/useSettingsExport';
 import { pathToTab } from '@/components/settings/SettingsTabsMapping';
+import { useGameContext } from '@/context/GameContext';
 
 const Settings = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { handleExportSettings, handleImportSettings } = useSettingsExport();
+  const { players } = useGameContext();
   
   // Determine active tab based on current path
   const getCurrentTab = () => {
@@ -111,6 +114,21 @@ const Settings = () => {
           
           <TabsContent value="testy">
             <SettingsTests />
+          </TabsContent>
+          
+          {/* Availability Calendar */}
+          <TabsContent value="kalendarz">
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold">Kalendarz dostępności graczy</h2>
+              <PlayerAvailabilityCalendar 
+                players={players}
+                isHost={true}
+                onSaveAvailability={(availability) => {
+                  console.log('Saving availability:', availability);
+                  // Here you would save this to your database or state
+                }}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </div>

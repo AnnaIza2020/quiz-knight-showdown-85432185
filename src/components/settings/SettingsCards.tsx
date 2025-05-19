@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -10,11 +10,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { useGameContext } from '@/context/GameContext';
 import { useSpecialCardsContext } from '@/context/SpecialCardsContext';
-import { SpecialCard, SpecialCardAwardRule, GameRound } from '@/types/game-types';
-import { Plus, Edit, Trash2, Save } from 'lucide-react';
+import { SpecialCard, SpecialCardAwardRule, GameRound, Player } from '@/types/game-types';
+import { Plus, Edit, Trash2, Save, Filter, Search, FileText, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import CardDisplay from '../cards/CardDisplay';
+import CardDecksManager, { CardDeck } from './cards/CardDecksManager';
+import AdvancedCardEditor from './cards/AdvancedCardEditor';
 
 const defaultCard: SpecialCard = {
   id: '',
@@ -38,18 +41,34 @@ const defaultRule: SpecialCardAwardRule = {
 };
 
 const SettingsCards = () => {
-  const { specialCards, specialCardRules, addSpecialCard, updateSpecialCard, removeSpecialCard, 
-          addSpecialCardRule, updateSpecialCardRule, removeSpecialCardRule } = useSpecialCardsContext();
+  const { 
+    specialCards, 
+    specialCardRules, 
+    addSpecialCard, 
+    updateSpecialCard, 
+    removeSpecialCard,
+    addSpecialCardRule, 
+    updateSpecialCardRule, 
+    removeSpecialCardRule,
+    giveCardToPlayer,
+    usePlayerCard,
+    players 
+  } = useGameContext();
 
   const [activeTab, setActiveTab] = useState('cards');
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false);
   const [isRuleDialogOpen, setIsRuleDialogOpen] = useState(false);
+  const [isAdvancedEditorOpen, setIsAdvancedEditorOpen] = useState(false);
   const [currentCard, setCurrentCard] = useState<SpecialCard>(defaultCard);
   const [currentRule, setCurrentRule] = useState<SpecialCardAwardRule>(defaultRule);
   const [isEditing, setIsEditing] = useState(false);
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{type: 'card' | 'rule', id: string}>({ type: 'card', id: '' });
-
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [cardDecks, setCardDecks] = useState<CardDeck[]>([]);
+  const [selectedPlayer, setSelectedPlayer] = useState<string>('');
+  
   // Card form handlers
   const handleAddCard = () => {
     setCurrentCard(defaultCard);
@@ -61,6 +80,11 @@ const SettingsCards = () => {
     setCurrentCard({...card});
     setIsEditing(true);
     setIsCardDialogOpen(true);
+  };
+
+  const handleOpenAdvancedEditor = (card: SpecialCard) => {
+    setCurrentCard({...card});
+    setIsAdvancedEditorOpen(true);
   };
 
   const handleSaveCard = () => {
@@ -153,6 +177,67 @@ const SettingsCards = () => {
     setDeleteConfirmDialog(true);
   };
 
+  // Deck management handlers
+  const handleSaveDeck = (deck: CardDeck) => {
+    setCardDecks(prev => {
+      const exists = prev.find(d => d.id === deck.id);
+      if (exists) {
+        return prev.map(d => d.id === deck.id ? deck : d);
+      } else {
+        return [...prev, deck];
+      }
+    });
+    
+    // Here you would save the deck to your storage/context
+  };
+
+  const handleDeleteDeck = (deckId: string) => {
+    setCardDecks(prev => prev.filter(d => d.id !== deckId));
+    // Here you would delete the deck from your storage/context
+  };
+
+  const handleActivateDeck = (deckId: string) => {
+    setCardDecks(prev => prev.map(d => ({
+      ...d,
+      isActive: d.id === deckId
+    })));
+    // Here you would activate the deck in your game context
+  };
+
+  // Card testing
+  const handleTestCardEffect = (card: SpecialCard, testParams?: any) => {
+    // Log the card and parameters for testing
+    console.log('Testing card effect:', card, testParams);
+    
+    // You would implement the actual effect testing logic here
+    toast.success(`Testowanie efektu karty "${card.name}"`);
+    
+    // Mock effect for demonstration
+    setTimeout(() => {
+      toast.info(`Efekt: ${card.effectType || 'custom'} wykonany pomyślnie`);
+    }, 1500);
+  };
+
+  // Manual assignment handlers
+  const handleGiveCardToPlayer = () => {
+    if (!selectedPlayer || !currentCard.id) {
+      toast.error('Wybierz gracza i kartę');
+      return;
+    }
+    
+    giveCardToPlayer(selectedPlayer, currentCard.id);
+    toast.success('Karta została przydzielona graczowi');
+  };
+
+  // Filtering and searching
+  const filteredCards = specialCards.filter(card => {
+    const matchesSearch = card.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          card.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesSearch;
+  });
+
+  // Helpers
   const getCardNameById = (cardId: string) => {
     const card = specialCards.find(c => c.id === cardId);
     return card ? card.name : 'Nieznana karta';
@@ -164,7 +249,10 @@ const SettingsCards = () => {
       'incorrect_answer': 'Błędna odpowiedź',
       'round_start': 'Start rundy',
       'round_end': 'Koniec rundy',
-      'random': 'Losowo'
+      'random': 'Losowo',
+      'points_milestone': 'Próg punktowy',
+      'card_used': 'Użycie karty',
+      'question_count': 'Liczba pytań'
     };
     
     return conditions[condition] || condition;
@@ -181,13 +269,21 @@ const SettingsCards = () => {
     }
   };
 
+  const countActiveInstances = (cardId: string): number => {
+    // Count how many players have this card
+    return players.reduce((count, player) => {
+      const hasCard = player.specialCards?.includes(cardId) || false;
+      return count + (hasCard ? 1 : 0);
+    }, 0);
+  };
+
   return (
     <div>
       <Card>
         <CardHeader>
           <CardTitle>Karty Specjalne (Boostery)</CardTitle>
           <CardDescription>
-            Zarządzaj kartami specjalnymi i regułami ich przyznawania
+            Zarządzaj kartami specjalnymi, regułami przyznawania i taliami kart
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -195,42 +291,87 @@ const SettingsCards = () => {
             <TabsList className="mb-4">
               <TabsTrigger value="cards">Karty</TabsTrigger>
               <TabsTrigger value="rules">Reguły przyznawania</TabsTrigger>
+              <TabsTrigger value="decks">Talie</TabsTrigger>
+              <TabsTrigger value="assign">Przydzielanie</TabsTrigger>
             </TabsList>
             
             <TabsContent value="cards">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Lista kart</h3>
-                <Button onClick={handleAddCard} className="gap-1">
-                  <Plus size={16} /> Dodaj kartę
+              <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-2">
+                <div className="flex flex-col md:flex-row w-full gap-2">
+                  <div className="relative md:w-1/2">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Szukaj kart..."
+                      className="pl-8"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <Select
+                    value={statusFilter}
+                    onValueChange={(value: 'all' | 'active' | 'inactive') => setStatusFilter(value)}
+                  >
+                    <SelectTrigger className="md:w-1/4">
+                      <Filter className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Filtruj" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Wszystkie karty</SelectItem>
+                      <SelectItem value="active">Aktywne karty</SelectItem>
+                      <SelectItem value="inactive">Nieaktywne karty</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={handleAddCard} className="md:w-auto">
+                  <Plus size={16} className="mr-2" /> Dodaj kartę
                 </Button>
               </div>
               
               {specialCards.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {specialCards.map((card) => (
-                    <Card key={card.id} className="overflow-hidden">
-                      <CardContent className="pt-4 flex flex-col items-center">
-                        <CardDisplay card={card} size="medium" showDescription={true} />
-                        <div className="mt-4 w-full flex justify-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleEditCard(card)}
-                          >
-                            <Edit size={16} />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => promptDelete('card', card.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 size={16} />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {filteredCards.map((card) => {
+                    const activeInstances = countActiveInstances(card.id);
+                    
+                    return (
+                      <Card key={card.id} className="overflow-hidden">
+                        <CardContent className="pt-4 flex flex-col items-center">
+                          <CardDisplay card={card} size="medium" showDescription={true} />
+                          
+                          <div className="w-full mt-2">
+                            <div className="flex justify-between text-xs text-muted-foreground mb-2">
+                              <span>Typ: {card.effectType || 'Standardowy'}</span>
+                              <span>Aktywne: {activeInstances}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-2 w-full flex justify-center gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleEditCard(card)}
+                            >
+                              <Edit size={16} />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleOpenAdvancedEditor(card)}
+                            >
+                              <FileText size={16} />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => promptDelete('card', card.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
@@ -304,6 +445,134 @@ const SettingsCards = () => {
                 </div>
               )}
             </TabsContent>
+            
+            <TabsContent value="decks">
+              <CardDecksManager 
+                availableCards={specialCards}
+                onSaveDeck={handleSaveDeck}
+                onDeleteDeck={handleDeleteDeck}
+                onActivateDeck={handleActivateDeck}
+                initialDecks={cardDecks}
+              />
+            </TabsContent>
+            
+            <TabsContent value="assign">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Przydziel kartę graczowi</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="player">Wybierz gracza</Label>
+                        <Select 
+                          value={selectedPlayer} 
+                          onValueChange={setSelectedPlayer}
+                        >
+                          <SelectTrigger id="player">
+                            <SelectValue placeholder="Wybierz gracza" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {players.map(player => (
+                              <SelectItem key={player.id} value={player.id}>
+                                {player.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="card">Wybierz kartę</Label>
+                        <Select 
+                          value={currentCard.id} 
+                          onValueChange={(value) => {
+                            const card = specialCards.find(c => c.id === value);
+                            if (card) setCurrentCard(card);
+                          }}
+                        >
+                          <SelectTrigger id="card">
+                            <SelectValue placeholder="Wybierz kartę" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {specialCards.map(card => (
+                              <SelectItem key={card.id} value={card.id}>
+                                {card.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {currentCard.id && (
+                        <div className="flex justify-center my-4">
+                          <CardDisplay card={currentCard} size="medium" />
+                        </div>
+                      )}
+                      
+                      <Button 
+                        className="w-full"
+                        onClick={handleGiveCardToPlayer}
+                        disabled={!selectedPlayer || !currentCard.id}
+                      >
+                        Przydziel kartę
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Karty graczy</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {selectedPlayer ? (
+                      <>
+                        <div className="mb-4">
+                          <h3 className="text-lg font-medium">
+                            {players.find(p => p.id === selectedPlayer)?.name}
+                          </h3>
+                        </div>
+                        
+                        {players.find(p => p.id === selectedPlayer)?.specialCards?.length ? (
+                          <div className="grid grid-cols-2 gap-4">
+                            {players.find(p => p.id === selectedPlayer)?.specialCards?.map(cardId => {
+                              const card = specialCards.find(c => c.id === cardId);
+                              return card ? (
+                                <div key={cardId} className="border rounded p-3 flex flex-col items-center">
+                                  <CardDisplay card={card} size="small" />
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="mt-2 w-full"
+                                    onClick={() => {
+                                      usePlayerCard(selectedPlayer, cardId);
+                                      toast.success('Karta została użyta');
+                                    }}
+                                  >
+                                    Usuń
+                                  </Button>
+                                </div>
+                              ) : null;
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-center py-6 text-muted-foreground">
+                            <Users className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                            <p>Gracz nie posiada żadnych kart</p>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center py-6 text-muted-foreground">
+                        <p>Wybierz gracza, aby zobaczyć jego karty</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
@@ -342,7 +611,7 @@ const SettingsCards = () => {
             <div className="grid gap-2">
               <Label htmlFor="iconName">Ikona</Label>
               <Select 
-                value={currentCard.iconName || currentCard.name} 
+                value={currentCard.iconName || ''} 
                 onValueChange={(value) => setCurrentCard({...currentCard, iconName: value})}
               >
                 <SelectTrigger id="iconName">
@@ -399,6 +668,27 @@ const SettingsCards = () => {
                 </SelectContent>
               </Select>
             </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="effectType">Typ efektu</Label>
+              <Select 
+                value={currentCard.effectType || 'points'} 
+                onValueChange={(value) => setCurrentCard({...currentCard, effectType: value})}
+              >
+                <SelectTrigger id="effectType">
+                  <SelectValue placeholder="Wybierz typ efektu" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="points">Punkty</SelectItem>
+                  <SelectItem value="health">Życie</SelectItem>
+                  <SelectItem value="block">Blokada</SelectItem>
+                  <SelectItem value="skip">Pomiń</SelectItem>
+                  <SelectItem value="steal">Kradzież</SelectItem>
+                  <SelectItem value="redirect">Przekierowanie</SelectItem>
+                  <SelectItem value="custom">Niestandardowy</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           
           <DialogFooter>
@@ -408,6 +698,35 @@ const SettingsCards = () => {
             <Button onClick={handleSaveCard}>
               <Save className="mr-2 h-4 w-4" />
               {isEditing ? 'Zapisz zmiany' : 'Dodaj kartę'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Advanced Editor Dialog */}
+      <Dialog open={isAdvancedEditorOpen} onOpenChange={setIsAdvancedEditorOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Zaawansowana edycja karty: {currentCard.name}</DialogTitle>
+            <DialogDescription>
+              Zdefiniuj dokładne działanie efektu karty przy użyciu kodu JavaScript
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <AdvancedCardEditor
+              card={currentCard}
+              onChange={(updates) => {
+                setCurrentCard({...currentCard, ...updates});
+                updateSpecialCard(currentCard.id, {...currentCard, ...updates});
+              }}
+              onTestEffect={handleTestCardEffect}
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={() => setIsAdvancedEditorOpen(false)}>
+              Zamknij
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -456,9 +775,50 @@ const SettingsCards = () => {
                   <SelectItem value="round_start">Start rundy</SelectItem>
                   <SelectItem value="round_end">Koniec rundy</SelectItem>
                   <SelectItem value="random">Losowo</SelectItem>
+                  <SelectItem value="points_milestone">Osiągnięcie punktów</SelectItem>
+                  <SelectItem value="question_count">Co X pytań</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            
+            {currentRule.condition === 'points_milestone' && (
+              <div className="grid gap-2">
+                <Label htmlFor="pointsThreshold">Próg punktowy</Label>
+                <Input 
+                  id="pointsThreshold" 
+                  type="number" 
+                  min="100"
+                  step="100"
+                  value={currentRule.params?.pointsThreshold || 500} 
+                  onChange={(e) => setCurrentRule({
+                    ...currentRule, 
+                    params: {
+                      ...currentRule.params,
+                      pointsThreshold: parseInt(e.target.value)
+                    }
+                  })}
+                />
+              </div>
+            )}
+            
+            {currentRule.condition === 'question_count' && (
+              <div className="grid gap-2">
+                <Label htmlFor="questionInterval">Co ile pytań</Label>
+                <Input 
+                  id="questionInterval" 
+                  type="number" 
+                  min="1"
+                  value={currentRule.params?.questionInterval || 3} 
+                  onChange={(e) => setCurrentRule({
+                    ...currentRule, 
+                    params: {
+                      ...currentRule.params,
+                      questionInterval: parseInt(e.target.value)
+                    }
+                  })}
+                />
+              </div>
+            )}
             
             <div className="grid gap-2">
               <Label htmlFor="probability">Szansa (%):</Label>
