@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Users, FileQuestion, Tabs, Palette, Volume2, 
+  Users, FileQuestion, Layers, Palette, Volume2, 
   UserCog, Trophy, PieChart, BotIcon, Lock, 
   TestTube, Gauge, BarChart
 } from 'lucide-react';
@@ -39,7 +38,7 @@ const SettingsTabs: React.FC<SettingsTabsProps> = ({ activeTab, setActiveTab }) 
           activeTab === 'karty' ? 'bg-neon-yellow text-black' : 'text-white/70'
         }`}
       >
-        <Tabs size={16} className="mr-2" /> Karty
+        <Layers size={16} className="mr-2" /> Karty
       </TabsTrigger>
       
       <TabsTrigger
