@@ -1,8 +1,8 @@
 
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import { GameRound, Player, Category, Question, GameContextType } from '@/types/game-types';
+import { GameRound, Player, Category, Question, GameContextType, RoundSettings } from '@/types/game-types';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
-import { useGameLogic, RoundSettings, DEFAULT_ROUND_SETTINGS } from '@/hooks/useGameLogic';
+import { useGameLogic, DEFAULT_ROUND_SETTINGS } from '@/hooks/useGameLogic';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { toast } from 'sonner';
 
@@ -146,9 +146,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   };
 
   const giveCardToPlayer = (playerId: string, cardId: string) => {
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
+    
     updatePlayer({
-      id: playerId,
-      specialCards: [...(players.find(p => p.id === playerId)?.specialCards || []), cardId]
+      ...player,
+      specialCards: [...(player.specialCards || []), cardId]
     });
   };
 
@@ -157,8 +160,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     if (!player) return;
     
     updatePlayer({
-      id: playerId,
-      specialCards: player.specialCards.filter(id => id !== cardId)
+      ...player,
+      specialCards: (player.specialCards || []).filter(id => id !== cardId)
     });
   };
 
@@ -241,7 +244,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     specialCards,
     specialCardRules,
     usedQuestionIds,
+    
+    // Round settings
     roundSettings,
+    updateRoundSettings: handleUpdateRoundSettings,
     
     // Sound settings
     playSound,
@@ -283,6 +289,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     resetGame,
     setWinnerIds,
     
+    // Undo and manual point/health adjustment
+    undoLastAction,
+    hasUndoHistory,
+    addManualPoints,
+    adjustHealthManually,
+    
     // Special card methods
     addSpecialCard,
     updateSpecialCard,
@@ -310,17 +322,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     markQuestionAsUsed,
     resetUsedQuestions,
     isQuestionUsed,
-    
-    // Round settings
-    updateRoundSettings: handleUpdateRoundSettings,
-    
-    // Undo functionality
-    undoLastAction,
-    hasUndoHistory,
-    
-    // Manual overrides
-    addManualPoints,
-    adjustHealthManually,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

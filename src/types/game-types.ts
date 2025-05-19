@@ -1,4 +1,3 @@
-
 import { SoundEffectOptions } from '@/hooks/useSoundEffects';
 
 // Game rounds
@@ -19,7 +18,7 @@ export interface Player {
   health: number;
   lives: number;
   isEliminated: boolean;
-  specialCards: string[];
+  specialCards?: string[];
   cameraUrl?: string;
   color?: string;
   isActive?: boolean;
@@ -97,6 +96,26 @@ export interface ErrorNotificationSettings {
   throttleMs?: number;
 }
 
+// Round settings structure
+export interface RoundSettings {
+  pointValues: {
+    round1: { easy: number; medium: number; hard: number; expert: number };
+    round2: number;
+    round3: number;
+  };
+  lifePenalties: {
+    round1: number;
+    round2: number;
+    round3: number;
+  };
+  timerDurations: {
+    round1: number;
+    round2: number;
+    round3: number;
+  };
+  luckyLoserThreshold: number;
+}
+
 // Game context type
 export interface GameContextType {
   // Game state
@@ -115,6 +134,16 @@ export interface GameContextType {
   primaryColor: string;
   secondaryColor: string;
   hostCameraUrl: string;
+  
+  // Round settings
+  roundSettings: RoundSettings;
+  updateRoundSettings: (newSettings: Partial<RoundSettings>) => void;
+  
+  // Manual overrides and undo
+  undoLastAction: () => void;
+  hasUndoHistory: boolean;
+  addManualPoints: (playerId: string, points: number) => void;
+  adjustHealthManually: (playerId: string, healthDelta: number) => void;
   
   // Special cards
   specialCards: SpecialCard[];
