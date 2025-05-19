@@ -14,17 +14,27 @@ export function useAvailability() {
     setError(null);
     
     try {
-      // W finalnej implementacji powinno to pobierać dane z API
-      // ale jako przykład używamy lokalnego stanu
-      const { data, error } = await supabase
-        .from('player_availability')
-        .select('*');
+      // First check if the table exists
+      const { exists, error: checkError } = await checkTableExists('player_availability');
+      
+      if (checkError) throw new Error(checkError);
+      
+      if (!exists) {
+        // Table doesn't exist yet, return empty data
+        console.log('player_availability table does not exist yet');
+        return [];
+      }
+      
+      // Using any type temporarily to bypass type checking for dynamic table
+      // This is necessary until we update the Supabase generated types
+      const { data, error } = await (supabase
+        .from('player_availability' as any)
+        .select('*'));
       
       if (error) throw error;
       
-      // Przekształć dane z bazy do formatu PlayerAvailability[]
-      const formattedData: PlayerAvailability[] = [];
-      // Tu powinna być logika transformacji danych z API
+      // Transform data to the expected format
+      const formattedData: PlayerAvailability[] = transformAvailabilityData(data || []);
       
       setPlayerAvailability(formattedData);
       return formattedData;
@@ -44,19 +54,31 @@ export function useAvailability() {
     setError(null);
     
     try {
-      // W finalnej implementacji powinno to wysyłać PATCH do API
-      // ale jako przykład używamy lokalnego stanu
-      const { error } = await supabase
-        .from('player_availability')
+      // First check if the table exists, create if not
+      const { exists, error: checkError } = await checkTableExists('player_availability');
+      
+      if (checkError) throw new Error(checkError);
+      
+      if (!exists) {
+        // Table doesn't exist, we should create it first
+        // This would be handled by a SQL migration in a real app
+        console.log('player_availability table does not exist yet');
+        // Return false as we can't update a non-existent table
+        return false;
+      }
+      
+      // Using any type temporarily to bypass type checking for dynamic table
+      const { error } = await (supabase
+        .from('player_availability' as any)
         .upsert({
           player_id: playerId,
           date: slot.date,
           time_slots: slot.timeSlots
-        });
+        }));
       
       if (error) throw error;
       
-      // Aktualizuj lokalny stan
+      // Update local state
       setPlayerAvailability(prev => {
         const playerIndex = prev.findIndex(p => p.playerId === playerId);
         
@@ -79,7 +101,7 @@ export function useAvailability() {
           return updatedAvailability;
         }
         
-        // Jeśli gracz nie istnieje, dodaj nowy wpis
+        // If player doesn't exist, add new entry
         return [...prev, {
           playerId,
           slots: [slot]
@@ -96,6 +118,57 @@ export function useAvailability() {
       return false;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Helper to transform raw DB data to our format
+  const transformAvailabilityData = (data: any[]): PlayerAvailability[] => {
+    const availabilityMap = new Map<string, PlayerAvailabilitySlot[]>();
+    
+    // Group by playerId
+    data.forEach(item => {
+      const playerId = item.player_id;
+      const slot: PlayerAvailabilitySlot = {
+        playerId,
+        date: item.date,
+        timeSlots: item.time_slots || {}
+      };
+      
+      if (!availabilityMap.has(playerId)) {
+        availabilityMap.set(playerId, []);
+      }
+      
+      availabilityMap.get(playerId)!.push(slot);
+    });
+    
+    // Convert map to array
+    const result: PlayerAvailability[] = [];
+    availabilityMap.forEach((slots, playerId) => {
+      result.push({
+        playerId,
+        slots
+      });
+    });
+    
+    return result;
+  };
+
+  // Helper function to check if a table exists
+  const checkTableExists = async (tableName: string) => {
+    try {
+      // Try to get a single row from the table
+      await supabase
+        .from(tableName as any)
+        .select('*', { count: 'exact', head: true });
+        
+      // If we get here without error, the table exists
+      return { exists: true, error: null };
+    } catch (err: any) {
+      // If the error is about the table not existing
+      if (err.message && err.message.includes('relation') && err.message.includes('does not exist')) {
+        return { exists: false, error: null };
+      }
+      return { exists: false, error: 'Unknown error checking table' };
     }
   };
 

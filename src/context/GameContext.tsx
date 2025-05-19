@@ -1,10 +1,14 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { useGamePersistence } from '@/hooks/useGamePersistence';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
 import { useAvailabilityContext } from './AvailabilityContext';
-import { GameContextType } from '@/types/game-types';
+import { GameContextType, Question } from '@/types/game-types';
+import { RoundSettings, DEFAULT_ROUND_SETTINGS } from '@/types/round-settings';
+import { toast } from 'sonner';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
@@ -326,7 +330,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     resetUsedQuestions,
     isQuestionUsed,
     
-    // Dodaj funkcje dostępności
+    // Add availability methods
     fetchAvailability,
     updateAvailability
   };

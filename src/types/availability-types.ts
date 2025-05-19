@@ -14,7 +14,7 @@ export interface PlayerAvailability {
 
 export interface AvailabilityContextType {
   fetchAvailability: () => Promise<PlayerAvailability[]>;
-  updateAvailability: (playerId: string, slots: PlayerAvailabilitySlot) => Promise<boolean>;
+  updateAvailability: (playerId: string, slot: PlayerAvailabilitySlot) => Promise<boolean>;
   playerAvailability: PlayerAvailability[];
   isLoading: boolean;
   error: Error | null;
