@@ -50,7 +50,7 @@ export interface Question {
   answer?: string; // For backward compatibility
 }
 
-// Special Card interface
+// Special Card interface - Updated with the missing properties
 export interface SpecialCard {
   id: string;
   name: string;
@@ -59,9 +59,13 @@ export interface SpecialCard {
   soundEffect?: string;
   iconName?: string;
   animationStyle?: string;
+  // New properties causing TypeScript errors:
+  effectHook?: string;
+  effectType?: string;
+  effectParams?: Record<string, any>;
 }
 
-// Special Card Award Rule interface
+// Special Card Award Rule interface - Updated with the missing properties
 export interface SpecialCardAwardRule {
   id: string;
   cardId: string;
@@ -71,6 +75,8 @@ export interface SpecialCardAwardRule {
   roundType?: GameRound;
   description?: string;
   isEnabled?: boolean;
+  // New property causing TypeScript errors:
+  params?: Record<string, any>;
 }
 
 // Sound effects
@@ -218,3 +224,6 @@ export interface GameContextType {
   resetUsedQuestions?: () => void;
   isQuestionUsed?: (questionId: string) => boolean;
 }
+
+// Define a type for card sizes to fix the error in CardDecksManager
+export type CardSize = "tiny" | "small" | "medium" | "large";
