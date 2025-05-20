@@ -1,16 +1,18 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Save, Database } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useGameContext } from '@/context/GameContext';
+import { GameBackup } from '@/types/game-types';
 
 const GameSaveManager: React.FC = () => {
   const { createBackup, restoreBackup, getBackups, deleteBackup } = useGameContext();
   const [backupName, setBackupName] = useState('');
   const [open, setOpen] = useState(false);
-  const [backups, setBackups] = useState([]);
+  const [backups, setBackups] = useState<GameBackup[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
   // Load backups on component mount
@@ -22,10 +24,10 @@ const GameSaveManager: React.FC = () => {
   const loadBackups = async () => {
     setIsLoading(true);
     const result = await getBackups();
-    if (result.success) {
-      setBackups(result.data);
+    if (result && 'success' in result && result.success) {
+      setBackups(result.data || []);
     } else {
-      console.error('Failed to load backups:', result.error);
+      console.error('Failed to load backups:', result && 'error' in result ? result.error : 'Unknown error');
     }
     setIsLoading(false);
   };
@@ -34,7 +36,7 @@ const GameSaveManager: React.FC = () => {
   const handleCreateBackup = async () => {
     setIsLoading(true);
     const result = await createBackup(backupName);
-    if (result) {
+    if (result && typeof result !== 'boolean') {
       setOpen(false);
       setBackupName('');
       await loadBackups();
@@ -61,10 +63,10 @@ const GameSaveManager: React.FC = () => {
   const handleDeleteBackup = async (backupId: string) => {
     setIsLoading(true);
     const result = await deleteBackup(backupId);
-    if (result.success) {
+    if (result && 'success' in result && result.success) {
       await loadBackups();
     } else {
-      console.error('Failed to delete backup:', result.error);
+      console.error('Failed to delete backup:', result && 'error' in result ? result.error : 'Unknown error');
     }
     setIsLoading(false);
   };

@@ -30,7 +30,7 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
     categoryId: '',
     difficulty: 1,
     options: [],
-    imageUrl: '',
+    image_url: '',
   });
 
   const [roundFilter, setRoundFilter] = useState<number | null>(null);
@@ -48,7 +48,7 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
         categoryId: editingQuestion.categoryId || '',
         difficulty: editingQuestion.difficulty || 1,
         options: editingQuestion.options || [],
-        imageUrl: editingQuestion.imageUrl || '',
+        image_url: editingQuestion.image_url || '',
       });
       
       // Set the round filter based on the category's round
@@ -71,7 +71,7 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
       categoryId: '',
       difficulty: 1,
       options: [],
-      imageUrl: '',
+      image_url: '',
     });
     setRoundFilter(null);
     setErrors({});
@@ -145,7 +145,7 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
         categoryId: formData.categoryId || '',
         difficulty: formData.difficulty || 1,
         options: formData.options || [],
-        imageUrl: formData.imageUrl || undefined,
+        image_url: formData.image_url || undefined,
       };
       
       onSave(questionToSave);
@@ -281,14 +281,14 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
           
           {/* Image URL (optional) */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="imageUrl" className="text-right">
+            <Label htmlFor="image_url" className="text-right">
               URL obrazu (opcjonalnie)
             </Label>
             <div className="col-span-3">
               <Input
-                id="imageUrl"
-                name="imageUrl"
-                value={formData.imageUrl || ''}
+                id="image_url"
+                name="image_url"
+                value={formData.image_url || ''}
                 onChange={handleChange}
                 placeholder="https://przyklad.pl/obraz.png"
                 className="bg-black/30 border-gray-700 text-white"

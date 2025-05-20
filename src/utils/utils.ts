@@ -1,4 +1,3 @@
-
 /**
  * Returns a random neon color in hexadecimal format
  */
@@ -59,3 +58,55 @@ export async function generatePlayerLink(playerId: string): Promise<{ success: b
 export function generateUniqueId(): string {
   return crypto.randomUUID();
 }
+
+/**
+ * Deep equality check for objects
+ */
+export const deepEqual = (a: any, b: any): boolean => {
+  if (a === b) return true;
+  
+  if (
+    typeof a !== 'object' ||
+    typeof b !== 'object' ||
+    a === null ||
+    b === null
+  ) {
+    return false;
+  }
+
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+
+  if (keysA.length !== keysB.length) return false;
+
+  for (const key of keysA) {
+    if (!keysB.includes(key)) return false;
+
+    if (!deepEqual(a[key], b[key])) return false;
+  }
+
+  return true;
+};
+
+/**
+ * Debounce function to limit the rate at which a function can fire
+ */
+export const debounce = <T extends (...args: any[]) => any>(
+  func: T, 
+  wait: number
+): ((...args: Parameters<T>) => void) => {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  
+  return function(...args: Parameters<T>) {
+    const later = () => {
+      timeout = null;
+      func(...args);
+    };
+    
+    if (timeout !== null) {
+      clearTimeout(timeout);
+    }
+    
+    timeout = setTimeout(later, wait);
+  };
+};

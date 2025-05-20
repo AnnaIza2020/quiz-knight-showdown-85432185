@@ -16,3 +16,8 @@ export interface PlayerAvailabilitySlot {
   date: string; // Format: "YYYY-MM-DD"
   timeSlots: TimeSlot[];
 }
+
+export interface AvailabilityContextType {
+  fetchAvailability: () => Promise<PlayerAvailabilitySlot[]>;
+  updateAvailability: (data: PlayerAvailabilitySlot) => Promise<boolean>;
+}

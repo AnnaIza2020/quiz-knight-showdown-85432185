@@ -1,58 +1,46 @@
-
 import { ReactNode } from 'react';
-import { PlayerAvailabilitySlot } from './availability-types';
 import { RoundSettings } from './round-settings';
-import { CardEffect, CardEffectType } from './card-types';
+import { AvailabilityContextType, PlayerAvailabilitySlot } from './availability-types';
 
 export enum GameRound {
-  SETUP = 0,
   ROUND_ONE = 1,
   ROUND_TWO = 2,
-  ROUND_THREE = 3,
-  FINISHED = 4
+  ROUND_THREE = 3
 }
 
 export interface Category {
   id: string;
   name: string;
-  description?: string;
-  color?: string;
+  round: GameRound;
   questions: Question[];
-  round?: number; // Added for wheel categories in round 3
 }
 
 export interface Question {
   id: string;
   text: string;
-  question?: string; // Alternative to text in some components
-  difficulty: number;
-  category?: string;
-  categoryId?: string; // Used in some components
   correctAnswer: string;
-  answer?: string; // Alternative to correctAnswer in some components
-  options?: string[];
+  categoryId: string;
+  difficulty: number;
+  options: string[];
   image_url?: string;
-  type?: 'multiple_choice' | 'true_false' | 'open';
-  categoryName?: string;
 }
 
 export interface Player {
   id: string;
-  name: string;
+  name?: string;
   nickname?: string;
   avatar_url?: string;
-  avatar?: string; // Alternative to avatar_url used in components
+  avatar?: string;
   camera_url?: string;
-  cameraUrl?: string; // Alternative to camera_url used in components
+  cameraUrl?: string;
   color?: string;
   points: number;
   health: number;
   lives: number;
   isEliminated: boolean;
-  isActive?: boolean; // Used in components for currently active player
   specialCards?: string[];
   status?: 'active' | 'inactive' | 'eliminated';
-  uniqueLinkToken?: string; // Used for player access links
+  forcedEliminated?: boolean;
 }
 
 // Log entry type for the action history system
@@ -74,33 +62,27 @@ export type SoundEffect =
   | 'bonus' 
   | 'card-reveal' 
   | 'eliminate' 
-  | 'intro-music' 
-  | 'narrator' 
+  | 'victory' 
   | 'round-start' 
   | 'timeout' 
-  | 'victory' 
+  | 'narrator' 
+  | 'intro-music'
   | 'wheel-tick'
   | 'wheel-spin'
   | 'click'
   | 'damage'
-  | 'powerup';
+  | 'powerup'
+  | string; // Allow custom sound effects
 
 export interface SpecialCard {
   id: string;
   name: string;
   description: string;
-  type: string;
-  icon?: string;
-  iconName?: string; // Used in components
   image_url?: string;
-  imageUrl?: string; // Alternative to image_url
   sound_effect?: string;
-  soundEffect?: string; // Alternative to sound_effect
+  icon_name?: string;
   animation_style?: string;
-  animationStyle?: string; // Alternative to animation_style
-  effectType?: string; // Used in components
-  effectHook?: string; // For advanced card editor
-  effectParams?: any;  // For card parameters
+  type: string;
 }
 
 export interface SpecialCardAwardRule {
@@ -124,18 +106,8 @@ export interface GameBackup {
   id: string;
   name: string;
   timestamp: number;
-  gameState: {
-    round: GameRound;
-    players: Player[];
-    categories: Category[];
-    specialCards: SpecialCard[];
-    specialCardRules: SpecialCardAwardRule[];
-    settings: any;
-  };
-  metadata?: {
-    appVersion?: string;
-    createdBy?: string;
-  };
+  data: any;
+  gameState?: any;
 }
 
 // Card size type used in CardDisplay component
@@ -165,14 +137,17 @@ export interface GameContextType {
   timerRunning: boolean;
   timerSeconds: number;
   winnerIds: string[];
-  gameLogo: string | null;
+  gameLogo: string;
   primaryColor: string;
   secondaryColor: string;
   hostCameraUrl: string;
   specialCards: SpecialCard[];
-  specialCardRules: SpecialCardAwardRule[];
+  specialCardRules: any[];
   usedQuestionIds: string[];
+  
+  // Round settings
   roundSettings: RoundSettings;
+  updateRoundSettings: (settings: RoundSettings) => void;
   
   // Action logs
   logs: LogEntry[];
@@ -180,22 +155,22 @@ export interface GameContextType {
   clearLogs: () => void;
   
   // Sound settings
-  playSound: (sound: SoundEffect, volume?: number) => void;
-  stopSound: (sound: SoundEffect) => void;
+  playSound: (soundName: SoundEffect, volume?: number) => void;
+  stopSound: (soundName: SoundEffect) => void;
   stopAllSounds: () => void;
   soundsEnabled: boolean;
   setSoundsEnabled: (enabled: boolean) => void;
-  playSoundWithOptions: (sound: SoundEffect, options: any) => void;
+  playSoundWithOptions: (options: any) => void;
   volume: number;
   setVolume: (volume: number) => void;
   soundStatus: Record<string, any>;
-  availableSounds: SoundEffect[];
+  availableSounds: string[];
   addCustomSound: (name: string, url: string) => void;
   
   // Error reporting
   reportError: (message: string, settings?: any) => void;
   
-  // Methods
+  // Game state methods
   setRound: (round: GameRound) => void;
   setPlayers: (players: Player[]) => void;
   setCategories: (categories: Category[]) => void;
@@ -210,26 +185,24 @@ export interface GameContextType {
   stopTimer: () => void;
   awardPoints: (playerId: string, points: number) => void;
   deductHealth: (playerId: string, percentage: number) => void;
-  deductLife: (playerId: string) => void;
+  deductLife: (playerId: string, amount: number) => void;
   eliminatePlayer: (playerId: string) => void;
   advanceToRoundTwo: () => void;
   advanceToRoundThree: () => void;
   finishGame: (winnerIds: string[]) => void;
   checkRoundThreeEnd: () => boolean;
   resetGame: () => void;
-  setWinnerIds: (ids: string[]) => void;
-  setSpecialCards: (cards: SpecialCard[]) => void;  // Added missing method
-  setSpecialCardRules: (rules: SpecialCardAwardRule[]) => void;  // Added missing method
+  setWinnerIds: (winnerIds: string[]) => void;
   
-  // Undo and manual adjustments
+  // Undo and manual point/health adjustment
   undoLastAction: () => void;
-  hasUndoHistory: boolean;
+  hasUndoHistory: () => boolean;
   addManualPoints: (playerId: string, points: number) => void;
-  adjustHealthManually: (playerId: string, healthPercent: number) => void;
+  adjustHealthManually: (playerId: string, health: number) => void;
   
-  // Card methods
-  addSpecialCard: (card: any) => void;
-  updateSpecialCard: (cardId: string, updates: any) => void;
+  // Special card methods
+  addSpecialCard: (card: Partial<SpecialCard>) => void;
+  updateSpecialCard: (cardId: string, updates: Partial<SpecialCard>) => void;
   removeSpecialCard: (cardId: string) => void;
   addSpecialCardRule: (rule: any) => void;
   updateSpecialCardRule: (ruleId: string, updates: any) => void;
@@ -238,31 +211,30 @@ export interface GameContextType {
   usePlayerCard: (playerId: string, cardId: string) => void;
   
   // Settings methods
-  setGameLogo: (logo: string | null) => void;
+  setGameLogo: (url: string) => void;
   setPrimaryColor: (color: string) => void;
   setSecondaryColor: (color: string) => void;
   setHostCameraUrl: (url: string) => void;
-  updateRoundSettings: (settings: Partial<RoundSettings>) => void;
   
   // Data persistence
-  loadGameData: () => void;
-  saveGameData: () => void;
+  loadGameData: () => Promise<any>;
+  saveGameData: () => Promise<any>;
   
-  // Backup & Restore
-  createBackup: (name?: string) => Promise<GameBackup>;
+  // Game Backup methods
+  createBackup: (name: string) => Promise<any>;
   restoreBackup: (backup: GameBackup) => Promise<boolean>;
-  getBackups: () => Promise<GameBackup[]>;
-  deleteBackup: (id: string) => Promise<boolean>;
-  
-  // Question management
+  getBackups: () => Promise<{success: boolean, data: GameBackup[], error?: any}>;
+  deleteBackup: (backupId: string) => Promise<{success: boolean, error?: any}>;
+
+  // Question methods
   addQuestion: (categoryId: string, question: Question) => void;
   removeQuestion: (categoryId: string, questionId: string) => void;
-  updateQuestion: (categoryId: string, question: Question) => void;
-  markQuestionAsUsed: (questionId: string) => void;
-  resetUsedQuestions: () => void;
+  updateQuestion: (categoryId: string, updatedQuestion: Question) => void;
+  markQuestionAsUsed: (questionId: string) => Promise<any>;
+  resetUsedQuestions: () => Promise<any>;
   isQuestionUsed: (questionId: string) => boolean;
   
-  // Player availability calendar
+  // Availability methods
   fetchAvailability: () => Promise<PlayerAvailabilitySlot[]>;
-  updateAvailability: (playerId: string, slot: PlayerAvailabilitySlot) => Promise<boolean>;
+  updateAvailability: (data: PlayerAvailabilitySlot) => Promise<boolean>;
 }

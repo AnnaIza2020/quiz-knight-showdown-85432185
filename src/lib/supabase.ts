@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
 import { GameBackup } from '@/types/game-types';
@@ -45,12 +46,9 @@ export async function generatePlayerLink(playerId: string) {
 
 export async function saveUsedQuestion(questionId: string) {
   try {
-    // Get existing used questions
+    // Use the raw() method to execute SQL directly since game_settings isn't in the type definition
     const { data: existingData, error: getError } = await supabase
-      .from('game_settings')
-      .select('value')
-      .eq('id', 'used_questions')
-      .single();
+      .rpc('get_game_setting', { setting_id: 'used_questions' });
     
     if (getError && getError.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
       throw getError;
@@ -58,8 +56,8 @@ export async function saveUsedQuestion(questionId: string) {
     
     // Prepare the list of used questions
     let usedQuestions: string[] = [];
-    if (existingData?.value && Array.isArray(existingData.value)) {
-      usedQuestions = existingData.value as string[];
+    if (existingData) {
+      usedQuestions = existingData as string[];
     }
     
     // Add the new question ID if not already present
@@ -68,22 +66,13 @@ export async function saveUsedQuestion(questionId: string) {
     }
     
     // Save the updated list
-    if (existingData) {
-      // Update existing record
-      const { error: updateError } = await supabase
-        .from('game_settings')
-        .update({ value: usedQuestions })
-        .eq('id', 'used_questions');
-      
-      if (updateError) throw updateError;
-    } else {
-      // Insert new record
-      const { error: insertError } = await supabase
-        .from('game_settings')
-        .insert({ id: 'used_questions', value: usedQuestions });
-      
-      if (insertError) throw insertError;
-    }
+    const { error: updateError } = await supabase
+      .rpc('update_game_setting', { 
+        setting_id: 'used_questions', 
+        setting_value: usedQuestions 
+      });
+    
+    if (updateError) throw updateError;
     
     return { success: true };
   } catch (error) {
@@ -94,30 +83,14 @@ export async function saveUsedQuestion(questionId: string) {
 
 export async function saveGameData(data: any, dataId: string) {
   try {
-    // Check if data with this ID already exists
-    const { data: existingData, error: getError } = await supabase
-      .from('game_settings')
-      .select('id')
-      .eq('id', dataId)
-      .maybeSingle();
+    // Use RPC to work with game_settings
+    const { error } = await supabase
+      .rpc('update_game_setting', { 
+        setting_id: dataId, 
+        setting_value: data 
+      });
     
-    // Save the data
-    if (existingData) {
-      // Update existing record
-      const { error: updateError } = await supabase
-        .from('game_settings')
-        .update({ value: data })
-        .eq('id', dataId);
-      
-      if (updateError) throw updateError;
-    } else {
-      // Insert new record
-      const { error: insertError } = await supabase
-        .from('game_settings')
-        .insert({ id: dataId, value: data });
-      
-      if (insertError) throw insertError;
-    }
+    if (error) throw error;
     
     return { success: true };
   } catch (error) {
@@ -128,17 +101,14 @@ export async function saveGameData(data: any, dataId: string) {
 
 export async function loadGameData(dataId: string) {
   try {
-    // Get data
+    // Use RPC to work with game_settings
     const { data, error } = await supabase
-      .from('game_settings')
-      .select('value')
-      .eq('id', dataId)
-      .maybeSingle();
+      .rpc('get_game_setting', { setting_id: dataId });
     
     if (error) throw error;
     if (!data) return { success: false, error: new Error('Data not found') };
     
-    return { success: true, data: data.value };
+    return { success: true, data };
   } catch (error) {
     console.error(`Error loading game data (${dataId}):`, error);
     return { success: false, error };
@@ -148,10 +118,9 @@ export async function loadGameData(dataId: string) {
 export async function saveBackup(backup: GameBackup) {
   try {
     const { error } = await supabase
-      .from('game_settings')
-      .insert({ 
-        id: `backup_${backup.id}`,
-        value: backup 
+      .rpc('update_game_setting', { 
+        setting_id: `backup_${backup.id}`, 
+        setting_value: backup 
       });
     
     if (error) throw error;
@@ -164,16 +133,13 @@ export async function saveBackup(backup: GameBackup) {
 
 export async function getBackups() {
   try {
+    // Use raw SQL or a stored procedure that returns all settings with backup_ prefix
     const { data, error } = await supabase
-      .from('game_settings')
-      .select('value')
-      .like('id', 'backup_%');
+      .rpc('get_all_backups');
     
     if (error) throw error;
     
-    const backups: GameBackup[] = data
-      ? data.map(item => item.value as unknown as GameBackup)
-      : [];
+    const backups: GameBackup[] = data || [];
     
     // Sort by timestamp, newest first
     return { 
@@ -189,9 +155,7 @@ export async function getBackups() {
 export async function deleteBackup(backupId: string) {
   try {
     const { error } = await supabase
-      .from('game_settings')
-      .delete()
-      .eq('id', `backup_${backupId}`);
+      .rpc('delete_game_setting', { setting_id: `backup_${backupId}` });
     
     if (error) throw error;
     return { success: true };
@@ -211,12 +175,8 @@ export async function loadGameEdition(editionName: string) {
 
 export async function getUsedQuestions() {
   try {
-    // Get list of used question IDs
     const { data, error } = await supabase
-      .from('game_settings')
-      .select('value')
-      .eq('id', 'used_questions')
-      .single();
+      .rpc('get_game_setting', { setting_id: 'used_questions' });
     
     if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
       throw error;
@@ -225,7 +185,7 @@ export async function getUsedQuestions() {
     // Return used question IDs or empty array if none found
     return { 
       success: true, 
-      data: data?.value ? (data.value as string[]) : [] 
+      data: data ? (data as string[]) : [] 
     };
   } catch (error) {
     console.error('Error getting used questions:', error);
@@ -237,29 +197,27 @@ export async function restoreQuestion(questionId: string) {
   try {
     // Get existing used questions
     const { data: existingData, error: getError } = await supabase
-      .from('game_settings')
-      .select('value')
-      .eq('id', 'used_questions')
-      .single();
+      .rpc('get_game_setting', { setting_id: 'used_questions' });
     
     if (getError && getError.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
       throw getError;
     }
     
     // If no used questions record exists, return success (nothing to restore)
-    if (!existingData?.value) {
+    if (!existingData) {
       return { success: true };
     }
     
     // Remove the restored question ID from the list
-    let usedQuestions = existingData.value as string[];
+    let usedQuestions = existingData as string[];
     usedQuestions = usedQuestions.filter(id => id !== questionId);
     
     // Update the used questions list
     const { error: updateError } = await supabase
-      .from('game_settings')
-      .update({ value: usedQuestions })
-      .eq('id', 'used_questions');
+      .rpc('update_game_setting', { 
+        setting_id: 'used_questions', 
+        setting_value: usedQuestions 
+      });
     
     if (updateError) throw updateError;
     
