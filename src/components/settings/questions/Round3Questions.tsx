@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,24 @@ const questionSchema = z.object({
   category: z.string().min(1, { message: 'Kategoria jest wymagana' }),
   difficulty: z.string().min(1, { message: 'Poziom trudności jest wymagany' }),
 });
+
+// Add this function somewhere in your file
+function createQuestionWithDefaults(questionData: Partial<Question>): Question {
+  return {
+    id: questionData.id || crypto.randomUUID(),
+    text: questionData.text || '',
+    correctAnswer: questionData.correctAnswer || '',
+    categoryId: questionData.categoryId || '',
+    difficulty: questionData.difficulty || 100,
+    options: questionData.options || [],
+    category: questionData.category,
+    question: questionData.question,
+    answer: questionData.answer,
+    image_url: questionData.image_url
+  };
+}
+
+export { createQuestionWithDefaults };
 
 const Round3Questions = () => {
   const { categories, addCategory, addQuestion, removeQuestion, removeCategory } = useGameContext();
@@ -74,8 +91,7 @@ const Round3Questions = () => {
       return;
     }
     
-    const newQuestion: Question = {
-      id: uuidv4(),
+    const newQuestion = createQuestionWithDefaults({
       text: newQuestionText,
       correctAnswer: newAnswerText,
       categoryId: selectedCategory,
@@ -83,7 +99,7 @@ const Round3Questions = () => {
       difficulty: parseInt(difficulty),
       question: newQuestionText, // For backward compatibility
       answer: newAnswerText, // For backward compatibility
-    };
+    });
     
     addQuestion(selectedCategory, newQuestion);
     

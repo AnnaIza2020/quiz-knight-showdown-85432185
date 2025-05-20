@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { useGameLogic } from '@/hooks/useGameLogic';
@@ -48,6 +47,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     selectQuestion, setActivePlayer,
     loadGameData, saveGameData
   } = gameState;
+
+  // Game title state
+  const [gameTitle, setGameTitle] = useState<string>('Discord Game Show');
   
   // Round settings
   const [roundSettings, setRoundSettings] = useState<RoundSettings>(defaultRoundSettings);
@@ -274,6 +276,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     specialCards,
     specialCardRules,
     usedQuestionIds,
+    gameTitle,
     
     // Round settings
     roundSettings,
@@ -318,6 +321,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     checkRoundThreeEnd,
     resetGame,
     setWinnerIds,
+    setGameTitle,
     
     // Undo and manual point/health adjustment
     undoLastAction,

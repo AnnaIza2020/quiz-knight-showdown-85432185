@@ -90,11 +90,15 @@ export interface SpecialCard {
   icon_name?: string;
   animation_style?: string;
   type: string;
-  // Legacy properties for backward compatibility
+  // For backward compatibility
   imageUrl?: string;
   soundEffect?: string;
   iconName?: string;
   animationStyle?: string;
+  // Extended properties for special card functionality
+  effectType?: string;
+  effectHook?: string;
+  effectParams?: any;
 }
 
 export interface SpecialCardAwardRule {
@@ -156,6 +160,7 @@ export interface GameContextType {
   specialCards: SpecialCard[];
   specialCardRules: any[];
   usedQuestionIds: string[];
+  gameTitle: string; // Added property
   
   // Round settings
   roundSettings: RoundSettings;
@@ -205,6 +210,7 @@ export interface GameContextType {
   checkRoundThreeEnd: () => boolean;
   resetGame: () => void;
   setWinnerIds: (winnerIds: string[]) => void;
+  setGameTitle: (title: string) => void; // Added property
   
   // Undo and manual point/health adjustment
   undoLastAction: () => void;

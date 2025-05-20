@@ -1,84 +1,107 @@
-
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { PlayerAvailabilitySlot, AvailabilityContextType } from '@/types/availability-types';
 
-const AvailabilityContext = createContext<AvailabilityContextType | undefined>(undefined);
+// Create context with a default value
+const AvailabilityContext = createContext<AvailabilityContextType>({
+  availability: [],
+  isLoading: false,
+  error: null,
+  fetchAvailability: async () => [],
+  updateAvailability: async () => false
+});
 
-export const useAvailabilityContext = () => {
-  const context = useContext(AvailabilityContext);
-  if (!context) {
-    throw new Error('useAvailabilityContext must be used within a AvailabilityProvider');
-  }
-  return context;
-};
+export const useAvailabilityContext = () => useContext(AvailabilityContext);
 
 interface AvailabilityProviderProps {
   children: ReactNode;
 }
 
 export const AvailabilityProvider: React.FC<AvailabilityProviderProps> = ({ children }) => {
-  // Fetch all player availability data
+  const [availability, setAvailability] = useState<PlayerAvailabilitySlot[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<any>(null);
+
   const fetchAvailability = async (): Promise<PlayerAvailabilitySlot[]> => {
+    setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('player_availability')
-        .select('*');
-      
+      const { data, error } = await supabase.from('player_availability').select('*');
+
       if (error) throw error;
-      
-      return data as PlayerAvailabilitySlot[] || [];
-    } catch (error) {
-      console.error('Error fetching player availability:', error);
+
+      // Transform the data to match our interface
+      const transformedData: PlayerAvailabilitySlot[] = data.map(item => ({
+        id: item.id,
+        playerId: item.player_id,
+        date: item.date,
+        timeSlots: item.time_slots as Record<string, boolean>,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        // Keep original fields for compatibility
+        player_id: item.player_id,
+        time_slots: item.time_slots
+      }));
+
+      setAvailability(transformedData);
+      setIsLoading(false);
+      return transformedData;
+    } catch (err) {
+      setError(err);
+      setIsLoading(false);
+      console.error('Error fetching availability:', err);
       return [];
     }
   };
-  
-  // Update a player's availability for a specific date
-  const updateAvailability = async (availabilityData: PlayerAvailabilitySlot): Promise<boolean> => {
+
+  const updateAvailability = async (data: PlayerAvailabilitySlot): Promise<boolean> => {
     try {
-      // Check if an entry already exists
-      const { data: existingData, error: findError } = await supabase
-        .from('player_availability')
-        .select('*')
-        .eq('playerId', availabilityData.playerId)
-        .eq('date', availabilityData.date)
-        .maybeSingle();
-      
-      if (findError) throw findError;
-      
-      if (existingData) {
-        // Update existing entry
-        const { error: updateError } = await supabase
+      // Convert to database format
+      const dbData = {
+        player_id: data.playerId,
+        date: data.date,
+        time_slots: data.timeSlots as any
+      };
+
+      if (data.id) {
+        const { error } = await supabase
           .from('player_availability')
-          .update({ timeSlots: availabilityData.timeSlots })
-          .eq('playerId', availabilityData.playerId)
-          .eq('date', availabilityData.date);
-        
-        if (updateError) throw updateError;
+          .update(dbData)
+          .eq('id', data.id);
+
+        if (error) throw error;
       } else {
-        // Insert new entry
-        const { error: insertError } = await supabase
+        const { error } = await supabase
           .from('player_availability')
-          .insert(availabilityData);
-        
-        if (insertError) throw insertError;
+          .insert([dbData]);
+
+        if (error) throw error;
       }
-      
+
+      // Refresh data
+      await fetchAvailability();
       return true;
-    } catch (error) {
-      console.error('Error updating player availability:', error);
+    } catch (err) {
+      setError(err);
+      console.error('Error updating availability:', err);
       return false;
     }
   };
-  
-  const value: AvailabilityContextType = {
-    fetchAvailability,
-    updateAvailability
-  };
-  
+
+  // Initial fetch on component mount
+  useEffect(() => {
+    fetchAvailability();
+  }, []);
+
   return (
-    <AvailabilityContext.Provider value={value}>
+    <AvailabilityContext.Provider
+      value={{
+        availability,
+        isLoading,
+        error,
+        fetchAvailability,
+        updateAvailability
+      }}
+    >
       {children}
     </AvailabilityContext.Provider>
   );

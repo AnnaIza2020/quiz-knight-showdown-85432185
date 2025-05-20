@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useGameContext } from '@/context/GameContext';
@@ -10,6 +9,45 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Trash2 } from 'lucide-react';
+
+// Add this function somewhere in your file
+function createQuestionWithDefaults(questionData: Partial<Question>): Question {
+  return {
+    id: questionData.id || crypto.randomUUID(),
+    text: questionData.text || '',
+    correctAnswer: questionData.correctAnswer || '',
+    categoryId: questionData.categoryId || '',
+    difficulty: questionData.difficulty || 100,
+    options: questionData.options || [],
+    category: questionData.category,
+    question: questionData.question,
+    answer: questionData.answer,
+    image_url: questionData.image_url
+  };
+}
+
+// Use this function when creating new questions:
+// e.g., replace:
+// const newQuestion = {
+//   id: crypto.randomUUID(),
+//   text: "Question text",
+//   correctAnswer: "Answer",
+//   categoryId: categoryId,
+//   category: categoryName, 
+//   difficulty: 100
+// };
+//
+// with:
+// const newQuestion = createQuestionWithDefaults({
+//   text: "Question text",
+//   correctAnswer: "Answer",
+//   categoryId: categoryId,
+//   category: categoryName, 
+//   difficulty: 100
+// });
+
+// Export the function to make it available for other components
+export { createQuestionWithDefaults };
 
 const Round1Questions = () => {
   const { categories, addCategory, removeCategory, setCategories, addQuestion, removeQuestion } = useGameContext();
@@ -81,14 +119,13 @@ const Round1Questions = () => {
       return;
     }
     
-    const newQuestion: Question = {
-      id: uuidv4(),
+    const newQuestion = createQuestionWithDefaults({
       text: newQuestionText,
       correctAnswer: newAnswerText,
       categoryId: selectedCategory,
-      category: categories.find(c => c.id === selectedCategory)?.name,
+      category: categories.find(c => c.id === selectedCategory)?.name, 
       difficulty: difficultyLevel
-    };
+    });
     
     addQuestion(selectedCategory, newQuestion);
     

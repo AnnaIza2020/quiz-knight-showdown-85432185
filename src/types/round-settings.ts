@@ -6,12 +6,24 @@ export interface RoundOneSettings {
   timerDuration: number;
   eliminateCount: number;
   luckyLoserEnabled: boolean;
+  // Additional properties needed by components
+  pointsForCorrectAnswer: number;
+  pointsForIncorrectAnswer: number;
+  livesCount: number;
+  healthDeductionPercentage: number;
+  maxQuestions: number;
 }
 
 export interface RoundTwoSettings {
   timerDuration: number;
   lifePenalty: number;
   pointsPerQuestion: number;
+  // Additional properties needed by components
+  pointsForCorrectAnswer: number;
+  pointsForIncorrectAnswer: number;
+  livesCount: number;
+  livesDeductedOnIncorrectAnswer: number;
+  maxQuestions: number;
 }
 
 export interface RoundThreeSettings {
@@ -19,6 +31,13 @@ export interface RoundThreeSettings {
   timerDuration: number;
   pointsMultiplier: number;
   wheelCategories: string[];
+  // Additional properties needed by components
+  pointsForCorrectAnswer: number;
+  pointsForIncorrectAnswer: number;
+  livesCount: number;
+  livesDeductedOnIncorrectAnswer: number;
+  maxSpins: number;
+  finalRoundEnabled: boolean;
 }
 
 export interface RoundSettings {
@@ -46,17 +65,33 @@ export const defaultRoundSettings: RoundSettings = {
     playerLifeCount: 3,
     timerDuration: 30,
     eliminateCount: 4,
-    luckyLoserEnabled: true
+    luckyLoserEnabled: true,
+    pointsForCorrectAnswer: 100,
+    pointsForIncorrectAnswer: 0,
+    livesCount: 3,
+    healthDeductionPercentage: 33,
+    maxQuestions: 15
   },
   [GameRound.ROUND_TWO]: {
     timerDuration: 5,
     lifePenalty: 1,
-    pointsPerQuestion: 100
+    pointsPerQuestion: 100,
+    pointsForCorrectAnswer: 200,
+    pointsForIncorrectAnswer: 0,
+    livesCount: 3,
+    livesDeductedOnIncorrectAnswer: 1,
+    maxQuestions: 10
   },
   [GameRound.ROUND_THREE]: {
     wheelSpinDuration: 5000,
     timerDuration: 15,
     pointsMultiplier: 2,
-    wheelCategories: ['Historia', 'Geografia', 'Film i TV', 'Kultura', 'Technologia', 'Internet', 'Nauka']
+    wheelCategories: ['Historia', 'Geografia', 'Film i TV', 'Kultura', 'Technologia', 'Internet', 'Nauka'],
+    pointsForCorrectAnswer: 300,
+    pointsForIncorrectAnswer: 0,
+    livesCount: 2,
+    livesDeductedOnIncorrectAnswer: 1,
+    maxSpins: 10,
+    finalRoundEnabled: false
   }
 };

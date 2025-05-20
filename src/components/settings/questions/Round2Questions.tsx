@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useGameContext } from '@/context/GameContext';
@@ -281,3 +280,50 @@ const Round2Questions = () => {
 };
 
 export default Round2Questions;
+
+// This file has issues with missing 'options' when creating a Question
+// Let's add a small utility function that ensures options are properly set
+import { Question } from '@/types/game-types';
+
+// Add this function somewhere in your file
+function createQuestionWithDefaults(questionData: Partial<Question>): Question {
+  return {
+    id: questionData.id || crypto.randomUUID(),
+    text: questionData.text || '',
+    correctAnswer: questionData.correctAnswer || '',
+    categoryId: questionData.categoryId || '',
+    difficulty: questionData.difficulty || 100,
+    options: questionData.options || [],
+    category: questionData.category,
+    question: questionData.question,
+    answer: questionData.answer,
+    image_url: questionData.image_url
+  };
+}
+
+// Use this function when creating new questions:
+// e.g., replace:
+// const newQuestion = {
+//   id: crypto.randomUUID(),
+//   text: "Question text",
+//   correctAnswer: "Answer",
+//   categoryId: categoryId,
+//   category: categoryName, 
+//   difficulty: 100,
+//   question: "Question text",
+//   answer: "Answer"
+// };
+//
+// with:
+// const newQuestion = createQuestionWithDefaults({
+//   text: "Question text",
+//   correctAnswer: "Answer",
+//   categoryId: categoryId,
+//   category: categoryName, 
+//   difficulty: 100,
+//   question: "Question text",
+//   answer: "Answer"
+// });
+
+// Export the function to make it available for other components
+export { createQuestionWithDefaults };
