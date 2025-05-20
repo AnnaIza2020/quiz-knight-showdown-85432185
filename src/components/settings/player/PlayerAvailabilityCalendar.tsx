@@ -1,520 +1,267 @@
 
 import React, { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { Player } from '@/types/game-types';
-import { CalendarDays, Calendar as CalendarIcon, Clock, Download, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useAvailabilityContext } from '@/context/AvailabilityContext';
+import { PlayerAvailabilitySlot, AvailabilityStatus, TimeSlot } from '@/types/availability-types';
 import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
-import { toast } from 'sonner';
-import { PlayerAvailabilitySlot, AvailabilityStatus } from '@/types/availability-types';
-
-// Time slots from 16:00 to 23:00
-const TIME_SLOTS = [
-  '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
-];
 
 interface PlayerAvailabilityCalendarProps {
   players: Player[];
-  isHost?: boolean;
-  currentPlayerId?: string;
+  isHost: boolean;
+  playerId?: string;
   onSaveAvailability?: (availability: PlayerAvailabilitySlot) => void;
-  existingAvailability?: PlayerAvailabilitySlot[];
 }
+
+const TIME_SLOTS = [
+  '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'
+];
 
 const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
   players,
-  isHost = false,
-  currentPlayerId,
-  onSaveAvailability,
-  existingAvailability = []
+  isHost,
+  playerId,
+  onSaveAvailability
 }) => {
-  const { updateAvailability } = useAvailabilityContext();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedPlayer, setSelectedPlayer] = useState<string>(currentPlayerId || '');
-  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
-  const [availabilityData, setAvailabilityData] = useState<PlayerAvailabilitySlot[]>(existingAvailability);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(playerId || null);
+  const [availabilityData, setAvailabilityData] = useState<PlayerAvailabilitySlot[]>([]);
   
-  // Ustaw domyślnie wybranego gracza na podstawie currentPlayerId
+  // Initialize availability data for selected date and player
   useEffect(() => {
-    if (currentPlayerId) {
-      setSelectedPlayer(currentPlayerId);
-    } else if (players.length > 0 && !selectedPlayer) {
-      setSelectedPlayer(players[0].id);
-    }
-  }, [currentPlayerId, players, selectedPlayer]);
-  
-  // Get week days for the current selected date
-  const getWeekDays = (date: Date) => {
-    const day = date.getDay();
-    const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Adjust for starting week on Monday
+    if (!selectedPlayer || !selectedDate) return;
     
-    const monday = new Date(date);
-    monday.setDate(diff);
-    
-    const weekDays = [];
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(monday);
-      day.setDate(monday.getDate() + i);
-      weekDays.push(day);
-    }
-    
-    return weekDays;
-  };
-  
-  const weekDays = getWeekDays(selectedDate);
-  
-  // Format date for display
-  const formatDate = (date: Date) => {
-    return format(date, 'EEEE, dd MMMM', { locale: pl });
-  };
-  
-  // Format short date for display
-  const formatShortDate = (date: Date) => {
-    return format(date, 'EEE, dd.MM', { locale: pl });
-  };
-  
-  // Format date for storage
-  const formatDateForStorage = (date: Date) => {
-    return format(date, 'yyyy-MM-dd');
-  };
-  
-  // Get player availability for a specific date and time
-  const getAvailability = (playerId: string, date: Date, timeSlot: string): AvailabilityStatus => {
-    const dateStr = formatDateForStorage(date);
-    const playerAvailability = availabilityData.find(
-      a => a.playerId === playerId && a.date === dateStr
+    // Check if there's existing availability data for this date/player
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
+    const existingData = availabilityData.find(
+      item => item.playerId === selectedPlayer && item.date === dateString
     );
     
-    return playerAvailability?.timeSlots[timeSlot] || '';
+    if (!existingData) {
+      // Create default availability with all slots set to 'unknown'
+      const defaultTimeSlots: TimeSlot[] = TIME_SLOTS.map(hour => ({
+        hour,
+        status: AvailabilityStatus.UNKNOWN
+      }));
+      
+      setAvailabilityData(prev => [
+        ...prev,
+        {
+          playerId: selectedPlayer,
+          date: dateString,
+          timeSlots: defaultTimeSlots
+        }
+      ]);
+    }
+  }, [selectedPlayer, selectedDate, availabilityData]);
+  
+  // Get current time slots for selected date & player
+  const getCurrentTimeSlots = (): TimeSlot[] => {
+    if (!selectedPlayer || !selectedDate) return [];
+    
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
+    const data = availabilityData.find(
+      item => item.playerId === selectedPlayer && item.date === dateString
+    );
+    
+    return data?.timeSlots || [];
   };
   
-  // Set player availability for a specific date and time
-  const setAvailability = async (playerId: string, date: Date, timeSlot: string, status: AvailabilityStatus) => {
-    const dateStr = formatDateForStorage(date);
+  // Update a time slot status
+  const updateTimeSlotStatus = (hour: string, status: AvailabilityStatus) => {
+    if (!selectedPlayer || !selectedDate) return;
+    
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
     
     setAvailabilityData(prev => {
-      // Find existing entry for this player and date
-      const existingIndex = prev.findIndex(
-        a => a.playerId === playerId && a.date === dateStr
+      const updatedData = [...prev];
+      const dataIndex = updatedData.findIndex(
+        item => item.playerId === selectedPlayer && item.date === dateString
       );
       
-      if (existingIndex >= 0) {
+      if (dataIndex >= 0) {
         // Update existing entry
-        const updated = [...prev];
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          timeSlots: {
-            ...updated[existingIndex].timeSlots,
-            [timeSlot]: status
-          }
+        const updatedTimeSlots = [...updatedData[dataIndex].timeSlots];
+        const slotIndex = updatedTimeSlots.findIndex(slot => slot.hour === hour);
+        
+        if (slotIndex >= 0) {
+          updatedTimeSlots[slotIndex] = { ...updatedTimeSlots[slotIndex], status };
+        } else {
+          updatedTimeSlots.push({ hour, status });
+        }
+        
+        updatedData[dataIndex] = {
+          ...updatedData[dataIndex],
+          timeSlots: updatedTimeSlots
         };
-        return updated;
       } else {
         // Create new entry
-        return [...prev, {
-          playerId,
-          date: dateStr,
-          timeSlots: { [timeSlot]: status }
-        }];
+        const newTimeSlots: TimeSlot[] = TIME_SLOTS.map(h => ({
+          hour: h,
+          status: h === hour ? status : AvailabilityStatus.UNKNOWN
+        }));
+        
+        updatedData.push({
+          playerId: selectedPlayer,
+          date: dateString,
+          timeSlots: newTimeSlots
+        });
       }
+      
+      return updatedData;
     });
     
-    // Save changes
+    // If there's a save callback, invoke it
     if (onSaveAvailability) {
-      const playerAvailability = availabilityData.find(
-        a => a.playerId === playerId && a.date === dateStr
-      ) || { playerId, date: dateStr, timeSlots: {} };
+      const dateString = format(selectedDate, 'yyyy-MM-dd');
+      const updatedEntry = availabilityData.find(
+        item => item.playerId === selectedPlayer && item.date === dateString
+      );
       
-      onSaveAvailability({
-        ...playerAvailability,
-        timeSlots: {
-          ...playerAvailability.timeSlots,
-          [timeSlot]: status
+      if (updatedEntry) {
+        const updatedTimeSlots = [...updatedEntry.timeSlots];
+        const slotIndex = updatedTimeSlots.findIndex(slot => slot.hour === hour);
+        
+        if (slotIndex >= 0) {
+          updatedTimeSlots[slotIndex] = { ...updatedTimeSlots[slotIndex], status };
+        } else {
+          updatedTimeSlots.push({ hour, status });
         }
-      });
-    }
-    
-    // Call the API to update availability
-    const playerAvailability = availabilityData.find(
-      a => a.playerId === playerId && a.date === dateStr
-    ) || { playerId, date: dateStr, timeSlots: {} };
-    
-    const updatedSlot: PlayerAvailabilitySlot = {
-      playerId,
-      date: dateStr,
-      timeSlots: {
-        ...playerAvailability.timeSlots,
-        [timeSlot]: status
+        
+        onSaveAvailability({
+          ...updatedEntry,
+          timeSlots: updatedTimeSlots
+        });
       }
-    };
-    
-    try {
-      const success = await updateAvailability(playerId, updatedSlot);
-      if (success) {
-        // Toast już jest wyświetlany w hook'u updateAvailability
-      }
-    } catch (error) {
-      console.error("Error updating availability:", error);
-      toast.error("Nie udało się zaktualizować dostępności");
     }
   };
   
-  // Handle cell click to cycle through availability statuses
-  const handleCellClick = (playerId: string, date: Date, timeSlot: string) => {
-    const currentStatus = getAvailability(playerId, date, timeSlot);
-    let newStatus: AvailabilityStatus;
+  // Render status cell with appropriate color
+  const renderStatusCell = (hour: string) => {
+    const timeSlots = getCurrentTimeSlots();
+    const slot = timeSlots.find(s => s.hour === hour);
+    const status = slot?.status || AvailabilityStatus.UNKNOWN;
     
-    switch (currentStatus) {
-      case 'available':
-        newStatus = 'maybe';
-        break;
-      case 'maybe':
-        newStatus = 'unavailable';
-        break;
-      case 'unavailable':
-        newStatus = '';
-        break;
-      default:
-        newStatus = 'available';
-    }
-    
-    setAvailability(playerId, date, timeSlot, newStatus);
-  };
-  
-  // Get class for availability cell
-  const getAvailabilityClass = (status: AvailabilityStatus) => {
-    switch (status) {
-      case 'available':
-        return 'bg-green-500/20 text-green-500 border-green-500/50';
-      case 'maybe':
-        return 'bg-yellow-500/20 text-yellow-500 border-yellow-500/50';
-      case 'unavailable':
-        return 'bg-red-500/20 text-red-500 border-red-500/50';
-      default:
-        return 'bg-transparent text-gray-400 border-gray-700';
-    }
-  };
-  
-  // Export availability data as CSV
-  const exportAsCSV = () => {
-    if (!availabilityData.length) return;
-    
-    // Create header
-    let csvContent = "Player,Date,Time,Availability\n";
-    
-    // Add rows
-    availabilityData.forEach(availability => {
-      const player = players.find(p => p.id === availability.playerId);
-      const playerName = player ? player.name : 'Unknown';
-      
-      Object.entries(availability.timeSlots).forEach(([timeSlot, status]) => {
-        csvContent += `"${playerName}","${availability.date}","${timeSlot}","${status}"\n`;
-      });
-    });
-    
-    // Create and download the file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `player_availability_${formatDateForStorage(new Date())}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-  
-  // Previous week
-  const goToPreviousWeek = () => {
-    const prevWeek = new Date(selectedDate);
-    prevWeek.setDate(prevWeek.getDate() - 7);
-    setSelectedDate(prevWeek);
-  };
-  
-  // Next week
-  const goToNextWeek = () => {
-    const nextWeek = new Date(selectedDate);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    setSelectedDate(nextWeek);
-  };
-  
-  // Single day view
-  const renderDayView = () => {
-    const playerToRender = isHost && selectedPlayer 
-      ? players.find(p => p.id === selectedPlayer) 
-      : players.find(p => p.id === currentPlayerId);
-    
-    if (!playerToRender) return (
-      <div className="text-center p-8 text-muted-foreground">
-        Wybierz gracza aby zobaczyć dostępność
-      </div>
-    );
+    let bgColor = 'bg-gray-200';
+    if (status === AvailabilityStatus.AVAILABLE) bgColor = 'bg-green-200';
+    if (status === AvailabilityStatus.UNAVAILABLE) bgColor = 'bg-red-200';
+    if (status === AvailabilityStatus.MAYBE) bgColor = 'bg-yellow-200';
     
     return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Dostępność: {playerToRender.name}</CardTitle>
-          <CardDescription>
-            {formatDate(selectedDate)}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {TIME_SLOTS.map(timeSlot => {
-              const status = getAvailability(playerToRender.id, selectedDate, timeSlot);
-              const statusClass = getAvailabilityClass(status);
-              
-              return (
-                <div 
-                  key={timeSlot}
-                  className={`flex items-center justify-between p-3 border rounded-md cursor-pointer ${statusClass}`}
-                  onClick={() => handleCellClick(playerToRender.id, selectedDate, timeSlot)}
-                >
-                  <span className="flex items-center">
-                    <Clock className="h-4 w-4 mr-2" />
-                    {timeSlot}
-                  </span>
-                  <span>
-                    {status === 'available' && 'Dostępny'}
-                    {status === 'maybe' && 'Może być dostępny'}
-                    {status === 'unavailable' && 'Niedostępny'}
-                    {status === '' && 'Nie określono'}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-  
-  // Week view
-  const renderWeekView = () => {
-    const playerToRender = isHost && selectedPlayer 
-      ? players.find(p => p.id === selectedPlayer) 
-      : players.find(p => p.id === currentPlayerId);
-    
-    if (!playerToRender) return (
-      <div className="text-center p-8 text-muted-foreground">
-        Wybierz gracza aby zobaczyć dostępność
-      </div>
-    );
-    
-    return (
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex justify-between items-center">
-            <CardTitle>Dostępność tygodniowa: {playerToRender.name}</CardTitle>
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm" onClick={goToPreviousWeek}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={goToNextWeek}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          <CardDescription>
-            Tydzień: {formatShortDate(weekDays[0])} - {formatShortDate(weekDays[6])}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Godzina</TableHead>
-                {weekDays.map(day => (
-                  <TableHead key={day.toISOString()} className="text-center">
-                    {format(day, 'EEE', { locale: pl })}
-                    <div className="text-xs font-normal">
-                      {format(day, 'dd.MM')}
-                    </div>
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {TIME_SLOTS.map(timeSlot => (
-                <TableRow key={timeSlot}>
-                  <TableCell>{timeSlot}</TableCell>
-                  {weekDays.map(day => {
-                    const status = getAvailability(playerToRender.id, day, timeSlot);
-                    const statusClass = getAvailabilityClass(status);
-                    
-                    return (
-                      <TableCell
-                        key={day.toISOString()}
-                        className={`text-center ${statusClass} cursor-pointer`}
-                        onClick={() => handleCellClick(playerToRender.id, day, timeSlot)}
-                      >
-                        {status === 'available' && '✓'}
-                        {status === 'maybe' && '?'}
-                        {status === 'unavailable' && '✗'}
-                        {status === '' && ''}
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    );
-  };
-  
-  // Host view - all players for a specific date
-  const renderHostView = () => {
-    return (
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex justify-between items-center">
-            <CardTitle>Dostępność wszystkich graczy</CardTitle>
-            <Button variant="outline" size="sm" onClick={exportAsCSV}>
-              <Download className="h-4 w-4 mr-2" /> Eksport CSV
-            </Button>
-          </div>
-          <CardDescription>
-            {formatDate(selectedDate)}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Gracz</TableHead>
-                {TIME_SLOTS.map(timeSlot => (
-                  <TableHead key={timeSlot}>{timeSlot}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {players.map(player => (
-                <TableRow key={player.id}>
-                  <TableCell>{player.name}</TableCell>
-                  {TIME_SLOTS.map(timeSlot => {
-                    const status = getAvailability(player.id, selectedDate, timeSlot);
-                    const statusClass = getAvailabilityClass(status);
-                    
-                    return (
-                      <TableCell
-                        key={timeSlot}
-                        className={`text-center ${statusClass} cursor-pointer`}
-                        onClick={() => handleCellClick(player.id, selectedDate, timeSlot)}
-                      >
-                        {status === 'available' && '✓'}
-                        {status === 'maybe' && '?'}
-                        {status === 'unavailable' && '✗'}
-                        {status === '' && ''}
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <td 
+        className={`border p-2 ${bgColor} cursor-pointer`}
+        onClick={() => {
+          // Cycle through statuses when clicking
+          if (status === AvailabilityStatus.UNKNOWN) {
+            updateTimeSlotStatus(hour, AvailabilityStatus.AVAILABLE);
+          } else if (status === AvailabilityStatus.AVAILABLE) {
+            updateTimeSlotStatus(hour, AvailabilityStatus.UNAVAILABLE);
+          } else if (status === AvailabilityStatus.UNAVAILABLE) {
+            updateTimeSlotStatus(hour, AvailabilityStatus.MAYBE);
+          } else {
+            updateTimeSlotStatus(hour, AvailabilityStatus.UNKNOWN);
+          }
+        }}
+      >
+        {status === AvailabilityStatus.AVAILABLE && "Dostępny"}
+        {status === AvailabilityStatus.UNAVAILABLE && "Niedostępny"}
+        {status === AvailabilityStatus.MAYBE && "Może"}
+        {status === AvailabilityStatus.UNKNOWN && "?"}
+      </td>
     );
   };
   
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="md:w-1/3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Kalendarz</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Calendar 
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                className="border rounded-md p-3"
-              />
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Kalendarz</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              className="rounded-md border"
+            />
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="md:col-span-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex justify-between">
+              <span>Dostępność {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''}</span>
               
-              <div className="mt-4">
-                <h3 className="text-sm font-medium mb-2">Widok</h3>
-                <div className="flex space-x-2">
-                  <Button
-                    variant={viewMode === 'day' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('day')}
-                  >
-                    <CalendarIcon className="h-4 w-4 mr-2" /> Dzień
-                  </Button>
-                  <Button
-                    variant={viewMode === 'week' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('week')}
-                  >
-                    <CalendarDays className="h-4 w-4 mr-2" /> Tydzień
-                  </Button>
-                </div>
-              </div>
-              
-              {(isHost || players.length > 1) && (
-                <div className="mt-4">
-                  <h3 className="text-sm font-medium mb-2">Gracz</h3>
-                  <Select 
-                    value={selectedPlayer} 
-                    onValueChange={setSelectedPlayer}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Wybierz gracza" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {players.map(player => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {isHost && (
+                <Select
+                  value={selectedPlayer || undefined}
+                  onValueChange={setSelectedPlayer}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Wybierz gracza" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {players.map(player => (
+                      <SelectItem key={player.id} value={player.id}>
+                        {player.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
-              
-              <div className="mt-4">
-                <h3 className="text-sm font-medium mb-2">Legenda</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-green-500/20 border border-green-500/50 rounded mr-2"></div>
-                    <span>Dostępny</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-yellow-500/20 border border-yellow-500/50 rounded mr-2"></div>
-                    <span>Może być dostępny</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-red-500/20 border border-red-500/50 rounded mr-2"></div>
-                    <span>Niedostępny</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-transparent border border-gray-700 rounded mr-2"></div>
-                    <span>Nie określono</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedPlayer && selectedDate ? (
+              <div>
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="border p-2">Godzina</th>
+                      <th className="border p-2">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {TIME_SLOTS.map(hour => (
+                      <tr key={hour}>
+                        <td className="border p-2">{hour}</td>
+                        {renderStatusCell(hour)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                
+                <div className="mt-4">
+                  <div className="text-sm text-gray-500 mb-2">Legenda:</div>
+                  <div className="flex space-x-4 text-xs">
+                    <span className="flex items-center">
+                      <div className="w-3 h-3 bg-green-200 mr-1"></div> Dostępny
+                    </span>
+                    <span className="flex items-center">
+                      <div className="w-3 h-3 bg-red-200 mr-1"></div> Niedostępny
+                    </span>
+                    <span className="flex items-center">
+                      <div className="w-3 h-3 bg-yellow-200 mr-1"></div> Może
+                    </span>
+                    <span className="flex items-center">
+                      <div className="w-3 h-3 bg-gray-200 mr-1"></div> Nieznany
+                    </span>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div className="md:w-2/3">
-          {isHost && viewMode === 'day' ? (
-            renderHostView()
-          ) : (
-            viewMode === 'day' ? renderDayView() : renderWeekView()
-          )}
-        </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                {!selectedPlayer && "Wybierz gracza"}
+                {!selectedDate && "Wybierz datę"}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
 import { GameBackup } from '@/types/game-types';
@@ -208,4 +207,65 @@ export async function saveGameEdition(edition: any, editionName: string) {
 
 export async function loadGameEdition(editionName: string) {
   return loadGameData(`edition_${editionName}`);
+}
+
+export async function getUsedQuestions() {
+  try {
+    // Get list of used question IDs
+    const { data, error } = await supabase
+      .from('game_settings')
+      .select('value')
+      .eq('id', 'used_questions')
+      .single();
+    
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
+      throw error;
+    }
+    
+    // Return used question IDs or empty array if none found
+    return { 
+      success: true, 
+      data: data?.value ? (data.value as string[]) : [] 
+    };
+  } catch (error) {
+    console.error('Error getting used questions:', error);
+    return { success: false, error, data: [] };
+  }
+}
+
+export async function restoreQuestion(questionId: string) {
+  try {
+    // Get existing used questions
+    const { data: existingData, error: getError } = await supabase
+      .from('game_settings')
+      .select('value')
+      .eq('id', 'used_questions')
+      .single();
+    
+    if (getError && getError.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
+      throw getError;
+    }
+    
+    // If no used questions record exists, return success (nothing to restore)
+    if (!existingData?.value) {
+      return { success: true };
+    }
+    
+    // Remove the restored question ID from the list
+    let usedQuestions = existingData.value as string[];
+    usedQuestions = usedQuestions.filter(id => id !== questionId);
+    
+    // Update the used questions list
+    const { error: updateError } = await supabase
+      .from('game_settings')
+      .update({ value: usedQuestions })
+      .eq('id', 'used_questions');
+    
+    if (updateError) throw updateError;
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error restoring question:', error);
+    return { success: false, error };
+  }
 }

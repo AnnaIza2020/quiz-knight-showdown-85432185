@@ -1,24 +1,18 @@
 
+export enum AvailabilityStatus {
+  AVAILABLE = 'available',
+  UNAVAILABLE = 'unavailable',
+  MAYBE = 'maybe',
+  UNKNOWN = 'unknown'
+}
+
 export interface TimeSlot {
-  hour: number;
+  hour: string; // Format: "HH:MM"
   status: AvailabilityStatus;
 }
 
-export type AvailabilityStatus = 'available' | 'unavailable' | 'maybe' | '';
-
 export interface PlayerAvailabilitySlot {
-  date: string;
   playerId: string;
+  date: string; // Format: "YYYY-MM-DD"
   timeSlots: TimeSlot[];
-}
-
-export interface AvailabilityContextType {
-  playerAvailability: PlayerAvailabilitySlot[];
-  isLoading: boolean;
-  error: Error | null;
-  fetchAvailability: (playerId?: string) => Promise<PlayerAvailabilitySlot[]>;
-  updateAvailability: (playerId: string, slot: PlayerAvailabilitySlot) => Promise<boolean>;
-  getPlayerAvailabilityForDate: (playerId: string, date: string) => PlayerAvailabilitySlot | undefined;
-  getAvailablePlayersForDate: (date: string, hour: number) => string[];
-  getAvailabilityPercentageForDate: (date: string, hour: number) => number;
 }

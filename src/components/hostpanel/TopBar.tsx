@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { GameRound } from '@/types/game-types';
 import { Button } from '@/components/ui/button';
@@ -49,7 +50,7 @@ const TopBar: React.FC<TopBarProps> = ({
   useEffect(() => {
     const loadEditions = async () => {
       try {
-        // Use correct Supabase API
+        // Fix: Use direct table access instead of from() method
         const { data, error } = await supabase
           .from('game_settings')
           .select('id');

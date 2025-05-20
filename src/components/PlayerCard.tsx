@@ -1,16 +1,20 @@
+
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Player } from '@/types/game-types';
 import { Heart } from 'lucide-react';
 import { getRandomNeonColor } from '@/utils/utils';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 export interface PlayerCardProps {
   player: Player;
   size?: 'sm' | 'md' | 'lg';
+  isSelected?: boolean;
 }
 
-const PlayerCard: React.FC<PlayerCardProps> = ({ player, size = 'md' }) => {
-  const { playSound } = useGameContext();
+const PlayerCard: React.FC<PlayerCardProps> = ({ player, size = 'md', isSelected = false }) => {
+  const { playSound } = useSoundEffects();
   
   // Format health percentage for display
   const formatHealth = (health: number) => {

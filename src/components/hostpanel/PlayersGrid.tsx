@@ -46,7 +46,10 @@ const PlayersGrid: React.FC<PlayersGridProps> = ({
             className="cursor-pointer transform transition-transform hover:scale-105"
             onClick={() => handlePlayerClick(player.id)}
           >
-            <PlayerCard player={playerWithActive} />
+            <PlayerCard 
+              player={playerWithActive} 
+              isSelected={player.id === activePlayerId}
+            />
           </div>
         );
       })}

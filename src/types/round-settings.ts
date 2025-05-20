@@ -1,85 +1,86 @@
 
-import { GameRound } from './game-types';
+import { GameRound } from "./game-types";
 
-export interface RoundSettings {
-  // Global settings
-  defaultTimerDuration: number;
-  randomizeQuestions: boolean;
-  
-  // Round-specific settings
-  [GameRound.ROUND_ONE]: {
-    pointsForCorrectAnswer: number;
-    pointsForIncorrectAnswer: number;
-    timerDuration: number;
-    livesCount: number;
-    livesDeductedOnIncorrectAnswer: number;
-    healthDeductionPercentage: number;
-    luckyLoserEnabled: boolean;
-    eliminationCount: number;
-    maxQuestions: number;
-  };
-  
-  [GameRound.ROUND_TWO]: {
-    pointsForCorrectAnswer: number;
-    pointsForIncorrectAnswer: number;
-    timerDuration: number;
-    livesCount: number;
-    livesDeductedOnIncorrectAnswer: number;
-    maxQuestions: number;
-  };
-  
-  [GameRound.ROUND_THREE]: {
-    pointsForCorrectAnswer: number;
-    pointsForIncorrectAnswer: number;
-    timerDuration: number;
-    livesCount: number;
-    livesDeductedOnIncorrectAnswer: number;
-    wheelCategories: string[];
-    maxSpins: number;
-    finalRoundEnabled: boolean;
-  };
+export interface RoundOneSettings {
+  pointsForCorrectAnswer: number;
+  pointsForIncorrectAnswer: number;
+  timerDuration: number;
+  livesCount: number;
+  livesDeductedOnIncorrectAnswer: number;
+  healthDeductionPercentage: number;
+  luckyLoserEnabled: boolean;
+  eliminationCount: number;
+  maxQuestions: number;
 }
 
-export const DEFAULT_ROUND_SETTINGS: RoundSettings = {
+export interface RoundTwoSettings {
+  pointsForCorrectAnswer: number;
+  pointsForIncorrectAnswer: number;
+  timerDuration: number;
+  livesCount: number;
+  livesDeductedOnIncorrectAnswer: number;
+  maxQuestions: number;
+}
+
+export interface RoundThreeSettings {
+  pointsForCorrectAnswer: number;
+  pointsForIncorrectAnswer: number;
+  timerDuration: number;
+  livesCount: number;
+  livesDeductedOnIncorrectAnswer: number;
+  maxSpins: number;
+  finalRoundEnabled: boolean;
+  wheelCategories: string[];
+}
+
+export interface RoundSettings {
+  defaultTimerDuration: number;
+  randomizeQuestions: boolean;
+  [GameRound.ROUND_ONE]: RoundOneSettings;
+  [GameRound.ROUND_TWO]: RoundTwoSettings;
+  [GameRound.ROUND_THREE]: RoundThreeSettings;
+}
+
+// Default settings
+export const defaultRoundSettings: RoundSettings = {
   defaultTimerDuration: 30,
   randomizeQuestions: true,
-  
   [GameRound.ROUND_ONE]: {
-    pointsForCorrectAnswer: 100,
-    pointsForIncorrectAnswer: -50,
+    pointsForCorrectAnswer: 10,
+    pointsForIncorrectAnswer: 0,
     timerDuration: 30,
-    livesCount: 3,
+    livesCount: 1,
     livesDeductedOnIncorrectAnswer: 0,
-    healthDeductionPercentage: 33,
+    healthDeductionPercentage: 25,
     luckyLoserEnabled: true,
     eliminationCount: 4,
-    maxQuestions: 12
+    maxQuestions: 15
   },
-  
   [GameRound.ROUND_TWO]: {
-    pointsForCorrectAnswer: 200,
-    pointsForIncorrectAnswer: -50,
+    pointsForCorrectAnswer: 15,
+    pointsForIncorrectAnswer: -5,
     timerDuration: 5,
     livesCount: 3,
     livesDeductedOnIncorrectAnswer: 1,
     maxQuestions: 10
   },
-  
   [GameRound.ROUND_THREE]: {
-    pointsForCorrectAnswer: 300,
-    pointsForIncorrectAnswer: -100,
-    timerDuration: 15,
-    livesCount: 1,
+    pointsForCorrectAnswer: 25,
+    pointsForIncorrectAnswer: -10,
+    timerDuration: 20,
+    livesCount: 3,
     livesDeductedOnIncorrectAnswer: 1,
-    wheelCategories: [
-      "Język polskiego internetu",
-      "Polska scena Twitcha",
-      "Zagadki", 
-      "Czy jesteś mądrzejszy od 8-klasisty",
-      "Gry, które podbiły Polskę",
-      "Technologie i internet w Polsce"
-    ],
     maxSpins: 10,
-    finalRoundEnabled: true
+    finalRoundEnabled: true,
+    wheelCategories: [
+      'Historia',
+      'Geografia',
+      'Sport',
+      'Kultura',
+      'Gry',
+      'Nowe Media',
+      'Polski Internet',
+      'Wiedza Ogólna'
+    ]
   }
 };

@@ -1,202 +1,169 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Save, Download, Upload, Trash } from 'lucide-react';
-import { toast } from 'sonner';
+import { Save, Database } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useGameContext } from '@/context/GameContext';
-import { GameBackup } from '@/types/game-types';
 
 const GameSaveManager: React.FC = () => {
   const { createBackup, restoreBackup, getBackups, deleteBackup } = useGameContext();
-  const [open, setOpen] = useState(false);
   const [backupName, setBackupName] = useState('');
-  const [backups, setBackups] = useState<GameBackup[]>([]);
-  const [selectedBackup, setSelectedBackup] = useState<GameBackup | null>(null);
+  const [open, setOpen] = useState(false);
+  const [backups, setBackups] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-
+  
   // Load backups on component mount
   React.useEffect(() => {
     loadBackups();
   }, []);
-
+  
+  // Load backups from the database
   const loadBackups = async () => {
     setIsLoading(true);
-    try {
-      const loadedBackups = await getBackups();
-      setBackups(loadedBackups);
-    } catch (error) {
-      console.error('Error loading backups:', error);
-      toast.error('Failed to load backups');
-    } finally {
-      setIsLoading(false);
+    const result = await getBackups();
+    if (result.success) {
+      setBackups(result.data);
+    } else {
+      console.error('Failed to load backups:', result.error);
     }
+    setIsLoading(false);
   };
-
+  
+  // Handle creating a new backup
   const handleCreateBackup = async () => {
     setIsLoading(true);
-    try {
-      await createBackup(backupName);
-      toast.success('Backup created successfully');
+    const result = await createBackup(backupName);
+    if (result) {
       setOpen(false);
       setBackupName('');
       await loadBackups();
-    } catch (error) {
-      console.error('Error creating backup:', error);
-      toast.error('Failed to create backup');
-    } finally {
-      setIsLoading(false);
     }
+    setIsLoading(false);
   };
-
-  const handleRestoreBackup = async () => {
-    if (!selectedBackup) {
-      toast.error('No backup selected');
-      return;
-    }
-
+  
+  // Handle restoring a backup
+  const handleRestoreBackup = async (backupId: string) => {
     setIsLoading(true);
-    try {
-      const success = await restoreBackup(selectedBackup);
-      if (success) {
-        toast.success('Backup restored successfully');
+    const backupToRestore = backups.find(backup => backup.id === backupId);
+    if (backupToRestore) {
+      const result = await restoreBackup(backupToRestore);
+      if (result) {
+        console.log('Backup restored successfully');
       } else {
-        toast.error('Failed to restore backup');
+        console.error('Failed to restore backup');
       }
-    } catch (error) {
-      console.error('Error restoring backup:', error);
-      toast.error('Failed to restore backup');
-    } finally {
-      setIsLoading(false);
     }
+    setIsLoading(false);
   };
-
+  
+  // Handle deleting a backup
   const handleDeleteBackup = async (backupId: string) => {
     setIsLoading(true);
-    try {
-      const success = await deleteBackup(backupId);
-      if (success) {
-        toast.success('Backup deleted successfully');
-        await loadBackups();
-      } else {
-        toast.error('Failed to delete backup');
-      }
-    } catch (error) {
-      console.error('Error deleting backup:', error);
-      toast.error('Failed to delete backup');
-    } finally {
-      setIsLoading(false);
+    const result = await deleteBackup(backupId);
+    if (result.success) {
+      await loadBackups();
+    } else {
+      console.error('Failed to delete backup:', result.error);
     }
+    setIsLoading(false);
   };
-
+  
   return (
     <Card className="bg-black/40 border border-white/10">
       <CardHeader>
-        <CardTitle>Zarządzanie Zapisami Gry</CardTitle>
-        <CardDescription>
-          Twórz i przywracaj kopie zapasowe stanu gry
-        </CardDescription>
+        <CardTitle className="flex items-center space-x-2">
+          <Database className="h-5 w-5 text-neon-blue" />
+          <span>Zarządzanie Zapisami Gry</span>
+        </CardTitle>
       </CardHeader>
       
-      <CardContent className="space-y-4">
-        <Button onClick={() => setOpen(true)} className="w-full">
-          <Save className="mr-2 h-4 w-4" />
-          Utwórz Nowy Zapis
-        </Button>
-        
-        {/* List of Backups */}
-        <div>
-          <h3 className="text-sm font-bold mb-2 text-white/80">Dostępne Zapisy</h3>
+      <CardContent>
+        <div className="space-y-4">
+          {/* Create Backup Section */}
+          <div>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="bg-neon-green/10 hover:bg-neon-green/20">
+                  <Save className="h-4 w-4 mr-2" />
+                  Utwórz Nowy Zapis
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Utwórz Nowy Zapis</DialogTitle>
+                  <DialogDescription>
+                    Nazwij swój zapis gry, aby łatwo go później odnaleźć.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <label htmlFor="name" className="text-right">
+                      Nazwa
+                    </label>
+                    <Input
+                      id="name"
+                      value={backupName}
+                      onChange={(e) => setBackupName(e.target.value)}
+                      className="col-span-3"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
+                    Anuluj
+                  </Button>
+                  <Button type="submit" onClick={handleCreateBackup} disabled={isLoading}>
+                    Utwórz
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
           
-          {isLoading ? (
-            <p>Ładowanie zapisów...</p>
-          ) : backups.length === 0 ? (
-            <p>Brak dostępnych zapisów.</p>
-          ) : (
-            <div className="space-y-2">
-              {backups.map((backup) => (
-                <div
-                  key={backup.id}
-                  className={`p-3 rounded-md border ${selectedBackup?.id === backup.id ? 'border-neon-blue bg-black/50' : 'border-white/20 hover:bg-black/30'} cursor-pointer`}
-                  onClick={() => setSelectedBackup(backup)}
-                >
-                  <div className="flex justify-between items-center">
+          {/* List Backups Section */}
+          <div>
+            <h3 className="text-lg font-semibold mb-2 text-white">Dostępne Zapisy</h3>
+            {isLoading ? (
+              <div className="text-center text-gray-500">Ładowanie zapisów...</div>
+            ) : backups.length === 0 ? (
+              <div className="text-center text-gray-500">Brak dostępnych zapisów.</div>
+            ) : (
+              <div className="space-y-2">
+                {backups.map((backup) => (
+                  <div key={backup.id} className="flex items-center justify-between p-2 bg-black/30 rounded-md border border-white/10">
                     <div>
-                      <p className="font-medium">{backup.name}</p>
-                      <p className="text-xs text-white/50">
+                      <h4 className="font-medium text-white">{backup.name}</h4>
+                      <p className="text-sm text-gray-500">
                         {new Date(backup.timestamp).toLocaleString()}
                       </p>
                     </div>
-                    <Button 
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteBackup(backup.id);
-                      }}
-                    >
-                      <Trash className="h-4 w-4 text-red-500" />
-                    </Button>
+                    <div className="space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRestoreBackup(backup.id)}
+                        disabled={isLoading}
+                        className="text-xs border-neon-green text-neon-green hover:bg-neon-green/20"
+                      >
+                        Przywróć
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteBackup(backup.id)}
+                        disabled={isLoading}
+                      >
+                        Usuń
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        
-        {/* Restore Selected Backup */}
-        {selectedBackup && (
-          <Button 
-            onClick={handleRestoreBackup}
-            disabled={isLoading}
-            className="w-full bg-neon-green hover:bg-neon-green/80"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Przywróć Wybrany Zapis
-          </Button>
-        )}
-      </CardContent>
-      
-      {/* Create Backup Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Utwórz Nowy Zapis</DialogTitle>
-            <DialogDescription>
-              Nazwij swój zapis, aby łatwo go później odnaleźć.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Nazwa
-              </Label>
-              <Input 
-                id="name" 
-                value={backupName}
-                onChange={(e) => setBackupName(e.target.value)}
-                className="col-span-3" 
-              />
-            </div>
+                ))}
+              </div>
+            )}
           </div>
-          
-          <DialogFooter>
-            <Button type="submit" onClick={handleCreateBackup} disabled={isLoading}>
-              Utwórz
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </CardContent>
     </Card>
   );
 };

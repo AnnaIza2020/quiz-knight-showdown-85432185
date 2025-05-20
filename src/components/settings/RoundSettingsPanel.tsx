@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -13,12 +14,14 @@ import { toast } from 'sonner';
 
 const RoundSettingsPanel: React.FC = () => {
   const { roundSettings, updateRoundSettings } = useGameContext();
-  const [localSettings, setLocalSettings] = useState<RoundSettings>(roundSettings);
+  const [localSettings, setLocalSettings] = useState<RoundSettings>(roundSettings || {} as RoundSettings);
   const [activeTab, setActiveTab] = useState('global');
   
   // Update local state when context changes
   useEffect(() => {
-    setLocalSettings(roundSettings);
+    if (roundSettings) {
+      setLocalSettings(roundSettings);
+    }
   }, [roundSettings]);
   
   // Update a specific field in settings
@@ -31,12 +34,13 @@ const RoundSettingsPanel: React.FC = () => {
       
       if (Array.isArray(path)) {
         // For nested paths like [GameRound.ROUND_ONE, 'pointsForCorrectAnswer']
-        let current = newSettings;
-        for (let i = 0; i < path.length - 1; i++) {
-          current = current[path[i] as keyof typeof current];
+        if (path.length === 2) {
+          const [roundKey, fieldKey] = path;
+          if (!newSettings[roundKey as GameRound]) {
+            newSettings[roundKey as GameRound] = {} as any;
+          }
+          newSettings[roundKey as GameRound][fieldKey as keyof typeof newSettings[GameRound.ROUND_ONE]] = value;
         }
-        const lastKey = path[path.length - 1];
-        current[lastKey as keyof typeof current] = value;
       } else {
         // For simple paths like 'defaultTimerDuration'
         newSettings[path as keyof RoundSettings] = value;
@@ -111,7 +115,7 @@ const RoundSettingsPanel: React.FC = () => {
                 <Input
                   id="r1-points-correct"
                   type="number"
-                  value={localSettings[GameRound.ROUND_ONE].pointsForCorrectAnswer}
+                  value={localSettings[GameRound.ROUND_ONE]?.pointsForCorrectAnswer}
                   onChange={(e) => updateField([GameRound.ROUND_ONE, 'pointsForCorrectAnswer'], parseInt(e.target.value) || 0)}
                   min={0}
                 />
@@ -122,7 +126,7 @@ const RoundSettingsPanel: React.FC = () => {
                 <Input
                   id="r1-points-incorrect"
                   type="number"
-                  value={localSettings[GameRound.ROUND_ONE].pointsForIncorrectAnswer}
+                  value={localSettings[GameRound.ROUND_ONE]?.pointsForIncorrectAnswer}
                   onChange={(e) => updateField([GameRound.ROUND_ONE, 'pointsForIncorrectAnswer'], parseInt(e.target.value) || 0)}
                 />
               </div>
@@ -132,7 +136,7 @@ const RoundSettingsPanel: React.FC = () => {
                 <Input
                   id="r1-timer"
                   type="number"
-                  value={localSettings[GameRound.ROUND_ONE].timerDuration}
+                  value={localSettings[GameRound.ROUND_ONE]?.timerDuration}
                   onChange={(e) => updateField([GameRound.ROUND_ONE, 'timerDuration'], parseInt(e.target.value) || 30)}
                   min={5}
                   max={60}
@@ -144,7 +148,7 @@ const RoundSettingsPanel: React.FC = () => {
                 <Input
                   id="r1-lives"
                   type="number"
-                  value={localSettings[GameRound.ROUND_ONE].livesCount}
+                  value={localSettings[GameRound.ROUND_ONE]?.livesCount}
                   onChange={(e) => updateField([GameRound.ROUND_ONE, 'livesCount'], parseInt(e.target.value) || 1)}
                   min={1}
                   max={10}
@@ -156,7 +160,7 @@ const RoundSettingsPanel: React.FC = () => {
                 <Input
                   id="r1-health-deduction"
                   type="number"
-                  value={localSettings[GameRound.ROUND_ONE].healthDeductionPercentage}
+                  value={localSettings[GameRound.ROUND_ONE]?.healthDeductionPercentage}
                   onChange={(e) => updateField([GameRound.ROUND_ONE, 'healthDeductionPercentage'], parseInt(e.target.value) || 0)}
                   min={0}
                   max={100}
@@ -167,7 +171,7 @@ const RoundSettingsPanel: React.FC = () => {
                 <Label htmlFor="r1-lucky-loser">Włącz Lucky Losera</Label>
                 <Switch
                   id="r1-lucky-loser"
-                  checked={localSettings[GameRound.ROUND_ONE].luckyLoserEnabled}
+                  checked={localSettings[GameRound.ROUND_ONE]?.luckyLoserEnabled}
                   onCheckedChange={(checked) => updateField([GameRound.ROUND_ONE, 'luckyLoserEnabled'], checked)}
                 />
               </div>
@@ -177,7 +181,7 @@ const RoundSettingsPanel: React.FC = () => {
                 <Input
                   id="r1-elimination-count"
                   type="number"
-                  value={localSettings[GameRound.ROUND_ONE].eliminationCount}
+                  value={localSettings[GameRound.ROUND_ONE]?.eliminationCount}
                   onChange={(e) => updateField([GameRound.ROUND_ONE, 'eliminationCount'], parseInt(e.target.value) || 0)}
                   min={0}
                   max={10}
@@ -189,7 +193,7 @@ const RoundSettingsPanel: React.FC = () => {
                 <Input
                   id="r1-max-questions"
                   type="number"
-                  value={localSettings[GameRound.ROUND_ONE].maxQuestions}
+                  value={localSettings[GameRound.ROUND_ONE]?.maxQuestions}
                   onChange={(e) => updateField([GameRound.ROUND_ONE, 'maxQuestions'], parseInt(e.target.value) || 10)}
                   min={5}
                   max={30}
@@ -206,7 +210,7 @@ const RoundSettingsPanel: React.FC = () => {
                 <Input
                   id="r2-points-correct"
                   type="number"
-                  value={localSettings[GameRound.ROUND_TWO].pointsForCorrectAnswer}
+                  value={localSettings[GameRound.ROUND_TWO]?.pointsForCorrectAnswer}
                   onChange={(e) => updateField([GameRound.ROUND_TWO, 'pointsForCorrectAnswer'], parseInt(e.target.value) || 0)}
                   min={0}
                 />
@@ -217,7 +221,7 @@ const RoundSettingsPanel: React.FC = () => {
                 <Input
                   id="r2-points-incorrect"
                   type="number"
-                  value={localSettings[GameRound.ROUND_TWO].pointsForIncorrectAnswer}
+                  value={localSettings[GameRound.ROUND_TWO]?.pointsForIncorrectAnswer}
                   onChange={(e) => updateField([GameRound.ROUND_TWO, 'pointsForIncorrectAnswer'], parseInt(e.target.value) || 0)}
                 />
               </div>
@@ -227,7 +231,7 @@ const RoundSettingsPanel: React.FC = () => {
                 <Input
                   id="r2-timer"
                   type="number"
-                  value={localSettings[GameRound.ROUND_TWO].timerDuration}
+                  value={localSettings[GameRound.ROUND_TWO]?.timerDuration}
                   onChange={(e) => updateField([GameRound.ROUND_TWO, 'timerDuration'], parseInt(e.target.value) || 5)}
                   min={3}
                   max={10}
@@ -239,7 +243,7 @@ const RoundSettingsPanel: React.FC = () => {
                 <Input
                   id="r2-lives"
                   type="number"
-                  value={localSettings[GameRound.ROUND_TWO].livesCount}
+                  value={localSettings[GameRound.ROUND_TWO]?.livesCount}
                   onChange={(e) => updateField([GameRound.ROUND_TWO, 'livesCount'], parseInt(e.target.value) || 1)}
                   min={1}
                   max={5}
@@ -251,7 +255,7 @@ const RoundSettingsPanel: React.FC = () => {
                 <Input
                   id="r2-lives-deduct"
                   type="number"
-                  value={localSettings[GameRound.ROUND_TWO].livesDeductedOnIncorrectAnswer}
+                  value={localSettings[GameRound.ROUND_TWO]?.livesDeductedOnIncorrectAnswer}
                   onChange={(e) => updateField([GameRound.ROUND_TWO, 'livesDeductedOnIncorrectAnswer'], parseInt(e.target.value) || 0)}
                   min={0}
                   max={3}
@@ -263,7 +267,7 @@ const RoundSettingsPanel: React.FC = () => {
                 <Input
                   id="r2-max-questions"
                   type="number"
-                  value={localSettings[GameRound.ROUND_TWO].maxQuestions}
+                  value={localSettings[GameRound.ROUND_TWO]?.maxQuestions}
                   onChange={(e) => updateField([GameRound.ROUND_TWO, 'maxQuestions'], parseInt(e.target.value) || 10)}
                   min={5}
                   max={20}

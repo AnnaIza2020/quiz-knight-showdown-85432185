@@ -38,7 +38,10 @@ const PlayerSelection: React.FC<PlayerSelectionProps> = ({
                 activePlayerId === player.id ? 'scale-105' : ''
               }`}
             >
-              <PlayerCard player={playerWithActive} />
+              <PlayerCard 
+                player={playerWithActive}
+                isSelected={activePlayerId === player.id}
+              />
             </div>
           );
         })}
