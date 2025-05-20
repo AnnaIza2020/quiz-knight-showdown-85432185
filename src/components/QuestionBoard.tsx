@@ -30,7 +30,8 @@ const QuestionBoard: React.FC<QuestionBoardProps> = React.memo(({
   // Memo-izowane obliczanie kategorii
   const categoryName = useMemo(() => {
     if (!question) return '';
-    return question.categoryId ? (question.category || 'Nieznana kategoria') : 'Nieznana kategoria';
+    // Use category from the question if available, otherwise infer from categoryId
+    return question.category || (question.categoryId ? 'Nieznana kategoria' : 'Nieznana kategoria');
   }, [question]);
   
   // Efekt dźwiękowy dla timera
@@ -66,6 +67,9 @@ const QuestionBoard: React.FC<QuestionBoardProps> = React.memo(({
     );
   }
 
+  // Get the question text from either text or question field
+  const questionText = question.text || question.question || '';
+
   return (
     <Card className={`w-full ${className || ''}`}>
       <CardHeader>
@@ -84,7 +88,7 @@ const QuestionBoard: React.FC<QuestionBoardProps> = React.memo(({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="p-4 bg-black/30 rounded-lg border border-white/10">
-          <p className="text-lg">{question.text || question.question}</p>
+          <p className="text-lg">{questionText}</p>
         </div>
         
         {question.options && question.options.length > 0 && (
@@ -101,7 +105,7 @@ const QuestionBoard: React.FC<QuestionBoardProps> = React.memo(({
         <div>
           <p className="font-semibold text-sm mb-1">Poprawna odpowiedź:</p>
           <p className="p-2 bg-green-500/20 rounded border border-green-500/40">
-            {question.correctAnswer || question.answer}
+            {question.correctAnswer || question.answer || ''}
           </p>
         </div>
       </CardContent>

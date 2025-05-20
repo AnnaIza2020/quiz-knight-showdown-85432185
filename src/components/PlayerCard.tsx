@@ -40,7 +40,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, size = 'md', isSelected
   const getStatusColor = () => {
     if (player.isEliminated) {
       return 'bg-red-500';
-    } else if (player.isActive) {
+    } else if (player.isActive || player.status === 'active') {
       playSound('success');
       return 'bg-green-500 animate-pulse';
     } else {
@@ -69,13 +69,13 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, size = 'md', isSelected
   // Render player avatar
   const renderAvatar = () => {
     const avatarUrl = player.avatar || player.avatar_url;
-    const initials = player.name.substring(0, 2).toUpperCase();
+    const initials = player.name?.substring(0, 2).toUpperCase() || '';
     const bgColor = player.color || getRandomNeonColor();
     
     return (
       <Avatar className="h-16 w-16 border-2 border-white/20">
         {avatarUrl ? (
-          <AvatarImage src={avatarUrl} alt={player.name} />
+          <AvatarImage src={avatarUrl} alt={player.name || 'Player'} />
         ) : (
           <AvatarFallback style={{ backgroundColor: bgColor }}>
             {initials}

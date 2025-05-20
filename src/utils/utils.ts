@@ -1,3 +1,4 @@
+
 /**
  * Returns a random neon color in hexadecimal format
  */

@@ -46,18 +46,17 @@ export async function generatePlayerLink(playerId: string) {
 
 export async function saveUsedQuestion(questionId: string) {
   try {
-    // Use the raw() method to execute SQL directly since game_settings isn't in the type definition
-    const { data: existingData, error: getError } = await supabase
-      .rpc('get_game_setting', { setting_id: 'used_questions' });
+    // Use direct RPC call instead of from() since game_settings isn't in the type definition
+    const { data, error } = await supabase.rpc('get_game_setting', { setting_id: 'used_questions' });
     
-    if (getError && getError.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
-      throw getError;
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
+      throw error;
     }
     
     // Prepare the list of used questions
     let usedQuestions: string[] = [];
-    if (existingData) {
-      usedQuestions = existingData as string[];
+    if (data) {
+      usedQuestions = data as string[];
     }
     
     // Add the new question ID if not already present
@@ -65,12 +64,11 @@ export async function saveUsedQuestion(questionId: string) {
       usedQuestions.push(questionId);
     }
     
-    // Save the updated list
-    const { error: updateError } = await supabase
-      .rpc('update_game_setting', { 
-        setting_id: 'used_questions', 
-        setting_value: usedQuestions 
-      });
+    // Save the updated list using RPC
+    const { error: updateError } = await supabase.rpc('update_game_setting', { 
+      setting_id: 'used_questions', 
+      setting_value: usedQuestions 
+    });
     
     if (updateError) throw updateError;
     
@@ -84,11 +82,10 @@ export async function saveUsedQuestion(questionId: string) {
 export async function saveGameData(data: any, dataId: string) {
   try {
     // Use RPC to work with game_settings
-    const { error } = await supabase
-      .rpc('update_game_setting', { 
-        setting_id: dataId, 
-        setting_value: data 
-      });
+    const { error } = await supabase.rpc('update_game_setting', { 
+      setting_id: dataId, 
+      setting_value: data 
+    });
     
     if (error) throw error;
     
@@ -102,11 +99,10 @@ export async function saveGameData(data: any, dataId: string) {
 export async function loadGameData(dataId: string) {
   try {
     // Use RPC to work with game_settings
-    const { data, error } = await supabase
-      .rpc('get_game_setting', { setting_id: dataId });
+    const { data, error } = await supabase.rpc('get_game_setting', { setting_id: dataId });
     
-    if (error) throw error;
-    if (!data) return { success: false, error: new Error('Data not found') };
+    if (error && error.code !== 'PGRST116') throw error;
+    if (!data && error && error.code === 'PGRST116') return { success: false, error: new Error('Data not found') };
     
     return { success: true, data };
   } catch (error) {
@@ -117,11 +113,10 @@ export async function loadGameData(dataId: string) {
 
 export async function saveBackup(backup: GameBackup) {
   try {
-    const { error } = await supabase
-      .rpc('update_game_setting', { 
-        setting_id: `backup_${backup.id}`, 
-        setting_value: backup 
-      });
+    const { error } = await supabase.rpc('update_game_setting', { 
+      setting_id: `backup_${backup.id}`, 
+      setting_value: backup 
+    });
     
     if (error) throw error;
     return { success: true };
@@ -133,9 +128,8 @@ export async function saveBackup(backup: GameBackup) {
 
 export async function getBackups() {
   try {
-    // Use raw SQL or a stored procedure that returns all settings with backup_ prefix
-    const { data, error } = await supabase
-      .rpc('get_all_backups');
+    // Use RPC to get all backups
+    const { data, error } = await supabase.rpc('get_all_backups');
     
     if (error) throw error;
     
@@ -154,8 +148,7 @@ export async function getBackups() {
 
 export async function deleteBackup(backupId: string) {
   try {
-    const { error } = await supabase
-      .rpc('delete_game_setting', { setting_id: `backup_${backupId}` });
+    const { error } = await supabase.rpc('delete_game_setting', { setting_id: `backup_${backupId}` });
     
     if (error) throw error;
     return { success: true };
@@ -175,8 +168,7 @@ export async function loadGameEdition(editionName: string) {
 
 export async function getUsedQuestions() {
   try {
-    const { data, error } = await supabase
-      .rpc('get_game_setting', { setting_id: 'used_questions' });
+    const { data, error } = await supabase.rpc('get_game_setting', { setting_id: 'used_questions' });
     
     if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
       throw error;
@@ -196,28 +188,26 @@ export async function getUsedQuestions() {
 export async function restoreQuestion(questionId: string) {
   try {
     // Get existing used questions
-    const { data: existingData, error: getError } = await supabase
-      .rpc('get_game_setting', { setting_id: 'used_questions' });
+    const { data, error } = await supabase.rpc('get_game_setting', { setting_id: 'used_questions' });
     
-    if (getError && getError.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
-      throw getError;
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
+      throw error;
     }
     
     // If no used questions record exists, return success (nothing to restore)
-    if (!existingData) {
+    if (!data) {
       return { success: true };
     }
     
     // Remove the restored question ID from the list
-    let usedQuestions = existingData as string[];
+    let usedQuestions = data as string[];
     usedQuestions = usedQuestions.filter(id => id !== questionId);
     
     // Update the used questions list
-    const { error: updateError } = await supabase
-      .rpc('update_game_setting', { 
-        setting_id: 'used_questions', 
-        setting_value: usedQuestions 
-      });
+    const { error: updateError } = await supabase.rpc('update_game_setting', { 
+      setting_id: 'used_questions', 
+      setting_value: usedQuestions 
+    });
     
     if (updateError) throw updateError;
     

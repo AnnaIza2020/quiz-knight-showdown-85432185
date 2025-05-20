@@ -3,9 +3,11 @@ import { RoundSettings } from './round-settings';
 import { AvailabilityContextType, PlayerAvailabilitySlot } from './availability-types';
 
 export enum GameRound {
+  SETUP = 0,
   ROUND_ONE = 1,
   ROUND_TWO = 2,
-  ROUND_THREE = 3
+  ROUND_THREE = 3,
+  FINISHED = 4
 }
 
 export interface Category {
@@ -23,6 +25,9 @@ export interface Question {
   difficulty: number;
   options: string[];
   image_url?: string;
+  category?: string;
+  question?: string; // Alternative to text field used by some components
+  answer?: string;  // Alternative to correctAnswer field used by some components
 }
 
 export interface Player {
@@ -38,9 +43,11 @@ export interface Player {
   health: number;
   lives: number;
   isEliminated: boolean;
+  isActive?: boolean;
   specialCards?: string[];
   status?: 'active' | 'inactive' | 'eliminated';
   forcedEliminated?: boolean;
+  uniqueLinkToken?: string;
 }
 
 // Log entry type for the action history system
@@ -83,6 +90,11 @@ export interface SpecialCard {
   icon_name?: string;
   animation_style?: string;
   type: string;
+  // Legacy properties for backward compatibility
+  imageUrl?: string;
+  soundEffect?: string;
+  iconName?: string;
+  animationStyle?: string;
 }
 
 export interface SpecialCardAwardRule {

@@ -1,5 +1,5 @@
 
-import { Player, Question } from './game-types';
+import { Player, Question, SpecialCard } from './game-types';
 
 export type CardEffectType = 
   | 'shield'
@@ -20,3 +20,6 @@ export interface CardEffect {
   points?: number;
   question?: Question;
 }
+
+// Re-export SpecialCard for compatibility
+export { SpecialCard } from './game-types';

@@ -1,86 +1,62 @@
 
-import { GameRound } from "./game-types";
+import { GameRound } from './game-types';
 
 export interface RoundOneSettings {
-  pointsForCorrectAnswer: number;
-  pointsForIncorrectAnswer: number;
+  playerLifeCount: number;
   timerDuration: number;
-  livesCount: number;
-  livesDeductedOnIncorrectAnswer: number;
-  healthDeductionPercentage: number;
+  eliminateCount: number;
   luckyLoserEnabled: boolean;
-  eliminationCount: number;
-  maxQuestions: number;
 }
 
 export interface RoundTwoSettings {
-  pointsForCorrectAnswer: number;
-  pointsForIncorrectAnswer: number;
   timerDuration: number;
-  livesCount: number;
-  livesDeductedOnIncorrectAnswer: number;
-  maxQuestions: number;
+  lifePenalty: number;
+  pointsPerQuestion: number;
 }
 
 export interface RoundThreeSettings {
-  pointsForCorrectAnswer: number;
-  pointsForIncorrectAnswer: number;
+  wheelSpinDuration: number;
   timerDuration: number;
-  livesCount: number;
-  livesDeductedOnIncorrectAnswer: number;
-  maxSpins: number;
-  finalRoundEnabled: boolean;
+  pointsMultiplier: number;
   wheelCategories: string[];
 }
 
 export interface RoundSettings {
   defaultTimerDuration: number;
   randomizeQuestions: boolean;
+  timerDurations?: {
+    [GameRound.ROUND_ONE]: number;
+    [GameRound.ROUND_TWO]: number;
+    [GameRound.ROUND_THREE]: number;
+  };
   [GameRound.ROUND_ONE]: RoundOneSettings;
   [GameRound.ROUND_TWO]: RoundTwoSettings;
   [GameRound.ROUND_THREE]: RoundThreeSettings;
 }
 
-// Default settings
 export const defaultRoundSettings: RoundSettings = {
   defaultTimerDuration: 30,
   randomizeQuestions: true,
+  timerDurations: {
+    [GameRound.ROUND_ONE]: 30,
+    [GameRound.ROUND_TWO]: 5,
+    [GameRound.ROUND_THREE]: 15
+  },
   [GameRound.ROUND_ONE]: {
-    pointsForCorrectAnswer: 10,
-    pointsForIncorrectAnswer: 0,
+    playerLifeCount: 3,
     timerDuration: 30,
-    livesCount: 1,
-    livesDeductedOnIncorrectAnswer: 0,
-    healthDeductionPercentage: 25,
-    luckyLoserEnabled: true,
-    eliminationCount: 4,
-    maxQuestions: 15
+    eliminateCount: 4,
+    luckyLoserEnabled: true
   },
   [GameRound.ROUND_TWO]: {
-    pointsForCorrectAnswer: 15,
-    pointsForIncorrectAnswer: -5,
     timerDuration: 5,
-    livesCount: 3,
-    livesDeductedOnIncorrectAnswer: 1,
-    maxQuestions: 10
+    lifePenalty: 1,
+    pointsPerQuestion: 100
   },
   [GameRound.ROUND_THREE]: {
-    pointsForCorrectAnswer: 25,
-    pointsForIncorrectAnswer: -10,
-    timerDuration: 20,
-    livesCount: 3,
-    livesDeductedOnIncorrectAnswer: 1,
-    maxSpins: 10,
-    finalRoundEnabled: true,
-    wheelCategories: [
-      'Historia',
-      'Geografia',
-      'Sport',
-      'Kultura',
-      'Gry',
-      'Nowe Media',
-      'Polski Internet',
-      'Wiedza Ogólna'
-    ]
+    wheelSpinDuration: 5000,
+    timerDuration: 15,
+    pointsMultiplier: 2,
+    wheelCategories: ['Historia', 'Geografia', 'Film i TV', 'Kultura', 'Technologia', 'Internet', 'Nauka']
   }
 };
