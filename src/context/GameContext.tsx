@@ -330,7 +330,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     
     // Undo and manual point/health adjustment
     undoLastAction,
-    hasUndoHistory: Boolean(hasUndoHistory()),
+    hasUndoHistory,
     addManualPoints,
     adjustHealthManually,
     
@@ -351,15 +351,15 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setHostCameraUrl,
     
     // Data persistence with Promise return types
-    loadGameData: loadGameDataPromise,
-    saveGameData: saveGameDataPromise,
+    loadGameData,
+    saveGameData,
     
     // Question methods with Promise return types
     addQuestion,
     removeQuestion,
     updateQuestion,
-    markQuestionAsUsed: markQuestionAsUsedPromise,
-    resetUsedQuestions: resetUsedQuestionsPromise,
+    markQuestionAsUsed,
+    resetUsedQuestions,
     isQuestionUsed,
     
     // Game backup methods
