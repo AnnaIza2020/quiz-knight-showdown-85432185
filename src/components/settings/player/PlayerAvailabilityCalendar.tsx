@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Player } from '@/types/game-types';
-import { PlayerAvailabilitySlot, AvailabilityStatus, TimeSlot } from '@/types/availability-types';
+import { PlayerAvailabilitySlot, AvailabilityStatus } from '@/types/availability-types';
 import { format } from 'date-fns';
 
 interface PlayerAvailabilityCalendarProps {
@@ -41,13 +40,13 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
     
     if (!existingData) {
       // Create default availability with all slots set to 'unknown'
-      const defaultTimeSlots: TimeSlot[] = TIME_SLOTS.map(hour => ({
-        hour,
-        status: AvailabilityStatus.UNKNOWN
-      }));
+      const defaultTimeSlots: Record<string, boolean> = {};
+      TIME_SLOTS.forEach(hour => {
+        defaultTimeSlots[hour] = false;
+      });
       
-      setAvailabilityData(prev => [
-        ...prev,
+      setAvailabilityData(prevData => [
+        ...prevData,
         {
           playerId: selectedPlayer,
           date: dateString,
@@ -58,15 +57,15 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
   }, [selectedPlayer, selectedDate, availabilityData]);
   
   // Get current time slots for selected date & player
-  const getCurrentTimeSlots = (): TimeSlot[] => {
-    if (!selectedPlayer || !selectedDate) return [];
+  const getCurrentTimeSlots = (): Record<string, boolean> => {
+    if (!selectedPlayer || !selectedDate) return {};
     
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     const data = availabilityData.find(
       item => item.playerId === selectedPlayer && item.date === dateString
     );
     
-    return data?.timeSlots || [];
+    return data?.timeSlots || {};
   };
   
   // Update a time slot status
@@ -75,22 +74,17 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
     
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     
-    setAvailabilityData(prev => {
-      const updatedData = [...prev];
+    setAvailabilityData(prevData => {
+      const updatedData = [...prevData];
       const dataIndex = updatedData.findIndex(
         item => item.playerId === selectedPlayer && item.date === dateString
       );
       
       if (dataIndex >= 0) {
         // Update existing entry
-        const updatedTimeSlots = [...updatedData[dataIndex].timeSlots];
-        const slotIndex = updatedTimeSlots.findIndex(slot => slot.hour === hour);
-        
-        if (slotIndex >= 0) {
-          updatedTimeSlots[slotIndex] = { ...updatedTimeSlots[slotIndex], status };
-        } else {
-          updatedTimeSlots.push({ hour, status });
-        }
+        const updatedTimeSlots = { ...updatedData[dataIndex].timeSlots };
+        // Convert status to boolean based on availability
+        updatedTimeSlots[hour] = status === AvailabilityStatus.AVAILABLE;
         
         updatedData[dataIndex] = {
           ...updatedData[dataIndex],
@@ -98,10 +92,10 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
         };
       } else {
         // Create new entry
-        const newTimeSlots: TimeSlot[] = TIME_SLOTS.map(h => ({
-          hour: h,
-          status: h === hour ? status : AvailabilityStatus.UNKNOWN
-        }));
+        const newTimeSlots: Record<string, boolean> = {};
+        TIME_SLOTS.forEach(h => {
+          newTimeSlots[h] = h === hour ? status === AvailabilityStatus.AVAILABLE : false;
+        });
         
         updatedData.push({
           playerId: selectedPlayer,
@@ -121,14 +115,8 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
       );
       
       if (updatedEntry) {
-        const updatedTimeSlots = [...updatedEntry.timeSlots];
-        const slotIndex = updatedTimeSlots.findIndex(slot => slot.hour === hour);
-        
-        if (slotIndex >= 0) {
-          updatedTimeSlots[slotIndex] = { ...updatedTimeSlots[slotIndex], status };
-        } else {
-          updatedTimeSlots.push({ hour, status });
-        }
+        const updatedTimeSlots = { ...updatedEntry.timeSlots };
+        updatedTimeSlots[hour] = status === AvailabilityStatus.AVAILABLE;
         
         onSaveAvailability({
           ...updatedEntry,
@@ -141,8 +129,13 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
   // Render status cell with appropriate color
   const renderStatusCell = (hour: string) => {
     const timeSlots = getCurrentTimeSlots();
-    const slot = timeSlots.find(s => s.hour === hour);
-    const status = slot?.status || AvailabilityStatus.UNKNOWN;
+    const isAvailable = timeSlots[hour];
+    
+    // For backward compatibility, convert boolean to status
+    let status = AvailabilityStatus.UNKNOWN;
+    if (hour in timeSlots) {
+      status = isAvailable ? AvailabilityStatus.AVAILABLE : AvailabilityStatus.UNAVAILABLE;
+    }
     
     let bgColor = 'bg-gray-200';
     if (status === AvailabilityStatus.AVAILABLE) bgColor = 'bg-green-200';

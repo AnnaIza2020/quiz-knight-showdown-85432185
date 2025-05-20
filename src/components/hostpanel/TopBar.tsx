@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from '@/components/ui/label';
 import { Pencil, Save, X } from 'lucide-react';
 import { GameRound } from '@/types/game-types';
-import { loadGameData } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 const TopBar = () => {
@@ -24,9 +25,15 @@ const TopBar = () => {
   useEffect(() => {
     const fetchPassword = async () => {
       try {
-        const result = await loadGameData('game_password');
-        if (result.success && result.data) {
-          setStoredPassword(result.data);
+        const { data, error } = await supabase
+          .rpc('load_game_data', { key: 'game_password' });
+          
+        if (error) {
+          throw error;
+        }
+        
+        if (data) {
+          setStoredPassword(data);
         }
       } catch (error) {
         console.error('Error loading game password:', error);

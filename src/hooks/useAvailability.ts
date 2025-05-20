@@ -1,15 +1,14 @@
-
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { PlayerAvailability, PlayerAvailabilitySlot, AvailabilityStatus } from '@/types/availability-types';
+import { PlayerAvailabilitySlot, AvailabilityStatus } from '@/types/availability-types';
 import { toast } from 'sonner';
 
 export function useAvailability() {
-  const [playerAvailability, setPlayerAvailability] = useState<PlayerAvailability[]>([]);
+  const [playerAvailability, setPlayerAvailability] = useState<PlayerAvailabilitySlot[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchAvailability = async (): Promise<PlayerAvailability[]> => {
+  const fetchAvailability = async (): Promise<PlayerAvailabilitySlot[]> => {
     setIsLoading(true);
     setError(null);
     
@@ -34,7 +33,14 @@ export function useAvailability() {
       if (error) throw error;
       
       // Transform data to the expected format
-      const formattedData: PlayerAvailability[] = transformAvailabilityData(data || []);
+      const formattedData: PlayerAvailabilitySlot[] = (data || []).map(item => ({
+        id: item.id,
+        playerId: item.player_id,
+        date: item.date,
+        timeSlots: item.time_slots || {},
+        player_id: item.player_id,
+        time_slots: item.time_slots
+      }));
       
       setPlayerAvailability(formattedData);
       return formattedData;
@@ -121,35 +127,15 @@ export function useAvailability() {
   };
 
   // Helper to transform raw DB data to our format
-  const transformAvailabilityData = (data: any[]): PlayerAvailability[] => {
-    const availabilityMap = new Map<string, PlayerAvailabilitySlot[]>();
-    
-    // Group by playerId
-    data.forEach(item => {
-      const playerId = item.player_id;
-      const slot: PlayerAvailabilitySlot = {
-        playerId,
-        date: item.date,
-        timeSlots: item.time_slots || {}
-      };
-      
-      if (!availabilityMap.has(playerId)) {
-        availabilityMap.set(playerId, []);
-      }
-      
-      availabilityMap.get(playerId)!.push(slot);
-    });
-    
-    // Convert map to array
-    const result: PlayerAvailability[] = [];
-    availabilityMap.forEach((slots, playerId) => {
-      result.push({
-        playerId,
-        slots
-      });
-    });
-    
-    return result;
+  const transformAvailabilityData = (data: any[]): PlayerAvailabilitySlot[] => {
+    return data.map(item => ({
+      id: item.id,
+      playerId: item.player_id,
+      date: item.date,
+      timeSlots: item.time_slots || {},
+      player_id: item.player_id,
+      time_slots: item.time_slots
+    }));
   };
 
   // Helper function to check if a table exists

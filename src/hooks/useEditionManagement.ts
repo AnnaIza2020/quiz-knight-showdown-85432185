@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { saveGameData, loadGameData } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { useGameContext } from '@/context/GameContext';
 
 export const useEditionManagement = (addEvent: (event: string) => void) => {
@@ -16,9 +16,13 @@ export const useEditionManagement = (addEvent: (event: string) => void) => {
   useEffect(() => {
     const loadEditions = async () => {
       try {
-        const result = await loadGameData('availableEditions');
-        if (result.success && result.data) {
-          setAvailableEditions(result.data);
+        const { data, error } = await supabase
+          .rpc('load_game_data', { key: 'availableEditions' });
+          
+        if (error) throw error;
+          
+        if (data) {
+          setAvailableEditions(data);
         }
       } catch (error) {
         console.error('Failed to load editions:', error);
@@ -50,51 +54,74 @@ export const useEditionManagement = (addEvent: (event: string) => void) => {
       savedAt: new Date().toISOString()
     };
     
-    // Save to local storage
-    const result = await saveGameData(gameData, editionName);
-    
-    if (result.success) {
+    // Save to Supabase
+    try {
+      const { data, error } = await supabase
+        .rpc('save_game_data', { key: editionName, value: gameData });
+        
+      if (error) throw error;
+      
       // Update available editions
       const currentEditions = [...availableEditions];
       if (!currentEditions.find(e => e.name === editionName)) {
         currentEditions.push({ name: editionName });
         setAvailableEditions(currentEditions);
+        
         // Save updated editions list
-        await saveGameData(currentEditions, 'availableEditions');
+        await supabase
+          .rpc('save_game_data', { key: 'availableEditions', value: currentEditions });
       }
       
       toast.success(`Edycja "${editionName}" zapisana pomyślnie!`);
       addEvent(`Zapisano edycję "${editionName}"`);
       setSaveDialogOpen(false);
+    } catch (err) {
+      console.error('Error saving edition:', err);
+      toast.error('Nie udało się zapisać edycji');
     }
   };
 
   // Handle load edition
   const handleLoadEdition = async (name: string) => {
-    const result = await loadGameData(name);
-    if (result.success) {
-      // Update local storage with loaded data
-      if (result.data.players) {
-        localStorage.setItem('gameShowPlayers', JSON.stringify(result.data.players));
-      }
-      if (result.data.categories) {
-        localStorage.setItem('gameShowCategories', JSON.stringify(result.data.categories));
-      }
-      if (result.data.specialCards) {
-        localStorage.setItem('gameShowSpecialCards', JSON.stringify(result.data.specialCards));
-      }
-      if (result.data.specialCardRules) {
-        localStorage.setItem('gameShowSpecialCardRules', JSON.stringify(result.data.specialCardRules));
-      }
-      if (result.data.settings) {
-        localStorage.setItem('gameShowSettings', JSON.stringify(result.data.settings));
-      }
+    try {
+      const { data, error } = await supabase
+        .rpc('load_game_data', { key: name });
+        
+      if (error) throw error;
       
-      // Reload game data
-      loadContextGameData();
-      toast.success(`Edycja "${name}" wczytana pomyślnie!`);
-      addEvent(`Wczytano edycję "${name}"`);
-      setLoadDialogOpen(false);
+      if (data) {
+        // Update local storage with loaded data
+        if (data.players) {
+          localStorage.setItem('gameShowPlayers', JSON.stringify(data.players));
+        }
+        
+        if (data.categories) {
+          localStorage.setItem('gameShowCategories', JSON.stringify(data.categories));
+        }
+        
+        if (data.specialCards) {
+          localStorage.setItem('gameShowSpecialCards', JSON.stringify(data.specialCards));
+        }
+        
+        if (data.specialCardRules) {
+          localStorage.setItem('gameShowSpecialCardRules', JSON.stringify(data.specialCardRules));
+        }
+        
+        if (data.settings) {
+          localStorage.setItem('gameShowSettings', JSON.stringify(data.settings));
+        }
+        
+        // Reload game data
+        loadContextGameData();
+        toast.success(`Edycja "${name}" wczytana pomyślnie!`);
+        addEvent(`Wczytano edycję "${name}"`);
+        setLoadDialogOpen(false);
+      } else {
+        toast.error('Nie znaleziono danych dla tej edycji');
+      }
+    } catch (err) {
+      console.error('Error loading edition:', err);
+      toast.error('Nie udało się wczytać edycji');
     }
   };
 

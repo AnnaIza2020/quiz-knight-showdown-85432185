@@ -177,7 +177,7 @@ export interface GameContextType {
   stopAllSounds: () => void;
   soundsEnabled: boolean;
   setSoundsEnabled: (enabled: boolean) => void;
-  playSoundWithOptions: (options: any) => void;
+  playSoundWithOptions: (sound: SoundEffect, options: any) => void;
   volume: number;
   setVolume: (volume: number) => void;
   soundStatus: Record<string, any>;
@@ -214,7 +214,7 @@ export interface GameContextType {
   
   // Undo and manual point/health adjustment
   undoLastAction: () => void;
-  hasUndoHistory: () => boolean;
+  hasUndoHistory: boolean;
   addManualPoints: (playerId: string, points: number) => void;
   adjustHealthManually: (playerId: string, health: number) => void;
   

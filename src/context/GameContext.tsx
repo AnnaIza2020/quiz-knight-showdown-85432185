@@ -87,12 +87,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   } = useSoundEffects();
 
   // Game backup methods
-  const createBackup = async (name: string) => {
+  const createBackup = async (name: string): Promise<any> => {
     // Implementation would go here
     return { success: true, id: crypto.randomUUID() };
   };
   
-  const restoreBackup = async (backup: GameBackup) => {
+  const restoreBackup = async (backup: GameBackup): Promise<boolean> => {
     // Implementation would go here
     return true;
   };
@@ -258,6 +258,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
   };
 
+  // Fix playSoundWithOptions to match the expected signature
+  const playSoundWithOptionsWrapper = (sound: any, options: any) => {
+    playSoundWithOptions(options);
+  };
+
   // Context value with corrected types
   const contextValue: GameContextType = {
     // State
@@ -288,7 +293,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     stopAllSounds,
     soundsEnabled,
     setSoundsEnabled,
-    playSoundWithOptions,
+    playSoundWithOptions: playSoundWithOptionsWrapper,
     volume,
     setVolume,
     soundStatus,
@@ -325,7 +330,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     
     // Undo and manual point/health adjustment
     undoLastAction,
-    hasUndoHistory,
+    hasUndoHistory: Boolean(hasUndoHistory()),
     addManualPoints,
     adjustHealthManually,
     
@@ -345,16 +350,16 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setSecondaryColor,
     setHostCameraUrl,
     
-    // Data persistence
-    loadGameData,
-    saveGameData,
+    // Data persistence with Promise return types
+    loadGameData: loadGameDataPromise,
+    saveGameData: saveGameDataPromise,
     
-    // Question methods
+    // Question methods with Promise return types
     addQuestion,
     removeQuestion,
     updateQuestion,
-    markQuestionAsUsed,
-    resetUsedQuestions,
+    markQuestionAsUsed: markQuestionAsUsedPromise,
+    resetUsedQuestions: resetUsedQuestionsPromise,
     isQuestionUsed,
     
     // Game backup methods

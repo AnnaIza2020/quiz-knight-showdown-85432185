@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useGameContext } from '@/context/GameContext';
-import { Category, Question, GameRound } from '@/types/game-types';
+import { Category, GameRound } from '@/types/game-types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,7 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { Trash2 } from 'lucide-react';
+import { createQuestionWithDefaults } from '@/utils/createQuestionWithDefaults';
 
 // Tymczasowe zastąpienie react-beautiful-dnd
 interface DragDropContextProps {
@@ -114,8 +115,7 @@ const Round2Questions = () => {
       return;
     }
     
-    const newQuestion: Question = {
-      id: uuidv4(),
+    const newQuestion = createQuestionWithDefaults({
       text: newQuestionText,
       correctAnswer: newAnswerText,
       categoryId: selectedCategory,
@@ -123,7 +123,7 @@ const Round2Questions = () => {
       difficulty: 1,
       question: newQuestionText, // For backward compatibility
       answer: newAnswerText, // For backward compatibility
-    };
+    });
     
     addQuestion(selectedCategory, newQuestion);
     
@@ -280,50 +280,3 @@ const Round2Questions = () => {
 };
 
 export default Round2Questions;
-
-// This file has issues with missing 'options' when creating a Question
-// Let's add a small utility function that ensures options are properly set
-import { Question } from '@/types/game-types';
-
-// Add this function somewhere in your file
-function createQuestionWithDefaults(questionData: Partial<Question>): Question {
-  return {
-    id: questionData.id || crypto.randomUUID(),
-    text: questionData.text || '',
-    correctAnswer: questionData.correctAnswer || '',
-    categoryId: questionData.categoryId || '',
-    difficulty: questionData.difficulty || 100,
-    options: questionData.options || [],
-    category: questionData.category,
-    question: questionData.question,
-    answer: questionData.answer,
-    image_url: questionData.image_url
-  };
-}
-
-// Use this function when creating new questions:
-// e.g., replace:
-// const newQuestion = {
-//   id: crypto.randomUUID(),
-//   text: "Question text",
-//   correctAnswer: "Answer",
-//   categoryId: categoryId,
-//   category: categoryName, 
-//   difficulty: 100,
-//   question: "Question text",
-//   answer: "Answer"
-// };
-//
-// with:
-// const newQuestion = createQuestionWithDefaults({
-//   text: "Question text",
-//   correctAnswer: "Answer",
-//   categoryId: categoryId,
-//   category: categoryName, 
-//   difficulty: 100,
-//   question: "Question text",
-//   answer: "Answer"
-// });
-
-// Export the function to make it available for other components
-export { createQuestionWithDefaults };

@@ -16,6 +16,17 @@ export const useGameContextLegacy = (): GameContextType => {
   const questionsContext = useQuestionsContext();
   const specialCardsContext = useSpecialCardsContext();
   
+  // Create Promise-returning versions of the functions
+  const markQuestionAsUsedPromise = async (questionId: string) => {
+    questionsContext.markQuestionAsUsed(questionId);
+    return Promise.resolve({ success: true });
+  };
+  
+  const resetUsedQuestionsPromise = async () => {
+    questionsContext.resetUsedQuestions();
+    return Promise.resolve({ success: true });
+  };
+  
   // Merge all contexts into one
   return {
     ...gameContext,
@@ -23,8 +34,8 @@ export const useGameContextLegacy = (): GameContextType => {
     addQuestion: questionsContext.addQuestion,
     removeQuestion: questionsContext.removeQuestion,
     updateQuestion: questionsContext.updateQuestion,
-    markQuestionAsUsed: questionsContext.markQuestionAsUsed,
-    resetUsedQuestions: questionsContext.resetUsedQuestions,
+    markQuestionAsUsed: markQuestionAsUsedPromise,
+    resetUsedQuestions: resetUsedQuestionsPromise,
     isQuestionUsed: questionsContext.isQuestionUsed,
     
     // Override with functions from SpecialCardsContext

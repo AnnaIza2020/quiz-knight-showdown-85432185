@@ -10,7 +10,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useGameContext } from '@/context/GameContext';
-import { Category, Question } from '@/types/game-types';
+import { Category } from '@/types/game-types';
+import { createQuestionWithDefaults } from '@/utils/createQuestionWithDefaults';
 
 const questionSchema = z.object({
   questionText: z.string().min(1, { message: 'Pytanie jest wymagane' }),
@@ -18,22 +19,6 @@ const questionSchema = z.object({
   category: z.string().min(1, { message: 'Kategoria jest wymagana' }),
   difficulty: z.string().min(1, { message: 'Poziom trudności jest wymagany' }),
 });
-
-// Add this function somewhere in your file
-function createQuestionWithDefaults(questionData: Partial<Question>): Question {
-  return {
-    id: questionData.id || crypto.randomUUID(),
-    text: questionData.text || '',
-    correctAnswer: questionData.correctAnswer || '',
-    categoryId: questionData.categoryId || '',
-    difficulty: questionData.difficulty || 100,
-    options: questionData.options || [],
-    category: questionData.category,
-    question: questionData.question,
-    answer: questionData.answer,
-    image_url: questionData.image_url
-  };
-}
 
 export { createQuestionWithDefaults };
 

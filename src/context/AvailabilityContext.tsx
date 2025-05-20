@@ -59,7 +59,7 @@ export const AvailabilityProvider: React.FC<AvailabilityProviderProps> = ({ chil
       const dbData = {
         player_id: data.playerId,
         date: data.date,
-        time_slots: data.timeSlots as any
+        time_slots: data.timeSlots
       };
 
       if (data.id) {
