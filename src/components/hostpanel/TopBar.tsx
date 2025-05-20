@@ -1,175 +1,201 @@
 
 import React, { useState, useEffect } from 'react';
-import { GameRound } from '@/types/game-types';
-import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
-import { DatabaseIcon, FastForward, TimerReset, TimerOff, Timer } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Pencil, Save, Check, X, AlertTriangle } from 'lucide-react';
+import { GameRound } from '@/types/game-types';
+import { loadGameData } from '@/lib/supabase';
+import { toast } from 'sonner';
 
-interface TopBarProps {
-  round: GameRound;
-  handleStartTimer: (seconds: number) => void;
-  stopTimer: () => void;
-  handleAdvanceToRound: (round: GameRound) => void;
-}
+const TopBar = () => {
+  const { round, setRound, gameTitle, setGameTitle } = useGameContext();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [password, setPassword] = useState('');
+  const [storedPassword, setStoredPassword] = useState('');
+  const [isPasswordChecked, setIsPasswordChecked] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-const TopBar: React.FC<TopBarProps> = ({
-  round,
-  handleStartTimer,
-  stopTimer,
-  handleAdvanceToRound
-}) => {
-  const { timerRunning, timerSeconds, roundSettings } = useGameContext();
-  const [roundName, setRoundName] = useState<string>('');
-  const [availableEditions, setAvailableEditions] = useState<string[]>([]);
-  
-  // Effect to determine round name based on current round
+  // Load game password on component mount
   useEffect(() => {
-    switch(round) {
-      case GameRound.SETUP:
-        setRoundName('Przygotowanie');
-        break;
-      case GameRound.ROUND_ONE:
-        setRoundName('Runda 1 - Eliminacje');
-        break;
-      case GameRound.ROUND_TWO:
-        setRoundName('Runda 2 - Szybka Odpowiedź');
-        break;
-      case GameRound.ROUND_THREE:
-        setRoundName('Runda 3 - Koło Fortuny');
-        break;
-      case GameRound.FINISHED:
-        setRoundName('Zakończono');
-        break;
-      default:
-        setRoundName('Nieznana runda');
-    }
-  }, [round]);
-  
-  // Load available editions when component mounts
-  useEffect(() => {
-    const loadEditions = async () => {
+    const fetchPassword = async () => {
       try {
-        // Fix: Use direct table access instead of from() method
-        const { data, error } = await supabase
-          .from('game_settings')
-          .select('id');
-        
-        if (error) {
-          console.error('Error fetching editions:', error);
-          return;
+        const result = await loadGameData('game_password');
+        if (result.success && result.data) {
+          setStoredPassword(result.data);
         }
-        
-        // Filter out records that start with 'edition_'
-        if (data) {
-          const editionIds = data
-            .filter(record => record.id.startsWith('edition_'))
-            .map(record => record.id.replace('edition_', ''));
-          
-          setAvailableEditions(editionIds);
-        }
-      } catch (err) {
-        console.error('Failed to load editions:', err);
+      } catch (error) {
+        console.error('Error loading game password:', error);
       }
     };
-    
-    loadEditions();
+
+    fetchPassword();
   }, []);
-  
-  // Get the appropriate timer duration for the current round
-  const getTimerDuration = (): number => {
-    switch(round) {
-      case GameRound.ROUND_ONE:
-        return roundSettings?.[GameRound.ROUND_ONE]?.timerDuration || 30;
-      case GameRound.ROUND_TWO:
-        return roundSettings?.[GameRound.ROUND_TWO]?.timerDuration || 5;
-      case GameRound.ROUND_THREE:
-        return roundSettings?.[GameRound.ROUND_THREE]?.timerDuration || 30;
-      default:
-        return 30;
+
+  const handleEditClick = () => {
+    if (storedPassword && !isPasswordChecked) {
+      setIsPasswordDialogOpen(true);
+    } else {
+      startEditing();
     }
   };
-  
+
+  const startEditing = () => {
+    setIsEditing(true);
+    setEditedTitle(gameTitle);
+  };
+
+  const handleSaveClick = () => {
+    setGameTitle(editedTitle);
+    setIsEditing(false);
+  };
+
+  const handleCancelClick = () => {
+    setIsEditing(false);
+  };
+
+  const checkPassword = () => {
+    setIsAuthenticating(true);
+    
+    setTimeout(() => {
+      if (password === storedPassword) {
+        setIsPasswordChecked(true);
+        setIsPasswordDialogOpen(false);
+        startEditing();
+        toast.success('Password verified!');
+      } else {
+        toast.error('Incorrect password!');
+      }
+      setPassword('');
+      setIsAuthenticating(false);
+    }, 500);
+  };
+
+  const getRoundLabel = () => {
+    switch(round) {
+      case GameRound.SETUP:
+        return 'Przygotowanie';
+      case GameRound.ROUND_ONE:
+        return 'Runda 1';
+      case GameRound.ROUND_TWO:
+        return 'Runda 2';
+      case GameRound.ROUND_THREE:
+        return 'Runda 3';
+      case GameRound.FINISHED:
+        return 'Zakończono';
+      default:
+        return `Runda ${round}`;
+    }
+  };
+
+  const getBadgeColor = () => {
+    switch(round) {
+      case GameRound.SETUP:
+        return 'bg-blue-500';
+      case GameRound.ROUND_ONE:
+        return 'bg-green-500';
+      case GameRound.ROUND_TWO:
+        return 'bg-yellow-500';
+      case GameRound.ROUND_THREE:
+        return 'bg-purple-500';
+      case GameRound.FINISHED:
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
+
   return (
-    <div className="flex justify-between items-center p-4 bg-black/50 backdrop-blur-md rounded-lg border border-white/10 mb-4">
-      {/* Left - Round Name and Buttons */}
-      <div className="flex items-center space-x-2">
-        <div>
-          <span className="text-white/60 text-sm mr-1">Runda:</span>
-          <span className="font-bold">{roundName}</span>
-        </div>
-        
-        <div className="ml-4 space-x-1">
-          {round === GameRound.ROUND_ONE && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleAdvanceToRound(GameRound.ROUND_TWO)}
-              className="text-xs bg-neon-green/10 hover:bg-neon-green/20"
-              title="Przejdź do Rundy 2"
-            >
-              <FastForward size={14} className="mr-1" />
-              Runda 2
-            </Button>
-          )}
-          
-          {round === GameRound.ROUND_TWO && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleAdvanceToRound(GameRound.ROUND_THREE)}
-              className="text-xs bg-neon-green/10 hover:bg-neon-green/20"
-              title="Przejdź do Rundy 3"
-            >
-              <FastForward size={14} className="mr-1" />
-              Runda 3
-            </Button>
-          )}
-        </div>
-      </div>
-      
-      {/* Right - Timer Controls */}
-      <div className="flex items-center space-x-2">
-        <span className={`font-mono ${timerRunning ? 'text-neon-green' : 'text-white/60'}`}>
-          {timerRunning ? (
-            `${timerSeconds}s`
-          ) : (
-            'Timer zatrzymany'
-          )}
-        </span>
-        
-        {!timerRunning ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleStartTimer(getTimerDuration())}
-            title="Rozpocznij timer"
-          >
-            <Timer size={16} />
-          </Button>
-        ) : (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={stopTimer}
-            title="Zatrzymaj timer"
-          >
-            <TimerOff size={16} />
-          </Button>
-        )}
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            stopTimer();
-            handleStartTimer(getTimerDuration());
-          }}
-          title="Zresetuj timer"
+    <div className="flex items-center justify-between px-4 py-2 bg-slate-800 rounded-lg mb-4">
+      <div className="flex items-center">
+        <Badge 
+          variant="secondary" 
+          className={`${getBadgeColor()} text-white mr-4 px-3 py-1`}
         >
-          <TimerReset size={16} />
-        </Button>
+          {getRoundLabel()}
+        </Badge>
+        
+        {isEditing ? (
+          <div className="flex items-center gap-2">
+            <Input
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              className="w-64 bg-slate-700 border-slate-600"
+            />
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={handleSaveClick}
+              className="text-green-400 hover:text-green-500 hover:bg-slate-700"
+            >
+              <Save size={16} className="mr-1" /> Zapisz
+            </Button>
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={handleCancelClick}
+              className="text-red-400 hover:text-red-500 hover:bg-slate-700"
+            >
+              <X size={16} /> Anuluj
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center">
+            <h2 className="text-lg font-semibold text-white mr-2">
+              {gameTitle || 'Discord Game Show'}
+            </h2>
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={handleEditClick}
+              className="text-blue-400 hover:text-blue-500 hover:bg-slate-700"
+            >
+              <Pencil size={14} />
+            </Button>
+          </div>
+        )}
       </div>
+
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Wymagane hasło</DialogTitle>
+            <DialogDescription>
+              Podaj hasło aby edytować nazwę gry
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center space-x-2">
+              <div className="grid flex-1 gap-2">
+                <Label htmlFor="password">Hasło</Label>
+                <Input 
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Wprowadź hasło"
+                  className="bg-slate-700 border-slate-600"
+                  onKeyDown={(e) => e.key === 'Enter' && checkPassword()}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                disabled={!password || isAuthenticating}
+                onClick={checkPassword}
+              >
+                {isAuthenticating ? 'Sprawdzanie...' : 'Weryfikuj'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -3,11 +3,14 @@ import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
 import { GameBackup } from '@/types/game-types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Use the constants defined in .env file or use the direct URL
+const supabaseUrl = "https://jkkvxlojgxlmbypulvtu.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impra3Z4bG9qZ3hsbWJ5cHVsdnR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxMTQ5NjUsImV4cCI6MjA2MTY5MDk2NX0.OAjQdrGrFhKGwV_lfSmWEBTQ5ZSLnvB_glXB3G2wBSs";
 
+// Create the Supabase client with explicit URL and key
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
+// Functions using RPC calls to work with tables that might not be in the type definitions
 export async function generatePlayerLink(playerId: string) {
   try {
     // Generate a unique token for player access
@@ -46,7 +49,7 @@ export async function generatePlayerLink(playerId: string) {
 
 export async function saveUsedQuestion(questionId: string) {
   try {
-    // Use direct RPC call instead of from() since game_settings isn't in the type definition
+    // Use direct RPC call for game_settings
     const { data, error } = await supabase.rpc('get_game_setting', { setting_id: 'used_questions' });
     
     if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
