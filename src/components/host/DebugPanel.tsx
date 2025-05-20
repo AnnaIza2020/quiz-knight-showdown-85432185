@@ -7,6 +7,7 @@ import { useGameContext } from '@/context/GameContext';
 import { GameRound } from '@/types/game-types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
+import { useLogsContext } from '@/context/LogsContext';
 
 const DebugPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,8 +23,12 @@ const DebugPanel = () => {
     timerRunning,
     timerSeconds,
     availableSounds,
-    soundsEnabled
+    soundsEnabled,
+    hasUndoHistory,
+    undoLastAction
   } = useGameContext();
+  
+  const { logs, addLog } = useLogsContext();
   
   // Check network status
   useEffect(() => {
@@ -95,6 +100,13 @@ const DebugPanel = () => {
       const truncatedMessage = errorMessage.substring(0, 100) + 
         (errorMessage.length > 100 ? '...' : '');
       
+      // Add to system log
+      addLog({
+        type: 'system',
+        action: 'Console Error',
+        value: truncatedMessage
+      });
+      
       // Update errors with aggregation
       setConsoleErrors(prevErrors => {
         // Check if this is a duplicate error
@@ -128,7 +140,7 @@ const DebugPanel = () => {
     return () => {
       console.error = originalConsoleError;
     };
-  }, []);
+  }, [addLog]);
   
   const getRoundName = (round: GameRound) => {
     switch (round) {
@@ -164,7 +176,20 @@ const DebugPanel = () => {
           <Bug className="mr-2" size={20} />
           <h3 className="font-medium">Panel Diagnostyczny</h3>
         </div>
-        <div>
+        <div className="flex items-center">
+          {hasUndoHistory && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                undoLastAction();
+              }}
+              className="mr-2 h-7 text-xs bg-amber-900/20 text-amber-400 border-amber-900/30"
+            >
+              Cofnij ostatnią akcję
+            </Button>
+          )}
           {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </div>
       </div>
@@ -260,6 +285,12 @@ const DebugPanel = () => {
                     {players.length} ({players.filter(p => !p.isEliminated).length} aktywnych)
                   </span>
                 </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/60">Logi:</span>
+                  <span className="font-medium">
+                    {logs.length} ({logs.filter(log => log.type === 'system').length} systemowe)
+                  </span>
+                </div>
               </div>
               
               {/* Console errors with improved display */}
@@ -295,7 +326,7 @@ const DebugPanel = () => {
               
               <div className="mt-4 flex justify-between">
                 <span className="text-xs text-white/40">
-                  v1.0.1
+                  v1.0.2 - {new Date().toLocaleDateString()}
                 </span>
                 <Button
                   variant="ghost"

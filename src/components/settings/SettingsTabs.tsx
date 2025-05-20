@@ -1,135 +1,76 @@
 
 import React from 'react';
-import { TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Users, FileQuestion, Layers, Palette, Volume2, 
-  UserCog, Trophy, PieChart, BotIcon, Lock, 
-  TestTube, BarChart, Calendar
+  Users, 
+  MessageCircleQuestion, 
+  CreditCard, 
+  Layers, 
+  Palette, 
+  Volume2, 
+  ShieldCheck, 
+  Trophy, 
+  PieChart, 
+  Bot, 
+  Lock, 
+  BarChart, 
+  Calendar, 
+  Bug, 
+  Save 
 } from 'lucide-react';
 
 interface SettingsTabsProps {
   activeTab: string;
-  setActiveTab: (value: string) => void;
+  setActiveTab: (tab: string) => void;
 }
 
 const SettingsTabs: React.FC<SettingsTabsProps> = ({ activeTab, setActiveTab }) => {
   return (
-    <TabsList className="bg-black/40 border border-white/10 p-1 grid grid-cols-2 md:grid-cols-4 gap-1">
-      <TabsTrigger
-        value="gracze"
-        className={`flex items-center ${
-          activeTab === 'gracze' ? 'bg-neon-blue text-white' : 'text-white/70'
-        }`}
-      >
-        <Users size={16} className="mr-2" /> Gracze
+    <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 mb-4">
+      <TabsTrigger value="gracze" className="flex items-center px-2">
+        <Users className="w-4 h-4 mr-1" /> Gracze
       </TabsTrigger>
-      
-      <TabsTrigger
-        value="pytania"
-        className={`flex items-center ${
-          activeTab === 'pytania' ? 'bg-neon-green text-black' : 'text-white/70'
-        }`}
-      >
-        <FileQuestion size={16} className="mr-2" /> Pytania
+      <TabsTrigger value="pytania" className="flex items-center px-2">
+        <MessageCircleQuestion className="w-4 h-4 mr-1" /> Pytania
       </TabsTrigger>
-      
-      <TabsTrigger
-        value="karty"
-        className={`flex items-center ${
-          activeTab === 'karty' ? 'bg-neon-yellow text-black' : 'text-white/70'
-        }`}
-      >
-        <Layers size={16} className="mr-2" /> Karty
+      <TabsTrigger value="karty" className="flex items-center px-2">
+        <CreditCard className="w-4 h-4 mr-1" /> Karty
       </TabsTrigger>
-      
-      <TabsTrigger
-        value="rundy"
-        className={`flex items-center ${
-          activeTab === 'rundy' ? 'bg-neon-purple text-white' : 'text-white/70'
-        }`}
-      >
-        <BarChart size={16} className="mr-2" /> Rundy
+      <TabsTrigger value="rundy" className="flex items-center px-2">
+        <Layers className="w-4 h-4 mr-1" /> Rundy
       </TabsTrigger>
-      
-      <TabsTrigger
-        value="motywy"
-        className={`flex items-center ${
-          activeTab === 'motywy' ? 'bg-neon-pink text-white' : 'text-white/70'
-        }`}
-      >
-        <Palette size={16} className="mr-2" /> Motywy
+      <TabsTrigger value="motywy" className="flex items-center px-2">
+        <Palette className="w-4 h-4 mr-1" /> Motywy
       </TabsTrigger>
-      
-      <TabsTrigger
-        value="dzwieki"
-        className={`flex items-center ${
-          activeTab === 'dzwieki' ? 'bg-neon-blue/70 text-white' : 'text-white/70'
-        }`}
-      >
-        <Volume2 size={16} className="mr-2" /> Dźwięki
+      <TabsTrigger value="dzwieki" className="flex items-center px-2">
+        <Volume2 className="w-4 h-4 mr-1" /> Dźwięki
       </TabsTrigger>
-      
-      <TabsTrigger
-        value="role"
-        className={`flex items-center ${
-          activeTab === 'role' ? 'bg-neon-green/70 text-black' : 'text-white/70'
-        }`}
-      >
-        <UserCog size={16} className="mr-2" /> Role
+      <TabsTrigger value="role" className="flex items-center px-2">
+        <ShieldCheck className="w-4 h-4 mr-1" /> Role
       </TabsTrigger>
-      
-      <TabsTrigger
-        value="ranking"
-        className={`flex items-center ${
-          activeTab === 'ranking' ? 'bg-neon-yellow/70 text-black' : 'text-white/70'
-        }`}
-      >
-        <Trophy size={16} className="mr-2" /> Ranking
+      <TabsTrigger value="ranking" className="flex items-center px-2">
+        <Trophy className="w-4 h-4 mr-1" /> Ranking
       </TabsTrigger>
-      
-      <TabsTrigger
-        value="kolo"
-        className={`flex items-center ${
-          activeTab === 'kolo' ? 'bg-neon-purple/70 text-white' : 'text-white/70'
-        }`}
-      >
-        <PieChart size={16} className="mr-2" /> Koło
+      <TabsTrigger value="kolo" className="flex items-center px-2">
+        <PieChart className="w-4 h-4 mr-1" /> Koło
       </TabsTrigger>
-      
-      <TabsTrigger
-        value="automatyzacja"
-        className={`flex items-center ${
-          activeTab === 'automatyzacja' ? 'bg-neon-pink/70 text-white' : 'text-white/70'
-        }`}
-      >
-        <BotIcon size={16} className="mr-2" /> Boty
+      <TabsTrigger value="automatyzacja" className="flex items-center px-2">
+        <Bot className="w-4 h-4 mr-1" /> Automatyzacja
       </TabsTrigger>
-      
-      <TabsTrigger
-        value="haslo"
-        className={`flex items-center ${
-          activeTab === 'haslo' ? 'bg-neon-blue/40 text-white' : 'text-white/70'
-        }`}
-      >
-        <Lock size={16} className="mr-2" /> Hasło
+      <TabsTrigger value="diagnostyka" className="flex items-center px-2">
+        <Bug className="w-4 h-4 mr-1" /> Diagnostyka
       </TabsTrigger>
-      
-      <TabsTrigger
-        value="testy"
-        className={`flex items-center ${
-          activeTab === 'testy' ? 'bg-neon-green/40 text-black' : 'text-white/70'
-        }`}
-      >
-        <TestTube size={16} className="mr-2" /> Testy
+      <TabsTrigger value="backupy" className="flex items-center px-2">
+        <Save className="w-4 h-4 mr-1" /> Backupy
       </TabsTrigger>
-      
-      <TabsTrigger
-        value="kalendarz"
-        className={`flex items-center ${
-          activeTab === 'kalendarz' ? 'bg-neon-yellow/40 text-black' : 'text-white/70'
-        }`}
-      >
-        <Calendar size={16} className="mr-2" /> Kalendarz
+      <TabsTrigger value="haslo" className="flex items-center px-2">
+        <Lock className="w-4 h-4 mr-1" /> Hasło
+      </TabsTrigger>
+      <TabsTrigger value="testy" className="flex items-center px-2">
+        <BarChart className="w-4 h-4 mr-1" /> Testy
+      </TabsTrigger>
+      <TabsTrigger value="kalendarz" className="flex items-center px-2">
+        <Calendar className="w-4 h-4 mr-1" /> Kalendarz
       </TabsTrigger>
     </TabsList>
   );

@@ -1,6 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
+import { GameBackup } from '@/types/game-types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -92,55 +93,119 @@ export async function saveUsedQuestion(questionId: string) {
   }
 }
 
-export async function saveGameEdition(edition: any, editionName: string) {
+export async function saveGameData(data: any, dataId: string) {
   try {
-    // Check if edition with this name already exists
+    // Check if data with this ID already exists
     const { data: existingData, error: getError } = await supabase
       .from('game_settings')
-      .select('value')
-      .eq('id', `edition_${editionName}`)
-      .single();
+      .select('id')
+      .eq('id', dataId)
+      .maybeSingle();
     
-    // Save the edition data
+    // Save the data
     if (existingData) {
-      // Update existing edition
+      // Update existing record
       const { error: updateError } = await supabase
         .from('game_settings')
-        .update({ value: edition })
-        .eq('id', `edition_${editionName}`);
+        .update({ value: data })
+        .eq('id', dataId);
       
       if (updateError) throw updateError;
     } else {
-      // Create new edition
+      // Insert new record
       const { error: insertError } = await supabase
         .from('game_settings')
-        .insert({ id: `edition_${editionName}`, value: edition });
+        .insert({ id: dataId, value: data });
       
       if (insertError) throw insertError;
     }
     
     return { success: true };
   } catch (error) {
-    console.error('Error saving game edition:', error);
+    console.error(`Error saving game data (${dataId}):`, error);
     return { success: false, error };
   }
 }
 
-export async function loadGameEdition(editionName: string) {
+export async function loadGameData(dataId: string) {
   try {
-    // Get edition data
+    // Get data
     const { data, error } = await supabase
       .from('game_settings')
       .select('value')
-      .eq('id', `edition_${editionName}`)
-      .single();
+      .eq('id', dataId)
+      .maybeSingle();
     
     if (error) throw error;
-    if (!data) throw new Error('Edition not found');
+    if (!data) return { success: false, error: new Error('Data not found') };
     
     return { success: true, data: data.value };
   } catch (error) {
-    console.error('Error loading game edition:', error);
+    console.error(`Error loading game data (${dataId}):`, error);
     return { success: false, error };
   }
+}
+
+export async function saveBackup(backup: GameBackup) {
+  try {
+    const { error } = await supabase
+      .from('game_settings')
+      .insert({ 
+        id: `backup_${backup.id}`,
+        value: backup 
+      });
+    
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving backup:', error);
+    return { success: false, error };
+  }
+}
+
+export async function getBackups() {
+  try {
+    const { data, error } = await supabase
+      .from('game_settings')
+      .select('value')
+      .like('id', 'backup_%');
+    
+    if (error) throw error;
+    
+    const backups: GameBackup[] = data
+      ? data.map(item => item.value as unknown as GameBackup)
+      : [];
+    
+    // Sort by timestamp, newest first
+    return { 
+      success: true, 
+      data: backups.sort((a, b) => b.timestamp - a.timestamp)
+    };
+  } catch (error) {
+    console.error('Error getting backups:', error);
+    return { success: false, error, data: [] };
+  }
+}
+
+export async function deleteBackup(backupId: string) {
+  try {
+    const { error } = await supabase
+      .from('game_settings')
+      .delete()
+      .eq('id', `backup_${backupId}`);
+    
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting backup:', error);
+    return { success: false, error };
+  }
+}
+
+export async function saveGameEdition(edition: any, editionName: string) {
+  return saveGameData(edition, `edition_${editionName}`);
+}
+
+export async function loadGameEdition(editionName: string) {
+  return loadGameData(`edition_${editionName}`);
 }

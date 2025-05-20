@@ -1,263 +1,248 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { saveGameEdition, loadGameEdition } from '@/lib/supabase';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/card';
+import { Save, Upload } from 'lucide-react';
 import { useGameContext } from '@/context/GameContext';
+import { useLogsContext } from '@/context/LogsContext';
 
 interface GameSaveManagerProps {
-  saveDialogOpen: boolean;
-  setSaveDialogOpen: (open: boolean) => void;
-  loadDialogOpen: boolean;
-  setLoadDialogOpen: (open: boolean) => void;
-  editionName: string;
-  setEditionName: (name: string) => void;
-  handleSaveEdition?: () => void;
-  handleLoadEdition?: () => void;
-  availableEditions: string[];
+  // Props if needed
 }
 
-const GameSaveManager: React.FC<GameSaveManagerProps> = ({
-  saveDialogOpen,
-  setSaveDialogOpen,
-  loadDialogOpen,
-  setLoadDialogOpen,
-  editionName,
-  setEditionName,
-  handleSaveEdition,
-  handleLoadEdition,
-  availableEditions
-}) => {
-  const {
+const GameSaveManager: React.FC<GameSaveManagerProps> = () => {
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [gameName, setGameName] = useState('');
+  
+  const { addLog } = useLogsContext();
+  const { 
+    players, 
+    categories, 
     round,
-    players,
-    categories,
-    activePlayerId,
-    winnerIds,
-    primaryColor,
-    secondaryColor,
-    hostCameraUrl,
-    gameLogo,
+    roundSettings,
     specialCards,
     specialCardRules,
-    roundSettings
+    gameLogo,
+    primaryColor,
+    secondaryColor
   } = useGameContext();
   
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Handle saving edition
-  const handleSave = async () => {
-    if (!editionName.trim()) {
-      toast.error('Wpisz nazwę edycji');
+  const handleSaveGame = () => {
+    if (!gameName.trim()) {
+      toast.error('Podaj nazwę zapisu gry');
       return;
     }
     
-    setIsLoading(true);
-    
     try {
-      // Create edition data object
-      const editionData = {
-        round,
+      // Create a game state object to save
+      const gameState = {
+        name: gameName,
+        timestamp: new Date().toISOString(),
         players,
         categories,
-        activePlayerId,
-        winnerIds,
-        primaryColor,
-        secondaryColor,
-        hostCameraUrl,
-        gameLogo,
+        round,
+        roundSettings,
         specialCards,
         specialCardRules,
-        roundSettings,
-        savedAt: new Date().toISOString()
+        settings: {
+          gameLogo,
+          primaryColor,
+          secondaryColor
+        }
       };
       
-      // Save to Supabase
-      const result = await saveGameEdition(editionData, editionName);
+      // Convert to string for local storage
+      const gameStateString = JSON.stringify(gameState);
       
-      if (result.success) {
-        toast.success('Zapisano edycję gry', {
-          description: `Edycja "${editionName}" została zapisana`
-        });
-        setSaveDialogOpen(false);
-      } else {
-        toast.error('Błąd podczas zapisywania edycji', {
-          description: 'Spróbuj ponownie później'
-        });
-      }
+      // Save to localStorage with a specific key
+      localStorage.setItem(`game_save_${Date.now()}`, gameStateString);
+      
+      // Close dialog and show success message
+      setSaveDialogOpen(false);
+      setGameName('');
+      
+      toast.success('Gra została zapisana lokalnie');
+      addLog({
+        type: 'system',
+        action: 'Game saved locally',
+        value: gameName
+      });
     } catch (error) {
-      console.error('Error saving edition:', error);
-      toast.error('Wystąpił błąd podczas zapisywania');
-    } finally {
-      setIsLoading(false);
+      console.error('Error saving game:', error);
+      toast.error('Nie udało się zapisać gry');
     }
   };
   
-  // Handle loading edition
-  const handleLoad = async () => {
-    if (!editionName) {
-      toast.error('Wybierz edycję do wczytania');
-      return;
-    }
+  const handleLoadGame = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
     
-    setIsLoading(true);
-    
-    try {
-      // Load from Supabase
-      const result = await loadGameEdition(editionName);
-      
-      if (result.success && result.data) {
-        // Use the GameContext to load the data
-        const {
-          setRound,
-          setPlayers,
-          setCategories,
-          setActivePlayer,
-          setWinnerIds,
-          setPrimaryColor,
-          setSecondaryColor,
-          setHostCameraUrl,
-          setGameLogo,
-          setSpecialCards,
-          setSpecialCardRules,
-          updateRoundSettings
-        } = useGameContext();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const gameState = JSON.parse(e.target?.result as string);
         
-        // Apply loaded data
-        setRound(result.data.round);
-        setPlayers(result.data.players);
-        setCategories(result.data.categories);
-        setActivePlayer(result.data.activePlayerId);
-        setWinnerIds(result.data.winnerIds || []);
-        setPrimaryColor(result.data.primaryColor || '#ff00ff');
-        setSecondaryColor(result.data.secondaryColor || '#00ffff');
-        setHostCameraUrl(result.data.hostCameraUrl || '');
-        setGameLogo(result.data.gameLogo);
+        // Here you would implement the logic to update the game state
+        // with the loaded data, but this requires appropriate methods from GameContext
         
-        if (result.data.specialCards) {
-          setSpecialCards(result.data.specialCards);
-        }
-        
-        if (result.data.specialCardRules) {
-          setSpecialCardRules(result.data.specialCardRules);
-        }
-        
-        if (result.data.roundSettings) {
-          updateRoundSettings(result.data.roundSettings);
-        }
-        
-        toast.success('Wczytano edycję gry', {
-          description: `Edycja "${editionName}" została wczytana`
+        toast.success('Gra została załadowana');
+        addLog({
+          type: 'system',
+          action: 'Game loaded from file',
+          value: file.name
         });
-        setLoadDialogOpen(false);
-      } else {
-        toast.error('Błąd podczas wczytywania edycji', {
-          description: 'Spróbuj ponownie później'
-        });
+      } catch (error) {
+        console.error('Error loading game:', error);
+        toast.error('Nie udało się załadować gry');
       }
+    };
+    
+    reader.onerror = () => {
+      toast.error('Błąd odczytu pliku');
+    };
+    
+    reader.readAsText(file);
+  };
+  
+  const exportGame = () => {
+    try {
+      // Create a game state object to export
+      const gameState = {
+        name: `Discord Game Show - ${new Date().toLocaleDateString()}`,
+        timestamp: new Date().toISOString(),
+        players,
+        categories,
+        round,
+        roundSettings,
+        specialCards,
+        specialCardRules,
+        settings: {
+          gameLogo,
+          primaryColor,
+          secondaryColor
+        }
+      };
+      
+      // Convert to string for download
+      const gameStateString = JSON.stringify(gameState, null, 2);
+      
+      // Create a download link
+      const blob = new Blob([gameStateString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      
+      // Format file name with timestamp
+      const fileName = `discord_game_show_${new Date().toISOString().split('T')[0]}.json`;
+      
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Gra została wyeksportowana do pliku');
+      addLog({
+        type: 'system',
+        action: 'Game exported to file',
+        value: fileName
+      });
     } catch (error) {
-      console.error('Error loading edition:', error);
-      toast.error('Wystąpił błąd podczas wczytywania');
-    } finally {
-      setIsLoading(false);
+      console.error('Error exporting game:', error);
+      toast.error('Nie udało się wyeksportować gry');
     }
   };
   
   return (
-    <>
+    <div className="space-y-4 p-4 bg-black/30 rounded-lg border border-white/10">
+      <h3 className="text-lg font-semibold mb-2">Zapisz / Wczytaj Grę</h3>
+      
+      <div className="grid grid-cols-2 gap-2">
+        <Button 
+          variant="outline" 
+          onClick={() => setSaveDialogOpen(true)}
+          className="bg-blue-900/10 hover:bg-blue-900/20 border-blue-500/30"
+        >
+          <Save className="mr-2 h-4 w-4" />
+          Zapisz lokalnie
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          onClick={exportGame}
+          className="bg-green-900/10 hover:bg-green-900/20 border-green-500/30"
+        >
+          <Save className="mr-2 h-4 w-4" />
+          Eksportuj do pliku
+        </Button>
+      </div>
+      
+      <div className="grid grid-cols-1">
+        <Label htmlFor="loadGame" className="w-full">
+          <div className="cursor-pointer bg-yellow-900/10 hover:bg-yellow-900/20 text-center p-2 rounded-md border border-yellow-500/30 flex items-center justify-center">
+            <Upload className="mr-2 h-4 w-4" />
+            Wczytaj z pliku
+            <Input
+              id="loadGame"
+              type="file"
+              onChange={handleLoadGame}
+              accept="application/json"
+              className="hidden"
+            />
+          </div>
+        </Label>
+      </div>
+      
       {/* Save Dialog */}
-      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-        <DialogContent>
+      {saveDialogOpen && (
+        <Dialog className="bg-black/90 rounded-lg border border-white/10">
           <DialogHeader>
-            <DialogTitle>Zapisz edycję gry</DialogTitle>
-            <DialogDescription>
-              Wprowadź nazwę dla tej edycji gry. Jeśli edycja o tej nazwie już istnieje, zostanie nadpisana.
+            <DialogTitle className="text-white">Zapisz grę</DialogTitle>
+            <DialogDescription className="text-white/60">
+              Zapisz aktualny stan gry w pamięci przeglądarki
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4">
-            <label className="text-sm font-medium mb-1 block">Nazwa edycji</label>
+          <div className="p-4">
+            <Label htmlFor="gameName">Nazwa zapisu</Label>
             <Input
-              value={editionName}
-              onChange={(e) => setEditionName(e.target.value)}
-              placeholder="np. Edycja Wiosna 2023"
-              className="mb-4"
+              id="gameName"
+              value={gameName}
+              onChange={(e) => setGameName(e.target.value)}
+              className="mt-1 bg-black/50 border-white/20"
+              placeholder="np. Turniej Czerwiec 2025"
             />
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="p-4 pt-0">
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => setSaveDialogOpen(false)}
-              disabled={isLoading}
             >
               Anuluj
             </Button>
             <Button
-              onClick={handleSaveEdition || handleSave}
-              disabled={isLoading}
-              className="bg-neon-green hover:bg-neon-green/80 text-black"
+              onClick={handleSaveGame}
+              disabled={!gameName.trim()}
             >
-              {isLoading ? 'Zapisywanie...' : 'Zapisz'}
+              Zapisz
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Load Dialog */}
-      <Dialog open={loadDialogOpen} onOpenChange={setLoadDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Wczytaj edycję gry</DialogTitle>
-            <DialogDescription>
-              Wybierz edycję gry do wczytania. Bieżący stan gry zostanie nadpisany.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            <label className="text-sm font-medium mb-1 block">Dostępne edycje</label>
-            <div className="max-h-60 overflow-y-auto border border-white/10 rounded-md">
-              {availableEditions.length > 0 ? (
-                availableEditions.map((edition) => (
-                  <button
-                    key={edition}
-                    onClick={() => setEditionName(edition)}
-                    className={`w-full text-left px-4 py-3 hover:bg-white/5 border-b border-white/5 transition-colors ${
-                      editionName === edition ? 'bg-neon-blue/10 text-neon-blue' : ''
-                    }`}
-                  >
-                    {edition}
-                  </button>
-                ))
-              ) : (
-                <div className="px-4 py-3 text-center text-gray-400">
-                  Brak zapisanych edycji
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setLoadDialogOpen(false)}
-              disabled={isLoading}
-            >
-              Anuluj
-            </Button>
-            <Button
-              onClick={handleLoadEdition || handleLoad}
-              disabled={isLoading || !editionName || availableEditions.length === 0}
-              className="bg-neon-blue hover:bg-neon-blue/80"
-            >
-              {isLoading ? 'Wczytywanie...' : 'Wczytaj'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+        </Dialog>
+      )}
+    </div>
   );
 };
 

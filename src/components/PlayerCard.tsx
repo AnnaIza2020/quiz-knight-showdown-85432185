@@ -1,199 +1,146 @@
 
-import React, { useEffect, memo } from 'react';
+import React from 'react';
 import { Player } from '@/types/game-types';
-import { Heart } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useGameContext } from '@/context/GameContext';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getRandomNeonColor } from '@/utils/utils';
 
 interface PlayerCardProps {
   player: Player;
-  size?: 'sm' | 'md' | 'lg';
-  showHealthBar?: boolean;
-  showLives?: boolean;
-  className?: string;
+  isSelected?: boolean;
 }
 
-// Używamy memo do optymalizacji renderowania komponentu
-const PlayerCard: React.FC<PlayerCardProps> = memo(({
-  player,
-  size = 'md',
-  showHealthBar = true,
-  showLives = true,
-  className
-}) => {
+const PlayerCard: React.FC<PlayerCardProps> = ({ player, isSelected = false }) => {
   const { playSound } = useGameContext();
   
-  // Card sizes
-  const cardSizes = {
-    sm: 'h-28',
-    md: 'h-36',
-    lg: 'h-48'
+  // Format health percentage for display
+  const formatHealth = (health: number) => {
+    return Math.max(0, Math.min(100, health)) + '%';
   };
   
-  // Font sizes
-  const fontSizes = {
-    sm: 'text-sm',
-    md: 'text-base',
-    lg: 'text-lg'
+  // Get appropriate color for health bar
+  const getHealthColor = (health: number) => {
+    if (health > 70) return 'bg-green-500';
+    if (health > 40) return 'bg-yellow-500';
+    return 'bg-red-500';
   };
   
-  // Health bar sizes
-  const healthBarSizes = {
-    sm: 'h-1',
-    md: 'h-2',
-    lg: 'h-3'
+  // Get appropriate text for lives
+  const getLivesText = (lives: number) => {
+    if (lives === 0) return 'Brak żyć';
+    if (lives === 1) return '1 życie';
+    if (lives < 5) return `${lives} życia`;
+    return `${lives} żyć`;
   };
   
-  // Calculate health percentage
-  const healthPercentage = Math.max(0, Math.min(100, player.health));
-  
-  // Determine health bar color
-  let healthColor = 'bg-neon-green';
-  if (healthPercentage <= 25) {
-    healthColor = 'bg-neon-red';
-  } else if (healthPercentage <= 50) {
-    healthColor = 'bg-neon-yellow';
-  }
-  
-  // Border style based on player status
-  let borderStyle = 'border-white/20';
-  if (player.isActive) {
-    borderStyle = 'border-neon-green shadow-[0_0_10px_rgba(0,255,0,0.5)]';
-  } else if (player.isEliminated) {
-    borderStyle = 'border-neon-red/50';
-  }
-  
-  // Play elimination sound when player gets eliminated
-  useEffect(() => {
-    if (player.isEliminated || player.health === 0 || player.lives === 0) {
-      playSound('failure');
+  // Handle player status indicator
+  const getStatusColor = () => {
+    if (player.isEliminated) {
+      return 'bg-red-500';
+    } else if (player.isActive) {
+      playSound('success');
+      return 'bg-green-500 animate-pulse';
+    } else {
+      return 'bg-blue-500';
     }
-  }, [player.isEliminated, player.health, player.lives, playSound]);
+  };
+  
+  // Get player's camera stream if available
+  const renderCamera = () => {
+    if (player.cameraUrl || player.camera_url) {
+      const url = player.cameraUrl || player.camera_url;
+      return (
+        <div className="mb-2 aspect-video overflow-hidden rounded-md bg-black">
+          <iframe 
+            src={url}
+            title={`${player.name}'s camera`}
+            className="w-full h-full"
+            allowFullScreen
+          />
+        </div>
+      );
+    }
+    return null;
+  };
+  
+  // Render player avatar
+  const renderAvatar = () => {
+    const avatarUrl = player.avatar || player.avatar_url;
+    const initials = player.name.substring(0, 2).toUpperCase();
+    const bgColor = player.color || getRandomNeonColor();
+    
+    return (
+      <Avatar className="h-16 w-16 border-2 border-white/20">
+        {avatarUrl ? (
+          <AvatarImage src={avatarUrl} alt={player.name} />
+        ) : (
+          <AvatarFallback style={{ backgroundColor: bgColor }}>
+            {initials}
+          </AvatarFallback>
+        )}
+      </Avatar>
+    );
+  };
   
   return (
     <motion.div 
-      className={cn(
-        cardSizes[size], 
-        'rounded-md overflow-hidden border-2',
-        borderStyle,
-        'bg-black/60 backdrop-blur-sm flex flex-col',
-        'transition-all duration-300',
-        player.isEliminated ? 'grayscale opacity-60' : '',
-        className
-      )}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3 }}
+      className={`bg-black/40 backdrop-blur-sm border rounded-lg overflow-hidden
+        ${player.isEliminated ? 'border-red-500/30 opacity-70' : isSelected ? 'border-neon-green' : 'border-white/10'}
+      `}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 10 }}
     >
-      {/* Player camera */}
-      <div className="relative flex-grow bg-black/30">
-        {player.cameraUrl ? (
-          <iframe 
-            src={player.cameraUrl} 
-            title={`Player ${player.name}`} 
-            className="w-full h-full"
-            allowFullScreen
-            loading="lazy" // Dodajemy lazy loading dla iframes
-          />
-        ) : player.avatar ? (
-          <img 
-            src={player.avatar} 
-            alt={player.name} 
-            className="w-full h-full object-cover"
-            loading="lazy" // Dodajemy lazy loading dla obrazów
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-black/20">
-            <span className={cn(fontSizes[size], 'text-white/30')}>No Camera</span>
-          </div>
-        )}
-        
-        {/* Player status indicator */}
-        {player.isActive && (
-          <motion.div 
-            className="absolute top-2 right-2 w-3 h-3 rounded-full bg-neon-green"
-            animate={{ scale: [1, 1.3, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          />
-        )}
-        
-        {/* Lives display - show in all rounds except round 1 */}
-        {showLives && player.lives > 0 && (
-          <div className="absolute bottom-2 right-2 flex">
-            <AnimatePresence>
-              {Array.from({ length: player.lives }).map((_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  className={cn(
-                    'ml-0.5',
-                    size === 'sm' ? 'w-3 h-3' : size === 'md' ? 'w-4 h-4' : 'w-5 h-5'
-                  )}
-                >
-                  <Heart 
-                    className={cn(
-                      'fill-neon-red text-neon-red',
-                      size === 'sm' ? 'w-3 h-3' : size === 'md' ? 'w-4 h-4' : 'w-5 h-5'
-                    )}
-                  />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
-      </div>
-      
-      {/* Player info bar */}
-      <div className={cn('p-1', size === 'lg' ? 'p-2' : '')}>
-        <div className="flex justify-between items-center">
-          <span className={cn('font-bold text-white truncate', fontSizes[size])}>
-            {player.name}
-          </span>
-          <span className={cn('text-neon-yellow font-bold', size === 'sm' ? 'text-xs' : fontSizes[size])}>
-            {player.points} pts
+      {/* Player status indicator */}
+      <div className="flex justify-between items-center p-2 border-b border-white/10">
+        <div className="flex items-center">
+          <div className={`w-2 h-2 rounded-full ${getStatusColor()} mr-2`} />
+          <h3 className="font-medium truncate">{player.name}</h3>
+        </div>
+        <div className="flex items-center space-x-1">
+          <span className="text-xs font-mono bg-black/30 px-1.5 py-0.5 rounded">
+            {player.lives > 0 ? getLivesText(player.lives) : (
+              <span className="text-red-400">Brak żyć</span>
+            )}
           </span>
         </div>
+      </div>
+      
+      {/* Player camera if available */}
+      {renderCamera()}
+      
+      {/* Player info */}
+      <div className="p-3">
+        <div className="flex items-center space-x-3 mb-3">
+          {renderAvatar()}
+          
+          <div className="flex-1">
+            <div className="flex justify-between">
+              <div className="text-xl font-bold text-white">{player.points}</div>
+              <div className="text-xs opacity-70">punkty</div>
+            </div>
+          </div>
+        </div>
         
-        {/* Health bar for round 1 */}
-        {showHealthBar && (
-          <div className="mt-1 bg-gray-800 rounded-full overflow-hidden">
-            <motion.div 
-              className={cn('transition-all', healthBarSizes[size], healthColor)}
-              initial={{ width: 0 }}
-              animate={{ width: `${healthPercentage}%` }}
-              transition={{ duration: 0.5 }}
+        {/* Health bar */}
+        <div className="mt-1">
+          <div className="flex justify-between text-xs mb-1">
+            <span>Życie</span>
+            <span>{formatHealth(player.health)}</span>
+          </div>
+          <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden">
+            <div 
+              className={`h-full ${getHealthColor(player.health)} transition-all duration-500`}
+              style={{ width: formatHealth(player.health) }}
             />
           </div>
-        )}
-      </div>
-      
-      {/* Eliminated overlay */}
-      {player.isEliminated && (
-        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-          <span className={cn('font-bold text-neon-red', fontSizes[size])}>WYELIMINOWANY</span>
         </div>
-      )}
+        
+        {/* Special cards section - would be implemented separately */}
+      </div>
     </motion.div>
   );
-}, (prevProps, nextProps) => {
-  // Optymalizacja renderowania - porównanie istotnych właściwości
-  return (
-    prevProps.player.id === nextProps.player.id &&
-    prevProps.player.name === nextProps.player.name &&
-    prevProps.player.points === nextProps.player.points &&
-    prevProps.player.health === nextProps.player.health &&
-    prevProps.player.lives === nextProps.player.lives &&
-    prevProps.player.isActive === nextProps.player.isActive &&
-    prevProps.player.isEliminated === nextProps.player.isEliminated &&
-    prevProps.size === nextProps.size &&
-    prevProps.showHealthBar === nextProps.showHealthBar &&
-    prevProps.showLives === nextProps.showLives
-  );
-});
-
-PlayerCard.displayName = 'PlayerCard';
+};
 
 export default PlayerCard;

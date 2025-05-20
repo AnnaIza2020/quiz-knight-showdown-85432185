@@ -1,11 +1,9 @@
 
-import React, { useState } from 'react';
-import { Clock, FastForward, Play, Square, Timer, HelpCircle } from 'lucide-react';
-import { GameRound, Question } from '@/types/game-types';
-import CountdownTimer from '../CountdownTimer';
+import React, { useState, useEffect } from 'react';
+import { GameRound } from '@/types/game-types';
+import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
-import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DatabaseIcon, FastForward, TimerReset, TimerOff, Timer } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface TopBarProps {
@@ -21,325 +19,156 @@ const TopBar: React.FC<TopBarProps> = ({
   stopTimer,
   handleAdvanceToRound
 }) => {
-  const { categories, selectQuestion, playSound, markQuestionAsUsed } = useGameContext();
-  const [randomQuestionDialogOpen, setRandomQuestionDialogOpen] = useState(false);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<number | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { timerRunning, timerSeconds, roundSettings } = useGameContext();
+  const [roundName, setRoundName] = useState<string>('');
+  const [availableEditions, setAvailableEditions] = useState<string[]>([]);
   
-  // Get all used questions from localStorage
-  const getUsedQuestionIds = (): string[] => {
-    const usedQuestionsJson = localStorage.getItem('gameShowUsedQuestions');
-    return usedQuestionsJson ? JSON.parse(usedQuestionsJson) : [];
-  };
-  
-  // Add a question to used questions
-  const addUsedQuestion = async (questionId: string) => {
-    const usedQuestions = getUsedQuestionIds();
-    if (!usedQuestions.includes(questionId)) {
-      const newUsedQuestions = [...usedQuestions, questionId];
-      localStorage.setItem('gameShowUsedQuestions', JSON.stringify(newUsedQuestions));
-      
-      try {
-        await saveUsedQuestion(questionId);
-      } catch (error) {
-        console.error("Error saving used question:", error);
-      }
-    }
-  };
-  
-  // New function to save used questions to Supabase
-  const saveUsedQuestion = async (questionId: string) => {
-    // Get existing used questions
-    const { data: existingData, error: getError } = await supabase
-      .from('game_settings')
-      .select('value')
-      .eq('id', 'used_questions')
-      .single();
-    
-    if (getError && getError.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
-      throw getError;
-    }
-    
-    // Prepare the list of used questions
-    let usedQuestions: string[] = [];
-    if (existingData?.value && Array.isArray(existingData.value)) {
-      usedQuestions = existingData.value as string[];
-    }
-    
-    // Add the new question ID if not already present
-    if (!usedQuestions.includes(questionId)) {
-      usedQuestions.push(questionId);
-    }
-    
-    // Save the updated list
-    if (existingData) {
-      // Update existing record
-      const { error: updateError } = await supabase
-        .from('game_settings')
-        .update({ value: usedQuestions })
-        .eq('id', 'used_questions');
-      
-      if (updateError) throw updateError;
-    } else {
-      // Insert new record
-      const { error: insertError } = await supabase
-        .from('game_settings')
-        .insert({ id: 'used_questions', value: usedQuestions });
-      
-      if (insertError) throw insertError;
-    }
-  };
-  
-  // Handle random question selection
-  const handleRandomQuestion = () => {
-    // Get all questions from all categories
-    const allQuestions = categories.flatMap(category => 
-      category.questions.map(question => ({
-        ...question,
-        categoryName: category.name
-      }))
-    );
-    
-    // Get used question ids
-    const usedQuestionIds = getUsedQuestionIds();
-    
-    // Apply filters if selected
-    let filteredQuestions = [...allQuestions];
-    
-    if (selectedCategory) {
-      filteredQuestions = filteredQuestions.filter(q => q.categoryName === selectedCategory);
-    }
-    
-    if (selectedDifficulty !== null) {
-      filteredQuestions = filteredQuestions.filter(q => q.difficulty === selectedDifficulty);
-    }
-    
-    // Filter out used questions
-    const availableQuestions = filteredQuestions.filter(q => !usedQuestionIds.includes(q.id));
-    
-    if (availableQuestions.length === 0) {
-      toast.error('Brak dostępnych pytań spełniających kryteria');
-      return;
-    }
-    
-    // Get random question
-    const randomIndex = Math.floor(Math.random() * availableQuestions.length);
-    const randomQuestion = availableQuestions[randomIndex];
-    
-    // Select question
-    selectQuestion(randomQuestion);
-    
-    // Mark as used
-    markQuestionAsUsed(randomQuestion.id);
-    addUsedQuestion(randomQuestion.id);
-    
-    // Close dialog
-    setRandomQuestionDialogOpen(false);
-    
-    // Play sound effect
-    playSound('card-reveal');
-    
-    // Show toast
-    toast.success('Wylosowano nowe pytanie', {
-      description: `${randomQuestion.categoryName} - ${randomQuestion.difficulty} pkt`
-    });
-  };
-  
-  // Generate round name based on current round
-  const getRoundName = () => {
-    switch (round) {
+  // Effect to determine round name based on current round
+  useEffect(() => {
+    switch(round) {
       case GameRound.SETUP:
-        return "Przygotowanie";
+        setRoundName('Przygotowanie');
+        break;
       case GameRound.ROUND_ONE:
-        return "Runda 1: Zróżnicowana Wiedza z Polskiego Internetu";
+        setRoundName('Runda 1 - Eliminacje');
+        break;
       case GameRound.ROUND_TWO:
-        return "Runda 2: 5 Sekund";
+        setRoundName('Runda 2 - Szybka Odpowiedź');
+        break;
       case GameRound.ROUND_THREE:
-        return "Runda 3: Koło Chaosu";
+        setRoundName('Runda 3 - Koło Fortuny');
+        break;
       case GameRound.FINISHED:
-        return "Gra Zakończona";
+        setRoundName('Zakończono');
+        break;
       default:
-        return "Nieznana runda";
+        setRoundName('Nieznana runda');
     }
-  };
+  }, [round]);
   
-  // Determine which timer buttons to show based on the current round
-  const getTimerButtons = () => {
-    if (round === GameRound.ROUND_ONE) {
-      return (
-        <>
-          <button
-            onClick={() => handleStartTimer(30)}
-            className="bg-black border border-neon-blue text-neon-blue hover:bg-neon-blue/10 py-2 px-3 rounded-md flex items-center"
-          >
-            <Timer className="h-4 w-4 mr-1" />
-            30s
-          </button>
-          <button
-            onClick={() => handleStartTimer(60)}
-            className="bg-black border border-neon-blue text-neon-blue hover:bg-neon-blue/10 py-2 px-3 rounded-md flex items-center"
-          >
-            <Timer className="h-4 w-4 mr-1" />
-            60s
-          </button>
-        </>
-      );
-    }
+  // Load available editions when component mounts
+  useEffect(() => {
+    const loadEditions = async () => {
+      try {
+        // We need to modify this to work with the current Supabase structure
+        // First, we fetch all game_settings records
+        const { data, error } = await supabase
+          .from('game_settings')
+          .select('id');
+        
+        if (error) {
+          console.error('Error fetching editions:', error);
+          return;
+        }
+        
+        // Filter out records that start with 'edition_'
+        const editionIds = data
+          .filter(record => record.id.startsWith('edition_'))
+          .map(record => record.id.replace('edition_', ''));
+        
+        setAvailableEditions(editionIds);
+      } catch (err) {
+        console.error('Failed to load editions:', err);
+      }
+    };
     
-    if (round === GameRound.ROUND_TWO) {
-      return (
-        <button
-          onClick={() => handleStartTimer(5)}
-          className="bg-black border border-neon-yellow text-neon-yellow hover:bg-neon-yellow/10 py-2 px-3 rounded-md flex items-center"
-        >
-          <Play className="h-4 w-4 mr-1" />
-          5s
-        </button>
-      );
-    }
-    
-    if (round === GameRound.ROUND_THREE) {
-      return (
-        <button
-          onClick={() => handleStartTimer(30)}
-          className="bg-black border border-neon-purple text-neon-purple hover:bg-neon-purple/10 py-2 px-3 rounded-md flex items-center"
-        >
-          <Timer className="h-4 w-4 mr-1" />
-          30s
-        </button>
-      );
-    }
-    
-    return null;
-  };
+    loadEditions();
+  }, []);
   
-  // Get the next round button if applicable
-  const getNextRoundButton = () => {
-    if (round === GameRound.ROUND_ONE) {
-      return (
-        <button
-          onClick={() => handleAdvanceToRound(GameRound.ROUND_TWO)}
-          className="bg-black border border-neon-green text-neon-green hover:bg-neon-green/10 py-2 px-3 rounded-md flex items-center"
-        >
-          <FastForward className="h-4 w-4 mr-1" />
-          Przejdź do Rundy 2
-        </button>
-      );
+  // Get the appropriate timer duration for the current round
+  const getTimerDuration = (): number => {
+    switch(round) {
+      case GameRound.ROUND_ONE:
+        return roundSettings?.timerDurations?.round1 || 30;
+      case GameRound.ROUND_TWO:
+        return roundSettings?.timerDurations?.round2 || 5;
+      case GameRound.ROUND_THREE:
+        return roundSettings?.timerDurations?.round3 || 30;
+      default:
+        return 30;
     }
-    
-    if (round === GameRound.ROUND_TWO) {
-      return (
-        <button
-          onClick={() => handleAdvanceToRound(GameRound.ROUND_THREE)}
-          className="bg-black border border-neon-green text-neon-green hover:bg-neon-green/10 py-2 px-3 rounded-md flex items-center"
-        >
-          <FastForward className="h-4 w-4 mr-1" />
-          Przejdź do Rundy 3
-        </button>
-      );
-    }
-    
-    return null;
   };
   
   return (
-    <div className="bg-black/70 backdrop-blur-md p-4 rounded-lg border border-white/10 mb-4 flex flex-wrap justify-between items-center gap-y-3">
-      {/* Left section - Round info */}
-      <div className="flex items-center">
-        <h1 className="text-2xl font-bold text-white mr-2">
-          {getRoundName()}
-        </h1>
-      </div>
-      
-      {/* Middle section - Timer */}
-      <div className="flex gap-2">
-        <CountdownTimer size="md" />
+    <div className="flex justify-between items-center p-4 bg-black/50 backdrop-blur-md rounded-lg border border-white/10 mb-4">
+      {/* Left - Round Name and Buttons */}
+      <div className="flex items-center space-x-2">
+        <div>
+          <span className="text-white/60 text-sm mr-1">Runda:</span>
+          <span className="font-bold">{roundName}</span>
+        </div>
         
-        {round !== GameRound.SETUP && round !== GameRound.FINISHED && (
-          <button
-            onClick={() => setRandomQuestionDialogOpen(true)}
-            className="bg-black border border-neon-yellow text-neon-yellow hover:bg-neon-yellow/10 py-2 px-3 rounded-md flex items-center ml-2"
-          >
-            <HelpCircle className="h-4 w-4 mr-1" />
-            Losuj Pytanie
-          </button>
-        )}
-      </div>
-      
-      {/* Right section - Actions */}
-      <div className="flex gap-2">
-        {getTimerButtons()}
-        
-        <button
-          onClick={stopTimer}
-          className="bg-black border border-neon-red text-neon-red hover:bg-neon-red/10 py-2 px-3 rounded-md flex items-center"
-        >
-          <Square className="h-4 w-4 mr-1" />
-          Stop
-        </button>
-        
-        {getNextRoundButton()}
-      </div>
-      
-      {/* Random Question Dialog */}
-      <Dialog open={randomQuestionDialogOpen} onOpenChange={setRandomQuestionDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Losuj pytanie</DialogTitle>
-          </DialogHeader>
+        <div className="ml-4 space-x-1">
+          {round === GameRound.ROUND_ONE && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleAdvanceToRound(GameRound.ROUND_TWO)}
+              className="text-xs bg-neon-green/10 hover:bg-neon-green/20"
+              title="Przejdź do Rundy 2"
+            >
+              <FastForward size={14} className="mr-1" />
+              Runda 2
+            </Button>
+          )}
           
-          <div className="py-4">
-            <h3 className="mb-2 font-medium">Kategoria</h3>
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              <button
-                className={`p-2 rounded text-center ${selectedCategory === null ? 'bg-neon-blue/20 border border-neon-blue' : 'bg-black/50 border border-white/20'}`}
-                onClick={() => setSelectedCategory(null)}
-              >
-                Wszystkie
-              </button>
-              
-              {categories.map(category => (
-                <button
-                  key={category.id}
-                  className={`p-2 rounded text-center ${selectedCategory === category.name ? 'bg-neon-blue/20 border border-neon-blue' : 'bg-black/50 border border-white/20'}`}
-                  onClick={() => setSelectedCategory(category.name)}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
-            
-            <h3 className="mb-2 font-medium">Poziom trudności</h3>
-            <div className="grid grid-cols-4 gap-2 mb-6">
-              <button
-                className={`p-2 rounded text-center ${selectedDifficulty === null ? 'bg-neon-blue/20 border border-neon-blue' : 'bg-black/50 border border-white/20'}`}
-                onClick={() => setSelectedDifficulty(null)}
-              >
-                Wszystkie
-              </button>
-              
-              {[5, 10, 15, 20].map(difficulty => (
-                <button
-                  key={difficulty}
-                  className={`p-2 rounded text-center ${selectedDifficulty === difficulty ? 'bg-neon-blue/20 border border-neon-blue' : 'bg-black/50 border border-white/20'}`}
-                  onClick={() => setSelectedDifficulty(difficulty)}
-                >
-                  {difficulty} pkt
-                </button>
-              ))}
-            </div>
-            
-            <div className="flex justify-end">
-              <button
-                onClick={handleRandomQuestion}
-                className="px-4 py-2 bg-neon-yellow hover:bg-neon-yellow/80 text-black font-medium rounded"
-              >
-                Losuj Pytanie
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          {round === GameRound.ROUND_TWO && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleAdvanceToRound(GameRound.ROUND_THREE)}
+              className="text-xs bg-neon-green/10 hover:bg-neon-green/20"
+              title="Przejdź do Rundy 3"
+            >
+              <FastForward size={14} className="mr-1" />
+              Runda 3
+            </Button>
+          )}
+        </div>
+      </div>
+      
+      {/* Right - Timer Controls */}
+      <div className="flex items-center space-x-2">
+        <span className={`font-mono ${timerRunning ? 'text-neon-green' : 'text-white/60'}`}>
+          {timerRunning ? (
+            `${timerSeconds}s`
+          ) : (
+            'Timer zatrzymany'
+          )}
+        </span>
+        
+        {!timerRunning ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleStartTimer(getTimerDuration())}
+            title="Rozpocznij timer"
+          >
+            <Timer size={16} />
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={stopTimer}
+            title="Zatrzymaj timer"
+          >
+            <TimerOff size={16} />
+          </Button>
+        )}
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            stopTimer();
+            handleStartTimer(getTimerDuration());
+          }}
+          title="Zresetuj timer"
+        >
+          <TimerReset size={16} />
+        </Button>
+      </div>
     </div>
   );
 };

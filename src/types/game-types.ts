@@ -55,6 +55,17 @@ export interface Player {
   uniqueLinkToken?: string; // Used for player access links
 }
 
+// Log entry type for the action history system
+export interface LogEntry {
+  id: string;
+  timestamp: number;
+  type: 'answer' | 'card' | 'score' | 'life' | 'round' | 'timer' | 'system' | 'player' | 'elimination';
+  player?: string; // Player ID or nickname
+  action: string;
+  value?: any;
+  metadata?: Record<string, any>;
+}
+
 // Sound effect types used across components
 export type SoundEffect = 
   | 'success' 
@@ -108,6 +119,25 @@ export interface SpecialCardAwardRule {
   params?: any; // Used in components
 }
 
+// Backup structure for the backup/restore system
+export interface GameBackup {
+  id: string;
+  name: string;
+  timestamp: number;
+  gameState: {
+    round: GameRound;
+    players: Player[];
+    categories: Category[];
+    specialCards: SpecialCard[];
+    specialCardRules: SpecialCardAwardRule[];
+    settings: any;
+  };
+  metadata?: {
+    appVersion?: string;
+    createdBy?: string;
+  };
+}
+
 // Card size type used in CardDisplay component
 export type CardSize = "tiny" | "small" | "medium" | "large";
 
@@ -143,6 +173,11 @@ export interface GameContextType {
   specialCardRules: SpecialCardAwardRule[];
   usedQuestionIds: string[];
   roundSettings: RoundSettings;
+  
+  // Action logs
+  logs: LogEntry[];
+  addLog: (entry: Omit<LogEntry, 'id' | 'timestamp'>) => void;
+  clearLogs: () => void;
   
   // Sound settings
   playSound: (sound: SoundEffect, volume?: number) => void;
@@ -183,6 +218,8 @@ export interface GameContextType {
   checkRoundThreeEnd: () => boolean;
   resetGame: () => void;
   setWinnerIds: (ids: string[]) => void;
+  setSpecialCards: (cards: SpecialCard[]) => void;  // Added missing method
+  setSpecialCardRules: (rules: SpecialCardAwardRule[]) => void;  // Added missing method
   
   // Undo and manual adjustments
   undoLastAction: () => void;
@@ -210,6 +247,12 @@ export interface GameContextType {
   // Data persistence
   loadGameData: () => void;
   saveGameData: () => void;
+  
+  // Backup & Restore
+  createBackup: (name?: string) => Promise<GameBackup>;
+  restoreBackup: (backup: GameBackup) => Promise<boolean>;
+  getBackups: () => Promise<GameBackup[]>;
+  deleteBackup: (id: string) => Promise<boolean>;
   
   // Question management
   addQuestion: (categoryId: string, question: Question) => void;
