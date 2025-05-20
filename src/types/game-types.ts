@@ -2,6 +2,7 @@
 import { ReactNode } from 'react';
 import { PlayerAvailabilitySlot } from './availability-types';
 import { RoundSettings } from './round-settings';
+import { CardEffect, CardEffectType } from './card-types';
 
 export enum GameRound {
   SETUP = 0,
@@ -17,6 +18,7 @@ export interface Category {
   description?: string;
   color?: string;
   questions: Question[];
+  round?: number; // Added for wheel categories in round 3
 }
 
 export interface Question {
@@ -86,6 +88,8 @@ export interface SpecialCard {
   animation_style?: string;
   animationStyle?: string; // Alternative to animation_style
   effectType?: string; // Used in components
+  effectHook?: string; // For advanced card editor
+  effectParams?: any;  // For card parameters
 }
 
 export interface SpecialCardAwardRule {

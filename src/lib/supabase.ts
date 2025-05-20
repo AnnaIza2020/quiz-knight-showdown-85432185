@@ -42,3 +42,105 @@ export async function generatePlayerLink(playerId: string) {
     return { success: false, error };
   }
 }
+
+export async function saveUsedQuestion(questionId: string) {
+  try {
+    // Get existing used questions
+    const { data: existingData, error: getError } = await supabase
+      .from('game_settings')
+      .select('value')
+      .eq('id', 'used_questions')
+      .single();
+    
+    if (getError && getError.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
+      throw getError;
+    }
+    
+    // Prepare the list of used questions
+    let usedQuestions: string[] = [];
+    if (existingData?.value && Array.isArray(existingData.value)) {
+      usedQuestions = existingData.value as string[];
+    }
+    
+    // Add the new question ID if not already present
+    if (!usedQuestions.includes(questionId)) {
+      usedQuestions.push(questionId);
+    }
+    
+    // Save the updated list
+    if (existingData) {
+      // Update existing record
+      const { error: updateError } = await supabase
+        .from('game_settings')
+        .update({ value: usedQuestions })
+        .eq('id', 'used_questions');
+      
+      if (updateError) throw updateError;
+    } else {
+      // Insert new record
+      const { error: insertError } = await supabase
+        .from('game_settings')
+        .insert({ id: 'used_questions', value: usedQuestions });
+      
+      if (insertError) throw insertError;
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving used question:', error);
+    return { success: false, error };
+  }
+}
+
+export async function saveGameEdition(edition: any, editionName: string) {
+  try {
+    // Check if edition with this name already exists
+    const { data: existingData, error: getError } = await supabase
+      .from('game_settings')
+      .select('value')
+      .eq('id', `edition_${editionName}`)
+      .single();
+    
+    // Save the edition data
+    if (existingData) {
+      // Update existing edition
+      const { error: updateError } = await supabase
+        .from('game_settings')
+        .update({ value: edition })
+        .eq('id', `edition_${editionName}`);
+      
+      if (updateError) throw updateError;
+    } else {
+      // Create new edition
+      const { error: insertError } = await supabase
+        .from('game_settings')
+        .insert({ id: `edition_${editionName}`, value: edition });
+      
+      if (insertError) throw insertError;
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving game edition:', error);
+    return { success: false, error };
+  }
+}
+
+export async function loadGameEdition(editionName: string) {
+  try {
+    // Get edition data
+    const { data, error } = await supabase
+      .from('game_settings')
+      .select('value')
+      .eq('id', `edition_${editionName}`)
+      .single();
+    
+    if (error) throw error;
+    if (!data) throw new Error('Edition not found');
+    
+    return { success: true, data: data.value };
+  } catch (error) {
+    console.error('Error loading game edition:', error);
+    return { success: false, error };
+  }
+}

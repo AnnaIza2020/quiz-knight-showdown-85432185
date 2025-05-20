@@ -1,215 +1,174 @@
 
 import React, { useState, useEffect } from 'react';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { PasswordSettings, safeJsonParse } from '@/types/supabase-custom-types';
+import { Loader2, Save, Lock, Eye, EyeOff } from 'lucide-react';
 
-const passwordSchema = z.object({
-  enabled: z.boolean(),
-  password: z.string().min(1, { message: 'Hasło jest wymagane' }),
-  attempts: z.number().int().min(1).max(10),
-  expiresAfter: z.number().int().min(1).max(24),
-});
+interface GameSettings {
+  accessPassword: string;
+}
 
-const defaultPasswordSettings: PasswordSettings = {
-  enabled: false,
-  password: '1234',
-  attempts: 3,
-  expiresAfter: 24,
-};
-
-const GamePasswordSettings = () => {
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const form = useForm<PasswordSettings>({
-    resolver: zodResolver(passwordSchema),
-    defaultValues: defaultPasswordSettings,
-  });
-
+const GamePasswordSettings: React.FC = () => {
+  const [settings, setSettings] = useState<GameSettings>({ accessPassword: '' });
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  
+  // Load settings on mount
   useEffect(() => {
-    const loadSettings = async () => {
-      setIsLoading(true);
-      try {
-        // Try to load from Supabase first
-        const { data, error } = await supabase
-          .from('game_settings')
-          .select('*')
-          .eq('id', 'password_settings')
-          .single();
-
-        if (error) {
-          console.error('Error loading password settings:', error);
-          
-          // Fallback to localStorage
-          const localSettings = safeJsonParse<PasswordSettings>(
-            localStorage.getItem('gamePasswordSettings'),
-            defaultPasswordSettings
-          );
-          
-          form.reset(localSettings);
-        } else if (data?.value) {
-          form.reset(data.value as PasswordSettings);
-        }
-      } catch (err) {
-        console.error('Unexpected error loading settings:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadSettings();
-  }, [form]);
-
-  const onSubmit = async (values: PasswordSettings) => {
-    setIsSaving(true);
+  }, []);
+  
+  // Load game settings from database
+  const loadSettings = async () => {
+    setIsLoading(true);
+    
     try {
-      // Save to Supabase
-      const { error } = await supabase
+      // Check if game_settings table exists in the Database types
+      // If not, we'll try the query anyway
+      const { data, error } = await supabase
         .from('game_settings')
-        .upsert(
-          { id: 'password_settings', value: values },
-          { onConflict: 'id' }
-        );
-
+        .select('*')
+        .eq('id', 'access_password')
+        .single();
+      
       if (error) {
-        console.error('Error saving password settings to Supabase:', error);
-        
-        // Fallback to localStorage
-        localStorage.setItem('gamePasswordSettings', JSON.stringify(values));
+        if (error.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
+          console.error('Error fetching game settings:', error);
+          toast.error('Błąd podczas pobierania ustawień');
+        }
+        // No settings found, use defaults
+      } else if (data) {
+        // Data found, update settings
+        setSettings({ 
+          accessPassword: data.value?.password || '' 
+        });
       }
-
-      toast.success('Ustawienia hasła zapisane');
     } catch (err) {
-      console.error('Unexpected error saving settings:', err);
-      toast.error('Błąd podczas zapisywania ustawień hasła');
+      console.error('Error in loadSettings:', err);
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
     }
   };
-
+  
+  // Save settings to database
+  const saveSettings = async () => {
+    setIsLoading(true);
+    
+    try {
+      // Check if record exists
+      const { data, error: checkError } = await supabase
+        .from('game_settings')
+        .select('*')
+        .eq('id', 'access_password')
+        .single();
+      
+      const settingsData = {
+        password: settings.accessPassword
+      };
+      
+      if (checkError && checkError.code === 'PGRST116') {
+        // No record found, create new
+        const { error } = await supabase
+          .from('game_settings')
+          .insert({
+            id: 'access_password',
+            value: settingsData
+          });
+          
+        if (error) throw error;
+      } else {
+        // Record exists, update
+        const { error } = await supabase
+          .from('game_settings')
+          .update({ value: settingsData })
+          .eq('id', 'access_password');
+          
+        if (error) throw error;
+      }
+      
+      toast.success('Zapisano ustawienia dostępu');
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      toast.error('Błąd podczas zapisywania ustawień');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Toggle password visibility
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+  
   return (
-    <div className="bg-[#0c0e1a] rounded-lg p-6 shadow-lg border border-gray-800">
-      <h2 className="text-xl font-bold mb-2 text-white">Hasło dostępu do gry</h2>
-      <p className="text-white/60 text-sm mb-6">
-        Ustaw hasło dostępu dla graczy, aby zapewnić bezpieczne dołączanie do gry
-      </p>
-
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="enabled"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-700 p-4 bg-black/30">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">Wymagaj hasła</FormLabel>
-                  <FormDescription className="text-sm text-white/60">
-                    Gracze będą musieli podać hasło, aby dołączyć do gry
-                  </FormDescription>
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    disabled={isLoading || isSaving}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          {form.watch('enabled') && (
-            <>
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Hasło</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="Wpisz hasło dla graczy"
-                        disabled={isLoading || isSaving}
-                        className="bg-black/40 border-gray-700 text-white"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Hasło, które gracze będą musieli wpisać, aby dołączyć
-                    </FormDescription>
-                  </FormItem>
+    <Card className="bg-black/40 border border-white/10">
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <Lock className="h-5 w-5 text-neon-blue" />
+          <span>Ustawienia dostępu</span>
+        </CardTitle>
+      </CardHeader>
+      
+      <CardContent>
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-neon-blue" />
+          </div>
+        ) : (
+          <>
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-1">Hasło do panelu prowadzącego</label>
+              <div className="relative">
+                <Input 
+                  type={showPassword ? "text" : "password"}
+                  value={settings.accessPassword}
+                  onChange={(e) => setSettings({ ...settings, accessPassword: e.target.value })}
+                  placeholder="Hasło (opcjonalnie)" 
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={toggleShowPassword}
+                  className="absolute right-2 top-2 text-white/50 hover:text-white"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+              <p className="text-xs text-white/50 mt-1">
+                Ustaw hasło, aby zabezpieczyć panel prowadzącego. Pozostaw puste, jeśli hasło nie jest potrzebne.
+              </p>
+            </div>
+            
+            <div className="flex justify-end">
+              <Button 
+                onClick={saveSettings}
+                disabled={isLoading}
+                className="bg-neon-blue hover:bg-neon-blue/80"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Zapisywanie...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Zapisz ustawienia
+                  </>
                 )}
-              />
-
-              <FormField
-                control={form.control}
-                name="attempts"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Liczba dozwolonych prób ({field.value})</FormLabel>
-                    <FormControl>
-                      <Slider
-                        value={[field.value]}
-                        min={1}
-                        max={10}
-                        step={1}
-                        onValueChange={(value) => field.onChange(value[0])}
-                        disabled={isLoading || isSaving}
-                        className="py-4"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Ile prób będzie miał gracz na wprowadzenie poprawnego hasła
-                    </FormDescription>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="expiresAfter"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Czas ważności hasła ({field.value} godz.)</FormLabel>
-                    <FormControl>
-                      <Slider
-                        value={[field.value]}
-                        min={1}
-                        max={24}
-                        step={1}
-                        onValueChange={(value) => field.onChange(value[0])}
-                        disabled={isLoading || isSaving}
-                        className="py-4"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Po ilu godzinach gracz będzie musiał ponownie wprowadzić hasło
-                    </FormDescription>
-                  </FormItem>
-                )}
-              />
-            </>
-          )}
-
-          <Button
-            type="submit"
-            className="bg-neon-green hover:bg-neon-green/80 text-black px-8 py-2"
-            disabled={isLoading || isSaving || !form.formState.isDirty}
-          >
-            {isSaving ? 'Zapisywanie...' : 'Zapisz ustawienia'}
-          </Button>
-        </form>
-      </Form>
-    </div>
+              </Button>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

@@ -4,10 +4,9 @@ import { Clock, FastForward, Play, Square, Timer, HelpCircle } from 'lucide-reac
 import { GameRound, Question } from '@/types/game-types';
 import CountdownTimer from '../CountdownTimer';
 import { useGameContext } from '@/context/GameContext';
-import { getRandomQuestion } from '@/lib/utils';
-import { saveUsedQuestion } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { supabase } from '@/lib/supabase';
 
 interface TopBarProps {
   round: GameRound;
@@ -22,7 +21,7 @@ const TopBar: React.FC<TopBarProps> = ({
   stopTimer,
   handleAdvanceToRound
 }) => {
-  const { categories, selectQuestion, playSound } = useGameContext();
+  const { categories, selectQuestion, playSound, markQuestionAsUsed } = useGameContext();
   const [randomQuestionDialogOpen, setRandomQuestionDialogOpen] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<number | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -34,12 +33,60 @@ const TopBar: React.FC<TopBarProps> = ({
   };
   
   // Add a question to used questions
-  const addUsedQuestion = (questionId: string) => {
+  const addUsedQuestion = async (questionId: string) => {
     const usedQuestions = getUsedQuestionIds();
     if (!usedQuestions.includes(questionId)) {
       const newUsedQuestions = [...usedQuestions, questionId];
       localStorage.setItem('gameShowUsedQuestions', JSON.stringify(newUsedQuestions));
-      saveUsedQuestion(questionId).catch(console.error);
+      
+      try {
+        await saveUsedQuestion(questionId);
+      } catch (error) {
+        console.error("Error saving used question:", error);
+      }
+    }
+  };
+  
+  // New function to save used questions to Supabase
+  const saveUsedQuestion = async (questionId: string) => {
+    // Get existing used questions
+    const { data: existingData, error: getError } = await supabase
+      .from('game_settings')
+      .select('value')
+      .eq('id', 'used_questions')
+      .single();
+    
+    if (getError && getError.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
+      throw getError;
+    }
+    
+    // Prepare the list of used questions
+    let usedQuestions: string[] = [];
+    if (existingData?.value && Array.isArray(existingData.value)) {
+      usedQuestions = existingData.value as string[];
+    }
+    
+    // Add the new question ID if not already present
+    if (!usedQuestions.includes(questionId)) {
+      usedQuestions.push(questionId);
+    }
+    
+    // Save the updated list
+    if (existingData) {
+      // Update existing record
+      const { error: updateError } = await supabase
+        .from('game_settings')
+        .update({ value: usedQuestions })
+        .eq('id', 'used_questions');
+      
+      if (updateError) throw updateError;
+    } else {
+      // Insert new record
+      const { error: insertError } = await supabase
+        .from('game_settings')
+        .insert({ id: 'used_questions', value: usedQuestions });
+      
+      if (insertError) throw insertError;
     }
   };
   
@@ -57,28 +104,45 @@ const TopBar: React.FC<TopBarProps> = ({
     const usedQuestionIds = getUsedQuestionIds();
     
     // Apply filters if selected
-    const filters: { category?: string; difficulty?: number } = {};
-    if (selectedCategory) filters.category = selectedCategory;
-    if (selectedDifficulty) filters.difficulty = selectedDifficulty;
+    let filteredQuestions = [...allQuestions];
+    
+    if (selectedCategory) {
+      filteredQuestions = filteredQuestions.filter(q => q.categoryName === selectedCategory);
+    }
+    
+    if (selectedDifficulty !== null) {
+      filteredQuestions = filteredQuestions.filter(q => q.difficulty === selectedDifficulty);
+    }
+    
+    // Filter out used questions
+    const availableQuestions = filteredQuestions.filter(q => !usedQuestionIds.includes(q.id));
+    
+    if (availableQuestions.length === 0) {
+      toast.error('Brak dostępnych pytań spełniających kryteria');
+      return;
+    }
     
     // Get random question
-    const randomQuestion = getRandomQuestion(allQuestions, usedQuestionIds, filters);
+    const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+    const randomQuestion = availableQuestions[randomIndex];
     
-    if (randomQuestion) {
-      // Select question and mark as used
-      selectQuestion(randomQuestion);
-      addUsedQuestion(randomQuestion.id);
-      setRandomQuestionDialogOpen(false);
-      
-      // Play sound effect
-      playSound('card-reveal');
-      
-      toast.success('Wylosowano nowe pytanie', {
-        description: `${randomQuestion.categoryName} - ${randomQuestion.difficulty} pkt`
-      });
-    } else {
-      toast.error('Brak dostępnych pytań spełniających kryteria');
-    }
+    // Select question
+    selectQuestion(randomQuestion);
+    
+    // Mark as used
+    markQuestionAsUsed(randomQuestion.id);
+    addUsedQuestion(randomQuestion.id);
+    
+    // Close dialog
+    setRandomQuestionDialogOpen(false);
+    
+    // Play sound effect
+    playSound('card-reveal');
+    
+    // Show toast
+    toast.success('Wylosowano nowe pytanie', {
+      description: `${randomQuestion.categoryName} - ${randomQuestion.difficulty} pkt`
+    });
   };
   
   // Generate round name based on current round
@@ -94,6 +158,8 @@ const TopBar: React.FC<TopBarProps> = ({
         return "Runda 3: Koło Chaosu";
       case GameRound.FINISHED:
         return "Gra Zakończona";
+      default:
+        return "Nieznana runda";
     }
   };
   

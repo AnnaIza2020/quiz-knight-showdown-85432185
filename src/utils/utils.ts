@@ -52,3 +52,10 @@ export async function generatePlayerLink(playerId: string): Promise<{ success: b
     return { success: false };
   }
 }
+
+/**
+ * Generate a unique ID
+ */
+export function generateUniqueId(): string {
+  return crypto.randomUUID();
+}

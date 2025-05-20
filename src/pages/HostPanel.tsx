@@ -1,12 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { GameRound } from '@/types/game-types';
 import TopBar from '@/components/hostpanel/TopBar';
-import PlayersGrid from '@/components/hostpanel/PlayersGrid';
 import RoundControls from '@/components/hostpanel/RoundControls';
 import ControlPanel from '@/components/hostpanel/ControlPanel';
 import EventsBar from '@/components/hostpanel/EventsBar';
+import PlayerGridContainer from '@/components/rounds/PlayerGridContainer';
+import PlayerCardsPanel from '@/components/cards/PlayerCardsPanel';
+import { toast } from 'sonner';
 
 const HostPanel = () => {
   const {
@@ -21,6 +23,7 @@ const HostPanel = () => {
     stopTimer,
     playSound,
     resetGame,
+    activePlayerId
   } = useGameContext();
   
   const [isPaused, setIsPaused] = useState(false);
@@ -40,10 +43,12 @@ const HostPanel = () => {
       advanceToRoundTwo();
       addEvent("Rozpoczęto rundę 2: 5 sekund");
       playSound('round-start');
+      toast.success('Rozpoczęto Rundę 2');
     } else if (targetRound === GameRound.ROUND_THREE) {
       advanceToRoundThree();
       addEvent("Rozpoczęto rundę 3: Koło Fortuny");
       playSound('round-start');
+      toast.success('Rozpoczęto Rundę 3');
     }
   };
 
@@ -57,14 +62,17 @@ const HostPanel = () => {
     if (isPaused) {
       setIsPaused(false);
       addEvent("Gra wznowiona");
+      toast.success('Gra wznowiona');
     } else {
       setIsPaused(true);
       addEvent("Gra wstrzymana");
+      toast.info('Gra wstrzymana');
     }
   };
 
   const handleSkipQuestion = () => {
     addEvent("Pytanie pominięte");
+    toast.info('Pytanie pominięte');
     // Logic for skipping question would go here
   };
 
@@ -73,7 +81,6 @@ const HostPanel = () => {
     if (round === GameRound.ROUND_THREE) {
       const isEnded = checkRoundThreeEnd();
       
-      // Zmieniamy porównanie, żeby uniknąć problemu z typami
       // Only return if the function returns true explicitly
       if (isEnded === true) {
         addEvent("Runda 3 zakończona - wszyscy stracili życie");
@@ -87,11 +94,22 @@ const HostPanel = () => {
       finishGame([sortedPlayers[0].id]);
       addEvent(`Gra zakończona! Zwycięzca: ${sortedPlayers[0].name}`);
       playSound('victory');
+      toast.success(`Gra zakończona! Zwycięzca: ${sortedPlayers[0].name}`);
     }
   };
-
-  // Get active players that aren't eliminated
-  const activePlayers = players.filter(player => !player.isEliminated);
+  
+  // Use effect to show round notification
+  useEffect(() => {
+    if (round === GameRound.ROUND_ONE) {
+      toast.success('Runda 1 rozpoczęta!');
+    } else if (round === GameRound.ROUND_TWO) {
+      toast.success('Runda 2 rozpoczęta!');
+    } else if (round === GameRound.ROUND_THREE) {
+      toast.success('Runda 3 rozpoczęta!');
+    } else if (round === GameRound.FINISHED) {
+      toast.success('Gra zakończona!');
+    }
+  }, [round]);
 
   return (
     <div className="min-h-screen bg-neon-background p-4 flex flex-col">
@@ -105,14 +123,20 @@ const HostPanel = () => {
       
       {/* Main Layout with Players Grid and Right Column */}
       <div className="flex flex-grow gap-4">
-        {/* Players Grid */}
+        {/* Main Content Area */}
         <div className="flex-grow bg-black/50 backdrop-blur-md p-4 rounded-lg border border-white/10">
-          <h2 className="text-2xl font-bold mb-4 text-white">Siatka Graczy</h2>
+          {/* Round Controls */}
+          <RoundControls 
+            round={round} 
+            handleStartTimer={handleStartTimer} 
+          />
           
-          <PlayersGrid activePlayers={activePlayers} />
-          
-          {/* Round-specific controls */}
-          <RoundControls round={round} handleStartTimer={handleStartTimer} />
+          {/* Special Cards Panel if not in SETUP phase */}
+          {round !== GameRound.SETUP && (
+            <div className="mt-6">
+              <PlayerCardsPanel players={players} />
+            </div>
+          )}
         </div>
         
         {/* Right Control Column */}

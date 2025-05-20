@@ -1,108 +1,140 @@
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Trash2, Save } from 'lucide-react';
-import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
 import { Category, GameRound } from '@/types/game-types';
+import { Plus, Trash2, Check } from 'lucide-react';
+import { toast } from 'sonner';
+import { Label } from '@/components/ui/label';
 
-const SettingsWheelCategories = () => {
-  const { categories, addCategory, removeCategory, saveGameData } = useGameContext();
+const SettingsWheelCategories: React.FC = () => {
+  const { categories, addCategory, removeCategory } = useGameContext();
   const [newCategory, setNewCategory] = useState<string>('');
-
+  const [editing, setEditing] = useState(false);
+  
+  // Filter categories for Round 3
+  const wheelCategories = categories.filter(c => {
+    // Check if the category has a round property set to 3 (ROUND_THREE)
+    if (typeof c.round === 'number') {
+      return c.round === GameRound.ROUND_THREE;
+    }
+    // For backward compatibility, include categories without a round property
+    return true;
+  });
+  
+  // Add a new category for wheel
   const handleAddCategory = () => {
     if (!newCategory.trim()) {
       toast.error('Nazwa kategorii nie może być pusta');
       return;
     }
-
-    if (categories.find(c => c.name === newCategory.trim())) {
-      toast.error('Kategoria o takiej nazwie już istnieje');
+    
+    // Check if category already exists
+    if (wheelCategories.some(c => c.name.toLowerCase() === newCategory.trim().toLowerCase())) {
+      toast.error('Kategoria o tej nazwie już istnieje');
       return;
     }
-
-    // Create a new category for round 3 (wheel)
+    
+    // Create new category object
     const newCategoryObj: Category = {
       id: crypto.randomUUID(),
       name: newCategory.trim(),
-      round: GameRound.ROUND_THREE,
+      round: GameRound.ROUND_THREE, // Set for Round 3 (wheel)
       questions: []
     };
     
+    // Add to context
     addCategory(newCategoryObj);
     
+    // Reset form
     setNewCategory('');
-    toast.success(`Dodano kategorię: ${newCategory.trim()}`);
+    
+    // Show success message
+    toast.success(`Dodano kategorię "${newCategory.trim()}" do koła fortuny`);
   };
-
-  const handleRemoveCategory = (id: string, name: string) => {
-    removeCategory(id);
-    toast.info(`Usunięto kategorię: ${name}`);
+  
+  // Remove a category
+  const handleRemoveCategory = (categoryId: string) => {
+    const category = categories.find(c => c.id === categoryId);
+    if (!category) return;
+    
+    // Check if there are questions in this category
+    if (category.questions.length > 0) {
+      toast.error(`Nie można usunąć kategorii "${category.name}" - zawiera pytania`);
+      return;
+    }
+    
+    // Remove category
+    removeCategory(categoryId);
+    
+    // Show success message
+    toast.success(`Usunięto kategorię "${category.name}"`);
   };
-
-  const handleSaveCategories = () => {
-    saveGameData();
-    toast.success('Kategorie zostały zapisane');
-  };
-
-  // Filter categories for round 3 only (wheel)
-  const wheelCategories = categories.filter(c => c.round === GameRound.ROUND_THREE);
-
+  
   return (
-    <Card className="mb-6">
+    <Card className="bg-black/40 border border-white/10">
       <CardHeader>
-        <CardTitle>Kategorie dla Koła Fortuny</CardTitle>
+        <CardTitle>Kategorie Koła Fortuny (Runda 3)</CardTitle>
       </CardHeader>
+      
       <CardContent>
-        <div className="flex items-center gap-2 mb-4">
-          <Input
-            placeholder="Nowa kategoria..."
-            value={newCategory}
-            onChange={(e) => setNewCategory(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
-          />
-          <Button onClick={handleAddCategory} size="sm">
-            <PlusCircle className="h-4 w-4 mr-1" />
-            Dodaj
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-          {wheelCategories.map((category) => (
-            <div
-              key={category.id}
-              className="flex items-center justify-between bg-muted p-2 rounded"
-            >
-              <span className="truncate">{category.name}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleRemoveCategory(category.id, category.name)}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+        <div className="space-y-4">
+          {/* Add new category */}
+          <div className="flex space-x-2">
+            <Input
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              placeholder="Nazwa nowej kategorii"
+              className="bg-black/20"
+            />
+            <Button onClick={handleAddCategory} className="bg-neon-green hover:bg-neon-green/80 text-black">
+              <Plus className="h-4 w-4 mr-1" />
+              Dodaj
+            </Button>
+          </div>
+          
+          {/* Categories list */}
+          {wheelCategories.length > 0 ? (
+            <div>
+              <Label className="mb-2 block">Istniejące kategorie:</Label>
+              <div className="space-y-2">
+                {wheelCategories.map((category) => (
+                  <div 
+                    key={category.id} 
+                    className="flex items-center justify-between p-3 bg-black/30 border border-white/10 rounded-md"
+                  >
+                    <div>
+                      {category.name}
+                      <span className="text-sm text-white/50 ml-2">
+                        ({category.questions.length} pytań)
+                      </span>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleRemoveCategory(category.id)}
+                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                      disabled={category.questions.length > 0}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
+          ) : (
+            <div className="text-center py-4 text-white/50">
+              Brak kategorii. Dodaj kategorie, aby były dostępne w Kole Fortuny.
+            </div>
+          )}
+          
+          <div className="text-xs text-white/50">
+            Uwaga: Kategorie z pytaniami nie mogą zostać usunięte. 
+            Najpierw usuń lub przenieś wszystkie pytania z tej kategorii.
+          </div>
         </div>
-
-        {wheelCategories.length > 0 && (
-          <Button 
-            onClick={handleSaveCategories} 
-            className="mt-4"
-            variant="outline"
-          >
-            <Save className="h-4 w-4 mr-1" />
-            Zapisz zmiany
-          </Button>
-        )}
-
-        {wheelCategories.length === 0 && (
-          <p className="text-center text-muted-foreground mt-4">
-            Brak kategorii. Dodaj kategorię, aby używać koła fortuny.
-          </p>
-        )}
       </CardContent>
     </Card>
   );

@@ -1,361 +1,419 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { RoundSettings } from '@/types/round-settings';
+import { useGameContext } from '@/context/GameContext';
+import { Cog, RotateCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { RoundSettings, DEFAULT_ROUND_SETTINGS } from '@/hooks/useGameLogic';
-import { useGameContext } from '@/context/GameContext';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { GameRound } from '@/types/game-types';
 import { toast } from 'sonner';
-import { Save, Undo } from 'lucide-react';
 
-const RoundSettingsPanel = () => {
+const RoundSettingsPanel: React.FC = () => {
   const { roundSettings, updateRoundSettings } = useGameContext();
-  const [activeTab, setActiveTab] = useState('round1');
-  const [localSettings, setLocalSettings] = useState<RoundSettings>(roundSettings || DEFAULT_ROUND_SETTINGS);
+  const [localSettings, setLocalSettings] = useState<RoundSettings>(roundSettings);
+  const [activeTab, setActiveTab] = useState('global');
   
-  // Update local settings when context settings change
+  // Update local state when context changes
   useEffect(() => {
-    if (roundSettings) {
-      setLocalSettings(roundSettings);
-    }
+    setLocalSettings(roundSettings);
   }, [roundSettings]);
   
-  // Handle input change
-  const handlePointValueChange = (
-    round: 'round1' | 'round2' | 'round3',
-    difficulty?: keyof typeof DEFAULT_ROUND_SETTINGS.pointValues.round1
-  ) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10) || 0;
-    
-    setLocalSettings(prev => {
-      if (round === 'round1' && difficulty) {
+  // Update a specific field in settings
+  const updateField = (
+    roundKey: keyof RoundSettings | [keyof RoundSettings, string, string], 
+    value: any
+  ) => {
+    setLocalSettings((prev) => {
+      if (Array.isArray(roundKey)) {
+        // Handle nested updates like [GameRound.ROUND_ONE, 'pointsForCorrectAnswer']
+        const [round, field, subfield] = roundKey;
+        
         return {
           ...prev,
-          pointValues: {
-            ...prev.pointValues,
-            round1: {
-              ...prev.pointValues.round1,
-              [difficulty]: value
+          [round]: {
+            ...prev[round],
+            [field]: {
+              ...prev[round][field],
+              [subfield]: value
             }
           }
         };
-      } else {
+      } else if (typeof roundKey === 'string' || typeof roundKey === 'number') {
+        // Handle direct updates like 'defaultTimerDuration'
         return {
           ...prev,
-          pointValues: {
-            ...prev.pointValues,
-            [round]: value
-          }
+          [roundKey]: value
         };
       }
+      
+      return prev;
     });
   };
   
-  // Handle life penalty change
-  const handleLifePenaltyChange = (round: 'round1' | 'round2' | 'round3') => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10) || 0;
-    
-    setLocalSettings(prev => ({
-      ...prev,
-      lifePenalties: {
-        ...prev.lifePenalties,
-        [round]: value
-      }
-    }));
-  };
-  
-  // Handle timer duration change
-  const handleTimerDurationChange = (round: 'round1' | 'round2' | 'round3') => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10) || 0;
-    
-    setLocalSettings(prev => ({
-      ...prev,
-      timerDurations: {
-        ...prev.timerDurations,
-        [round]: value
-      }
-    }));
-  };
-  
-  // Handle lucky loser threshold change
-  const handleLuckyLoserThresholdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10) || 0;
-    
-    setLocalSettings(prev => ({
-      ...prev,
-      luckyLoserThreshold: value
-    }));
-  };
-  
-  // Save settings to context
-  const handleSaveSettings = () => {
+  // Save settings
+  const saveSettings = () => {
     updateRoundSettings(localSettings);
-    toast.success("Zapisano ustawienia rund", {
-      description: "Nowe ustawienia zostały zastosowane"
-    });
+    toast.success('Zapisano ustawienia rund');
   };
   
-  // Reset to defaults
-  const handleResetSettings = () => {
-    setLocalSettings(DEFAULT_ROUND_SETTINGS);
-    toast.info("Przywrócono domyślne ustawienia", {
-      description: "Aby zastosować zmiany, kliknij Zapisz"
-    });
+  // Reset settings to defaults
+  const resetSettings = () => {
+    // Use the original from context
+    setLocalSettings(roundSettings);
+    toast.info('Zresetowano zmiany');
   };
   
   return (
     <Card className="bg-black/40 border border-white/10">
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle className="text-xl font-bold text-white">Ustawienia rund</CardTitle>
-            <CardDescription>Konfiguracja parametrów dla każdej rundy</CardDescription>
-          </div>
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              className="border-amber-500 text-amber-500 hover:bg-amber-500/20"
-              onClick={handleResetSettings}
-            >
-              <Undo className="h-4 w-4 mr-1" />
-              Reset
-            </Button>
-            <Button
-              className="bg-neon-green text-black hover:bg-neon-green/80"
-              onClick={handleSaveSettings}
-            >
-              <Save className="h-4 w-4 mr-1" />
-              Zapisz
-            </Button>
-          </div>
-        </div>
+        <CardTitle className="flex items-center space-x-2">
+          <Cog className="h-5 w-5 text-neon-blue" />
+          <span>Ustawienia rund</span>
+        </CardTitle>
       </CardHeader>
       
       <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4 bg-black/50">
-            <TabsTrigger value="round1" className="data-[state=active]:bg-neon-blue">Runda 1</TabsTrigger>
-            <TabsTrigger value="round2" className="data-[state=active]:bg-neon-yellow text-black">Runda 2</TabsTrigger>
-            <TabsTrigger value="round3" className="data-[state=active]:bg-neon-purple">Runda 3</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-4 mb-6">
+            <TabsTrigger value="global">Globalne</TabsTrigger>
+            <TabsTrigger value="round1">Runda 1</TabsTrigger>
+            <TabsTrigger value="round2">Runda 2</TabsTrigger>
+            <TabsTrigger value="round3">Runda 3</TabsTrigger>
           </TabsList>
+          
+          {/* Global Settings */}
+          <TabsContent value="global" className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="defaultTimer">Domyślny czas na odpowiedź (sek)</Label>
+                <Input
+                  id="defaultTimer"
+                  type="number"
+                  value={localSettings.defaultTimerDuration}
+                  onChange={(e) => updateField('defaultTimerDuration', parseInt(e.target.value) || 30)}
+                  min={5}
+                  max={60}
+                />
+              </div>
+              
+              <div className="space-y-2 flex items-center justify-between">
+                <Label htmlFor="randomizeQuestions">Losowa kolejność pytań</Label>
+                <Switch
+                  id="randomizeQuestions"
+                  checked={localSettings.randomizeQuestions}
+                  onCheckedChange={(checked) => updateField('randomizeQuestions', checked)}
+                />
+              </div>
+            </div>
+          </TabsContent>
           
           {/* Round 1 Settings */}
           <TabsContent value="round1" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="r1-easy" className="text-white">Punkty za łatwe pytanie</Label>
-                  <Input 
-                    id="r1-easy"
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={localSettings.pointValues.round1.easy}
-                    onChange={handlePointValueChange('round1', 'easy')}
-                    className="bg-black/40 border-white/20 text-white"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="r1-medium" className="text-white">Punkty za średnie pytanie</Label>
-                  <Input 
-                    id="r1-medium"
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={localSettings.pointValues.round1.medium}
-                    onChange={handlePointValueChange('round1', 'medium')}
-                    className="bg-black/40 border-white/20 text-white"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="r1-hard" className="text-white">Punkty za trudne pytanie</Label>
-                  <Input 
-                    id="r1-hard"
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={localSettings.pointValues.round1.hard}
-                    onChange={handlePointValueChange('round1', 'hard')}
-                    className="bg-black/40 border-white/20 text-white"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="r1-expert" className="text-white">Punkty za eksperckie pytanie</Label>
-                  <Input 
-                    id="r1-expert"
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={localSettings.pointValues.round1.expert}
-                    onChange={handlePointValueChange('round1', 'expert')}
-                    className="bg-black/40 border-white/20 text-white"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <Separator className="bg-white/10 my-4" />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="r1-life-penalty" className="text-white">Kara za błąd (% życia)</Label>
-                <Input 
-                  id="r1-life-penalty"
+              <div className="space-y-2">
+                <Label htmlFor="r1-points-correct">Punkty za poprawną odpowiedź</Label>
+                <Input
+                  id="r1-points-correct"
                   type="number"
-                  min="1"
-                  max="100"
-                  value={localSettings.lifePenalties.round1}
-                  onChange={handleLifePenaltyChange('round1')}
-                  className="bg-black/40 border-white/20 text-white"
+                  value={localSettings[GameRound.ROUND_ONE].pointsForCorrectAnswer}
+                  onChange={(e) => updateField([GameRound.ROUND_ONE, 'pointsForCorrectAnswer'], parseInt(e.target.value) || 0)}
+                  min={0}
                 />
               </div>
               
-              <div>
-                <Label htmlFor="r1-timer" className="text-white">Czas na odpowiedź (sekundy)</Label>
-                <Input 
+              <div className="space-y-2">
+                <Label htmlFor="r1-points-incorrect">Punkty za błędną odpowiedź</Label>
+                <Input
+                  id="r1-points-incorrect"
+                  type="number"
+                  value={localSettings[GameRound.ROUND_ONE].pointsForIncorrectAnswer}
+                  onChange={(e) => updateField([GameRound.ROUND_ONE, 'pointsForIncorrectAnswer'], parseInt(e.target.value) || 0)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="r1-timer">Czas na odpowiedź (sek)</Label>
+                <Input
                   id="r1-timer"
                   type="number"
-                  min="1"
-                  max="300"
-                  value={localSettings.timerDurations.round1}
-                  onChange={handleTimerDurationChange('round1')}
-                  className="bg-black/40 border-white/20 text-white"
+                  value={localSettings[GameRound.ROUND_ONE].timerDuration}
+                  onChange={(e) => updateField([GameRound.ROUND_ONE, 'timerDuration'], parseInt(e.target.value) || 30)}
+                  min={5}
+                  max={60}
                 />
               </div>
-            </div>
-            
-            <Separator className="bg-white/10 my-4" />
-            
-            <div>
-              <Label htmlFor="lucky-loser" className="text-white">Próg punktowy dla Lucky Loser</Label>
-              <div className="flex items-center gap-4">
-                <Input 
-                  id="lucky-loser"
+              
+              <div className="space-y-2">
+                <Label htmlFor="r1-lives">Liczba żyć na start</Label>
+                <Input
+                  id="r1-lives"
                   type="number"
-                  min="1"
-                  max="100"
-                  value={localSettings.luckyLoserThreshold}
-                  onChange={handleLuckyLoserThresholdChange}
-                  className="bg-black/40 border-white/20 text-white"
+                  value={localSettings[GameRound.ROUND_ONE].livesCount}
+                  onChange={(e) => updateField([GameRound.ROUND_ONE, 'livesCount'], parseInt(e.target.value) || 1)}
+                  min={1}
+                  max={10}
                 />
-                <div className="text-sm text-white/70">punktów</div>
               </div>
-              <p className="text-sm text-white/50 mt-1">
-                Gracz z liczbą punktów równą lub większą od tego progu może awansować jako Lucky Loser
-              </p>
+              
+              <div className="space-y-2">
+                <Label htmlFor="r1-health-deduction">Utrata zdrowia za błędną odpowiedź (%)</Label>
+                <Input
+                  id="r1-health-deduction"
+                  type="number"
+                  value={localSettings[GameRound.ROUND_ONE].healthDeductionPercentage}
+                  onChange={(e) => updateField([GameRound.ROUND_ONE, 'healthDeductionPercentage'], parseInt(e.target.value) || 0)}
+                  min={0}
+                  max={100}
+                />
+              </div>
+              
+              <div className="space-y-2 flex items-center justify-between">
+                <Label htmlFor="r1-lucky-loser">Włącz Lucky Losera</Label>
+                <Switch
+                  id="r1-lucky-loser"
+                  checked={localSettings[GameRound.ROUND_ONE].luckyLoserEnabled}
+                  onCheckedChange={(checked) => updateField([GameRound.ROUND_ONE, 'luckyLoserEnabled'], checked)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="r1-elimination-count">Liczba eliminacji</Label>
+                <Input
+                  id="r1-elimination-count"
+                  type="number"
+                  value={localSettings[GameRound.ROUND_ONE].eliminationCount}
+                  onChange={(e) => updateField([GameRound.ROUND_ONE, 'eliminationCount'], parseInt(e.target.value) || 0)}
+                  min={0}
+                  max={10}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="r1-max-questions">Maksymalna liczba pytań</Label>
+                <Input
+                  id="r1-max-questions"
+                  type="number"
+                  value={localSettings[GameRound.ROUND_ONE].maxQuestions}
+                  onChange={(e) => updateField([GameRound.ROUND_ONE, 'maxQuestions'], parseInt(e.target.value) || 10)}
+                  min={5}
+                  max={30}
+                />
+              </div>
             </div>
           </TabsContent>
           
           {/* Round 2 Settings */}
           <TabsContent value="round2" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="r2-points" className="text-white">Punkty za poprawną odpowiedź</Label>
-                <Input 
-                  id="r2-points"
+              <div className="space-y-2">
+                <Label htmlFor="r2-points-correct">Punkty za poprawną odpowiedź</Label>
+                <Input
+                  id="r2-points-correct"
                   type="number"
-                  min="1"
-                  max="100"
-                  value={localSettings.pointValues.round2}
-                  onChange={handlePointValueChange('round2')}
-                  className="bg-black/40 border-white/20 text-white"
+                  value={localSettings[GameRound.ROUND_TWO].pointsForCorrectAnswer}
+                  onChange={(e) => updateField([GameRound.ROUND_TWO, 'pointsForCorrectAnswer'], parseInt(e.target.value) || 0)}
+                  min={0}
                 />
               </div>
               
-              <div>
-                <Label htmlFor="r2-life-penalty" className="text-white">Kara za błąd (% życia)</Label>
-                <Input 
-                  id="r2-life-penalty"
+              <div className="space-y-2">
+                <Label htmlFor="r2-points-incorrect">Punkty za błędną odpowiedź</Label>
+                <Input
+                  id="r2-points-incorrect"
                   type="number"
-                  min="1"
-                  max="100"
-                  value={localSettings.lifePenalties.round2}
-                  onChange={handleLifePenaltyChange('round2')}
-                  className="bg-black/40 border-white/20 text-white"
+                  value={localSettings[GameRound.ROUND_TWO].pointsForIncorrectAnswer}
+                  onChange={(e) => updateField([GameRound.ROUND_TWO, 'pointsForIncorrectAnswer'], parseInt(e.target.value) || 0)}
                 />
-                <p className="text-xs text-white/50 mt-1">
-                  Oprócz tego, gracz traci 1 życie
-                </p>
               </div>
-            </div>
-            
-            <Separator className="bg-white/10 my-4" />
-            
-            <div>
-              <Label htmlFor="r2-timer" className="text-white">Czas na odpowiedź (sekundy)</Label>
-              <Input 
-                id="r2-timer"
-                type="number"
-                min="1"
-                max="30"
-                value={localSettings.timerDurations.round2}
-                onChange={handleTimerDurationChange('round2')}
-                className="bg-black/40 border-white/20 text-white"
-              />
-              <p className="text-sm text-white/70 mt-2">
-                W rundzie 2 gracze mają bardzo mało czasu na odpowiedź, standardowo 5 sekund.
-              </p>
+              
+              <div className="space-y-2">
+                <Label htmlFor="r2-timer">Czas na odpowiedź (sek)</Label>
+                <Input
+                  id="r2-timer"
+                  type="number"
+                  value={localSettings[GameRound.ROUND_TWO].timerDuration}
+                  onChange={(e) => updateField([GameRound.ROUND_TWO, 'timerDuration'], parseInt(e.target.value) || 5)}
+                  min={3}
+                  max={10}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="r2-lives">Liczba żyć na start</Label>
+                <Input
+                  id="r2-lives"
+                  type="number"
+                  value={localSettings[GameRound.ROUND_TWO].livesCount}
+                  onChange={(e) => updateField([GameRound.ROUND_TWO, 'livesCount'], parseInt(e.target.value) || 1)}
+                  min={1}
+                  max={5}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="r2-lives-deduct">Utrata żyć za błędną odpowiedź</Label>
+                <Input
+                  id="r2-lives-deduct"
+                  type="number"
+                  value={localSettings[GameRound.ROUND_TWO].livesDeductedOnIncorrectAnswer}
+                  onChange={(e) => updateField([GameRound.ROUND_TWO, 'livesDeductedOnIncorrectAnswer'], parseInt(e.target.value) || 0)}
+                  min={0}
+                  max={3}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="r2-max-questions">Maksymalna liczba pytań</Label>
+                <Input
+                  id="r2-max-questions"
+                  type="number"
+                  value={localSettings[GameRound.ROUND_TWO].maxQuestions}
+                  onChange={(e) => updateField([GameRound.ROUND_TWO, 'maxQuestions'], parseInt(e.target.value) || 10)}
+                  min={5}
+                  max={20}
+                />
+              </div>
             </div>
           </TabsContent>
           
           {/* Round 3 Settings */}
           <TabsContent value="round3" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="r3-points" className="text-white">Punkty za poprawną odpowiedź</Label>
-                <Input 
-                  id="r3-points"
+              <div className="space-y-2">
+                <Label htmlFor="r3-points-correct">Punkty za poprawną odpowiedź</Label>
+                <Input
+                  id="r3-points-correct"
                   type="number"
-                  min="1"
-                  max="100"
-                  value={localSettings.pointValues.round3}
-                  onChange={handlePointValueChange('round3')}
-                  className="bg-black/40 border-white/20 text-white"
+                  value={localSettings[GameRound.ROUND_THREE].pointsForCorrectAnswer}
+                  onChange={(e) => updateField([GameRound.ROUND_THREE, 'pointsForCorrectAnswer'], parseInt(e.target.value) || 0)}
+                  min={0}
                 />
               </div>
               
-              <div>
-                <Label htmlFor="r3-life-penalty" className="text-white">Kara za błąd (% życia)</Label>
-                <Input 
-                  id="r3-life-penalty"
+              <div className="space-y-2">
+                <Label htmlFor="r3-points-incorrect">Punkty za błędną odpowiedź</Label>
+                <Input
+                  id="r3-points-incorrect"
                   type="number"
-                  min="1"
-                  max="100"
-                  value={localSettings.lifePenalties.round3}
-                  onChange={handleLifePenaltyChange('round3')}
-                  className="bg-black/40 border-white/20 text-white"
+                  value={localSettings[GameRound.ROUND_THREE].pointsForIncorrectAnswer}
+                  onChange={(e) => updateField([GameRound.ROUND_THREE, 'pointsForIncorrectAnswer'], parseInt(e.target.value) || 0)}
                 />
-                <p className="text-xs text-white/50 mt-1">
-                  Oprócz tego, gracz traci 1 życie
-                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="r3-timer">Czas na odpowiedź (sek)</Label>
+                <Input
+                  id="r3-timer"
+                  type="number"
+                  value={localSettings[GameRound.ROUND_THREE].timerDuration}
+                  onChange={(e) => updateField([GameRound.ROUND_THREE, 'timerDuration'], parseInt(e.target.value) || 15)}
+                  min={5}
+                  max={60}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="r3-lives">Liczba żyć na start</Label>
+                <Input
+                  id="r3-lives"
+                  type="number"
+                  value={localSettings[GameRound.ROUND_THREE].livesCount}
+                  onChange={(e) => updateField([GameRound.ROUND_THREE, 'livesCount'], parseInt(e.target.value) || 1)}
+                  min={1}
+                  max={3}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="r3-lives-deduct">Utrata żyć za błędną odpowiedź</Label>
+                <Input
+                  id="r3-lives-deduct"
+                  type="number"
+                  value={localSettings[GameRound.ROUND_THREE].livesDeductedOnIncorrectAnswer}
+                  onChange={(e) => updateField([GameRound.ROUND_THREE, 'livesDeductedOnIncorrectAnswer'], parseInt(e.target.value) || 1)}
+                  min={0}
+                  max={3}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="r3-max-spins">Maksymalna liczba obrotów koła</Label>
+                <Input
+                  id="r3-max-spins"
+                  type="number"
+                  value={localSettings[GameRound.ROUND_THREE].maxSpins}
+                  onChange={(e) => updateField([GameRound.ROUND_THREE, 'maxSpins'], parseInt(e.target.value) || 10)}
+                  min={3}
+                  max={20}
+                />
+              </div>
+              
+              <div className="space-y-2 flex items-center justify-between">
+                <Label htmlFor="r3-final-round">Włącz rundę finałową</Label>
+                <Switch
+                  id="r3-final-round"
+                  checked={localSettings[GameRound.ROUND_THREE].finalRoundEnabled}
+                  onCheckedChange={(checked) => updateField([GameRound.ROUND_THREE, 'finalRoundEnabled'], checked)}
+                />
               </div>
             </div>
             
-            <Separator className="bg-white/10 my-4" />
-            
-            <div>
-              <Label htmlFor="r3-timer" className="text-white">Czas na odpowiedź (sekundy)</Label>
-              <Input 
-                id="r3-timer"
-                type="number"
-                min="1"
-                max="300"
-                value={localSettings.timerDurations.round3}
-                onChange={handleTimerDurationChange('round3')}
-                className="bg-black/40 border-white/20 text-white"
-              />
+            {/* Wheel categories */}
+            <div className="mt-6 space-y-2">
+              <Label>Kategorie do koła fortuny</Label>
+              <div className="border border-white/10 rounded-md p-3 bg-black/30">
+                {localSettings[GameRound.ROUND_THREE].wheelCategories.map((category, index) => (
+                  <div key={index} className="flex items-center space-x-2 mb-2 last:mb-0">
+                    <Input
+                      value={category}
+                      onChange={(e) => {
+                        const newCategories = [...localSettings[GameRound.ROUND_THREE].wheelCategories];
+                        newCategories[index] = e.target.value;
+                        updateField([GameRound.ROUND_THREE, 'wheelCategories'], newCategories);
+                      }}
+                      className="bg-black/20"
+                    />
+                  </div>
+                ))}
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newCategories = [...localSettings[GameRound.ROUND_THREE].wheelCategories, ''];
+                    updateField([GameRound.ROUND_THREE, 'wheelCategories'], newCategories);
+                  }}
+                  className="mt-2"
+                >
+                  Dodaj kategorię
+                </Button>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
+        
+        <div className="flex justify-end space-x-4 mt-6">
+          <Button 
+            variant="outline" 
+            onClick={resetSettings}
+            className="border-neon-red text-neon-red hover:bg-neon-red/10"
+          >
+            <RotateCw className="h-4 w-4 mr-1" />
+            Reset zmian
+          </Button>
+          
+          <Button 
+            onClick={saveSettings}
+            className="bg-neon-blue hover:bg-neon-blue/80"
+          >
+            Zapisz ustawienia
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
