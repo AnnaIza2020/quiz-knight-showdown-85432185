@@ -1,123 +1,148 @@
 
-# Contributing Guide
+# Contributing to Discord Game Show
 
-## TypeScript & Types
+Thank you for your interest in contributing to our Discord Game Show project! This document provides guidelines on how to contribute effectively.
 
-### Adding New Types
+## Adding New Types
 
-1. Create or update type definition files in the `src/types/` directory
-2. Export types using `export type { TypeName }`
-3. Use clear interfaces and descriptive names
-4. Add documentation comments for complex types
+1. **Location**: All types should be defined in the `src/types/` directory:
+   - `game-types.ts` - Core game-related types
+   - `round-settings.ts` - Types related to round configuration
+   - `availability-types.ts` - Types for player availability calendar
+   - Add new files for logically grouped types
 
-### Database Types
+2. **Exporting Types**:
+   - Use `export type` for type definitions to avoid runtime overhead
+   - Example: `export type AvailabilityStatus = 'available' | 'unavailable' | 'maybe' | '';`
+   - For interfaces: `export interface PlayerAvailability { ... }`
 
-When adding or updating database tables:
+3. **Type Naming Conventions**:
+   - Use PascalCase for interface and type names
+   - Use descriptive names that clearly indicate the purpose
+   - For enums, use UPPER_CASE for values
 
-1. After creating or updating a table in Supabase, regenerate the types:
+4. **Documentation**:
+   - Add JSDoc comments for complex types
+   - Specify required and optional fields clearly
+   - Include example usage for non-trivial types
+
+## Generating and Updating Database Types
+
+We use Supabase for our database, and it's important to keep our TypeScript types in sync with the database schema:
+
+1. **Installing Supabase CLI** (if not already installed):
+   ```bash
+   npm install -g supabase
    ```
-   npx supabase gen types typescript --project-id <your-project-id> --schema public > src/integrations/supabase/types.ts
+
+2. **Generating Types**:
+   ```bash
+   supabase gen types typescript --project-id jkkvxlojgxlmbypulvtu > src/lib/database.types.ts
    ```
-2. If working with tables not yet in the DB schema, use the `as any` type assertion temporarily:
+
+3. **After Schema Changes**:
+   - Run migrations using SQL files in `supabase/migrations/`
+   - Regenerate types using the command above
+   - Update any dependent interfaces or types in your codebase
+
+4. **Using Generated Types**:
    ```typescript
-   await supabase.from('table_name' as any).select('*')
+   import { Database } from '@/lib/database.types';
+   
+   type Players = Database['public']['Tables']['players']['Row'];
    ```
 
 ## Writing Tests
 
-### Hook Tests
+### Testing Hooks
 
-For testing hooks:
+For testing React hooks, we use React Testing Library and jest:
 
-```typescript
-import { renderHook, act } from '@testing-library/react-hooks';
-import { useYourHook } from './useYourHook';
+1. **File Structure**:
+   - Place hook tests in `src/hooks/__tests__/`
+   - Name the test file the same as the hook file with `.test.ts` extension
 
-test('should return initial values', () => {
-  const { result } = renderHook(() => useYourHook());
-  expect(result.current.value).toBe(initialValue);
-});
+2. **Example Hook Test**:
+   ```typescript
+   import { renderHook, act } from '@testing-library/react-hooks';
+   import { useAvailability } from '../useAvailability';
+   
+   // Mock dependencies
+   jest.mock('@/lib/supabase', () => ({
+     supabase: {
+       from: jest.fn().mockReturnThis(),
+       select: jest.fn().mockResolvedValue({ data: [], error: null }),
+       upsert: jest.fn().mockResolvedValue({ data: null, error: null })
+     }
+   }));
+   
+   describe('useAvailability', () => {
+     test('should initialize with empty state', () => {
+       const { result } = renderHook(() => useAvailability());
+       
+       expect(result.current.playerAvailability).toEqual([]);
+       expect(result.current.isLoading).toBe(false);
+       expect(result.current.error).toBeNull();
+     });
+   
+     test('fetches availability data', async () => {
+       // Test implementation
+     });
+   });
+   ```
 
-test('should update value', () => {
-  const { result } = renderHook(() => useYourHook());
-  
-  act(() => {
-    result.current.setValue('new value');
-  });
-  
-  expect(result.current.value).toBe('new value');
-});
-```
-
-### Context Tests
+### Testing Context
 
 For testing context providers:
 
-```typescript
-import { render, screen } from '@testing-library/react';
-import { YourContext, YourContextProvider } from './YourContext';
-import { useContext } from 'react';
+1. **Create a Test Wrapper**:
+   ```typescript
+   const wrapper = ({ children }) => (
+     <AvailabilityProvider>{children}</AvailabilityProvider>
+   );
+   
+   const { result } = renderHook(() => useAvailabilityContext(), { wrapper });
+   ```
 
-const TestComponent = () => {
-  const context = useContext(YourContext);
-  return <div data-testid="test">{context.value}</div>;
-};
+2. **Test Provider Behavior**:
+   - Test initial state
+   - Test context updates
+   - Test error handling
 
-test('provides expected context value', () => {
-  render(
-    <YourContextProvider>
-      <TestComponent />
-    </YourContextProvider>
-  );
-  
-  expect(screen.getByTestId('test')).toHaveTextContent('expected value');
-});
-```
+### Running Tests
 
-## Code Organization
-
-1. **Keep files small and focused**:
-   - Components should be under 200 lines
-   - Break large components into smaller ones
-   - Extract logic into custom hooks
-
-2. **Folder structure**:
-   - Group related components, hooks and utilities
-   - Use index.ts files for cleaner imports
-   - Prefer feature-based organization over technology-based
-
-3. **File naming**:
-   - Use PascalCase for component files (e.g., `PlayerCard.tsx`)
-   - Use camelCase for utility and hook files (e.g., `useAvailability.ts`)
-
-## Pre-commit & CI
-
-This project uses:
-1. **Husky** for pre-commit hooks
-2. **lint-staged** for running checks on staged files
-3. **ESLint** for code quality
-4. **Prettier** for code formatting
-5. **Jest** for unit tests
-
-Before committing:
-```
-npm run lint
-npm run build -- --noEmit
+```bash
+# Run all tests
 npm test
+
+# Run specific test
+npm test -- -t "useAvailability"
+
+# Generate coverage report
+npm test -- --coverage
 ```
 
-## Troubleshooting Common Errors
+## Code Organization Guidelines
 
-1. "Cannot find module" errors:
-   - Make sure the import path is correct
-   - Check if you're using @ import aliases correctly
-   - Verify the file exists in the specified location
+1. **Component Organization**:
+   - Keep components small and focused
+   - Split large files into smaller ones
+   - Group related components in subfolders
 
-2. Type errors:
-   - Ensure all props match their interface definitions
-   - Check for null/undefined handling
-   - Use optional chaining (`?.`) for potentially undefined values
+2. **Hook Organization**:
+   - Move complex logic out of components into custom hooks
+   - Structure: `src/hooks/useFeature/index.ts` with supporting files in same folder
 
-3. Context errors:
-   - Ensure components using context are wrapped in the provider
-   - Check for circular imports between context files
+3. **Context Organization**:
+   - Split large context files:
+     - `GameContext/index.tsx` - Main export
+     - `GameContext/Provider.tsx` - Provider implementation
+     - `GameContext/hooks.ts` - Custom hooks for context
+
+4. **Code Quality Guidelines**:
+   - Use TypeScript strictly (no `any` unless absolutely necessary)
+   - Follow ESLint and Prettier rules
+   - Document complex functions with JSDoc
+   - Keep functions small and focused on a single responsibility
+
+By following these guidelines, you'll help maintain a high-quality, maintainable codebase that's easier for all contributors to work with.

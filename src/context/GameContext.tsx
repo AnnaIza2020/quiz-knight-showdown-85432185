@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { useGameLogic } from '@/hooks/useGameLogic';
@@ -9,6 +8,7 @@ import { GameContextType, Question } from '@/types/game-types';
 import { RoundSettings, DEFAULT_ROUND_SETTINGS } from '@/types/round-settings';
 import { toast } from 'sonner';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
+import { PlayerAvailabilitySlot } from '@/types/availability-types';
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
@@ -233,7 +233,24 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   // Pobierz funkcje związane z dostępnością
   const { fetchAvailability, updateAvailability } = useAvailabilityContext();
 
-  // Wartość kontekstu z uwzględnieniem nowych funkcji dostępności
+  // Fixed version of fetchAvailability to ensure it returns the expected type
+  const fetchPlayerAvailability = async (): Promise<PlayerAvailabilitySlot[]> => {
+    // Call the original function
+    const playerAvailabilityData = await fetchAvailability();
+    
+    // Transform the data to match the expected return type
+    // This flattens the nested structure to a single array of slots
+    const allSlots: PlayerAvailabilitySlot[] = [];
+    playerAvailabilityData.forEach(player => {
+      player.slots.forEach(slot => {
+        allSlots.push(slot);
+      });
+    });
+    
+    return allSlots;
+  };
+
+  // Context value with corrected types
   const contextValue: GameContextType = {
     // State
     round,
@@ -330,8 +347,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     resetUsedQuestions,
     isQuestionUsed,
     
-    // Add availability methods
-    fetchAvailability,
+    // Add availability methods with proper types
+    fetchAvailability: fetchPlayerAvailability,
     updateAvailability
   };
 

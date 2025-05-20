@@ -2,7 +2,8 @@
 {
   "*.{js,jsx,ts,tsx}": [
     "eslint --fix",
-    "prettier --write"
+    "prettier --write",
+    "tsc-files --noEmit"
   ],
   "*.{json,md}": [
     "prettier --write"

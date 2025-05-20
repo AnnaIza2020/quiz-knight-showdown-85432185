@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { PlayerAvailability, PlayerAvailabilitySlot } from '@/types/availability-types';
+import { PlayerAvailability, PlayerAvailabilitySlot, AvailabilityStatus } from '@/types/availability-types';
 import { toast } from 'sonner';
 
 export function useAvailability() {
@@ -61,7 +61,6 @@ export function useAvailability() {
       
       if (!exists) {
         // Table doesn't exist, we should create it first
-        // This would be handled by a SQL migration in a real app
         console.log('player_availability table does not exist yet');
         // Return false as we can't update a non-existent table
         return false;
