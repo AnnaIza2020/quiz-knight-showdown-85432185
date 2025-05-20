@@ -1,21 +1,24 @@
 
-export interface PlayerAvailabilitySlot {
-  playerId: string;
-  date: string; // format ISO "YYYY-MM-DD"
-  timeSlots: Record<string, AvailabilityStatus>; // key: time slot (e.g. "16:00"), value: availability status
+export interface TimeSlot {
+  hour: number;
+  status: AvailabilityStatus;
 }
 
 export type AvailabilityStatus = 'available' | 'unavailable' | 'maybe' | '';
 
-export interface PlayerAvailability {
+export interface PlayerAvailabilitySlot {
+  date: string;
   playerId: string;
-  slots: PlayerAvailabilitySlot[];
+  timeSlots: TimeSlot[];
 }
 
 export interface AvailabilityContextType {
-  fetchAvailability: () => Promise<PlayerAvailability[]>;
-  updateAvailability: (playerId: string, slot: PlayerAvailabilitySlot) => Promise<boolean>;
-  playerAvailability: PlayerAvailability[];
+  playerAvailability: PlayerAvailabilitySlot[];
   isLoading: boolean;
   error: Error | null;
+  fetchAvailability: (playerId?: string) => Promise<PlayerAvailabilitySlot[]>;
+  updateAvailability: (playerId: string, slot: PlayerAvailabilitySlot) => Promise<boolean>;
+  getPlayerAvailabilityForDate: (playerId: string, date: string) => PlayerAvailabilitySlot | undefined;
+  getAvailablePlayersForDate: (date: string, hour: number) => string[];
+  getAvailabilityPercentageForDate: (date: string, hour: number) => number;
 }

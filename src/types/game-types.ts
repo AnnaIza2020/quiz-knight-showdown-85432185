@@ -22,9 +22,12 @@ export interface Category {
 export interface Question {
   id: string;
   text: string;
+  question?: string; // Alternative to text in some components
   difficulty: number;
   category?: string;
+  categoryId?: string; // Used in some components
   correctAnswer: string;
+  answer?: string; // Alternative to correctAnswer in some components
   options?: string[];
   image_url?: string;
   type?: 'multiple_choice' | 'true_false' | 'open';
@@ -36,19 +39,25 @@ export interface Player {
   name: string;
   nickname?: string;
   avatar_url?: string;
+  avatar?: string; // Alternative to avatar_url used in components
   camera_url?: string;
+  cameraUrl?: string; // Alternative to camera_url used in components
   color?: string;
   points: number;
   health: number;
   lives: number;
   isEliminated: boolean;
+  isActive?: boolean; // Used in components for currently active player
   specialCards?: string[];
   status?: 'active' | 'inactive' | 'eliminated';
+  uniqueLinkToken?: string; // Used for player access links
 }
 
+// Sound effect types used across components
 export type SoundEffect = 
   | 'success' 
   | 'fail' 
+  | 'failure'  // Alternative to fail
   | 'bonus' 
   | 'card-reveal' 
   | 'eliminate' 
@@ -57,7 +66,11 @@ export type SoundEffect =
   | 'round-start' 
   | 'timeout' 
   | 'victory' 
-  | 'wheel-tick';
+  | 'wheel-tick'
+  | 'wheel-spin'
+  | 'click'
+  | 'damage'
+  | 'powerup';
 
 export interface SpecialCard {
   id: string;
@@ -65,9 +78,14 @@ export interface SpecialCard {
   description: string;
   type: string;
   icon?: string;
+  iconName?: string; // Used in components
   image_url?: string;
+  imageUrl?: string; // Alternative to image_url
   sound_effect?: string;
+  soundEffect?: string; // Alternative to sound_effect
   animation_style?: string;
+  animationStyle?: string; // Alternative to animation_style
+  effectType?: string; // Used in components
 }
 
 export interface SpecialCardAwardRule {
@@ -78,8 +96,16 @@ export interface SpecialCardAwardRule {
   cardId: string;
   threshold: number;
   round?: GameRound;
+  roundType?: string;
   limit?: number;
+  roundApplicable?: number[]; // Used in components
+  probability?: number; // Used in components
+  isEnabled?: boolean; // Used in components
+  params?: any; // Used in components
 }
+
+// Card size type used in CardDisplay component
+export type CardSize = "tiny" | "small" | "medium" | "large";
 
 export interface SoundEffectsHook {
   playSound: (sound: SoundEffect, volume?: number) => void;

@@ -1,41 +1,85 @@
 
-/**
- * Settings for game rounds
- */
+import { GameRound } from './game-types';
+
 export interface RoundSettings {
-  pointValues: {
-    round1: { easy: number; medium: number; hard: number; expert: number };
-    round2: number;
-    round3: number;
+  // Global settings
+  defaultTimerDuration: number;
+  randomizeQuestions: boolean;
+  
+  // Round-specific settings
+  [GameRound.ROUND_ONE]: {
+    pointsForCorrectAnswer: number;
+    pointsForIncorrectAnswer: number;
+    timerDuration: number;
+    livesCount: number;
+    livesDeductedOnIncorrectAnswer: number;
+    healthDeductionPercentage: number;
+    luckyLoserEnabled: boolean;
+    eliminationCount: number;
+    maxQuestions: number;
   };
-  lifePenalties: {
-    round1: number;
-    round2: number;
-    round3: number;
+  
+  [GameRound.ROUND_TWO]: {
+    pointsForCorrectAnswer: number;
+    pointsForIncorrectAnswer: number;
+    timerDuration: number;
+    livesCount: number;
+    livesDeductedOnIncorrectAnswer: number;
+    maxQuestions: number;
   };
-  timerDurations: {
-    round1: number;
-    round2: number;
-    round3: number;
+  
+  [GameRound.ROUND_THREE]: {
+    pointsForCorrectAnswer: number;
+    pointsForIncorrectAnswer: number;
+    timerDuration: number;
+    livesCount: number;
+    livesDeductedOnIncorrectAnswer: number;
+    wheelCategories: string[];
+    maxSpins: number;
+    finalRoundEnabled: boolean;
   };
-  luckyLoserThreshold: number;
 }
 
 export const DEFAULT_ROUND_SETTINGS: RoundSettings = {
-  pointValues: {
-    round1: { easy: 10, medium: 15, hard: 20, expert: 30 },
-    round2: 15,
-    round3: 30
+  defaultTimerDuration: 30,
+  randomizeQuestions: true,
+  
+  [GameRound.ROUND_ONE]: {
+    pointsForCorrectAnswer: 100,
+    pointsForIncorrectAnswer: -50,
+    timerDuration: 30,
+    livesCount: 3,
+    livesDeductedOnIncorrectAnswer: 0,
+    healthDeductionPercentage: 33,
+    luckyLoserEnabled: true,
+    eliminationCount: 4,
+    maxQuestions: 12
   },
-  lifePenalties: {
-    round1: 25,
-    round2: 20,
-    round3: 30
+  
+  [GameRound.ROUND_TWO]: {
+    pointsForCorrectAnswer: 200,
+    pointsForIncorrectAnswer: -50,
+    timerDuration: 5,
+    livesCount: 3,
+    livesDeductedOnIncorrectAnswer: 1,
+    maxQuestions: 10
   },
-  timerDurations: {
-    round1: 30,
-    round2: 20,
-    round3: 30
-  },
-  luckyLoserThreshold: 20
+  
+  [GameRound.ROUND_THREE]: {
+    pointsForCorrectAnswer: 300,
+    pointsForIncorrectAnswer: -100,
+    timerDuration: 15,
+    livesCount: 1,
+    livesDeductedOnIncorrectAnswer: 1,
+    wheelCategories: [
+      "Język polskiego internetu",
+      "Polska scena Twitcha",
+      "Zagadki", 
+      "Czy jesteś mądrzejszy od 8-klasisty",
+      "Gry, które podbiły Polskę",
+      "Technologie i internet w Polsce"
+    ],
+    maxSpins: 10,
+    finalRoundEnabled: true
+  }
 };

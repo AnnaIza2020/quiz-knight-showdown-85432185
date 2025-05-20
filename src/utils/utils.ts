@@ -1,76 +1,54 @@
 
 /**
- * Generates a unique token for identifying players
- */
-export function generateUniqueId(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-}
-
-/**
- * Alias dla generateUniqueId dla zapewnienia kompatybilności wstecznej
- */
-export function generateUniqueToken(): string {
-  return generateUniqueId();
-}
-
-/**
- * Zwraca losowy kolor neonowy (dla graczy, kart, itd.)
+ * Returns a random neon color in hexadecimal format
  */
 export function getRandomNeonColor(): string {
   const neonColors = [
-    '#ff00ff', // Neonowy różowy
-    '#00ffff', // Neonowy cyjan
-    '#00ff00', // Neonowy zielony
-    '#ffff00', // Neonowy żółty
-    '#ff9900', // Neonowy pomarańczowy
-    '#ff00cc', // Neonowy magenta
-    '#00ccff', // Neonowy jasnoniebieski
-    '#cc00ff', // Neonowy fioletowy
-    '#ff3366', // Neonowy czerwonoróżowy
-    '#33ccff', // Neonowy błękitny
+    '#FF00FF', // Neon Pink
+    '#00FFFF', // Neon Cyan
+    '#FF6600', // Neon Orange
+    '#FFFF00', // Neon Yellow
+    '#00FF00', // Neon Green
+    '#FF0000', // Neon Red
+    '#9D00FF', // Neon Purple
+    '#0088FF', // Neon Blue
   ];
   
   return neonColors[Math.floor(Math.random() * neonColors.length)];
 }
 
-// Funkcja do głębokiego porównania obiektów
-export function deepEqual(obj1: any, obj2: any): boolean {
-  if (obj1 === obj2) return true;
-  
-  if (typeof obj1 !== 'object' || obj1 === null ||
-      typeof obj2 !== 'object' || obj2 === null) {
-    return false;
-  }
-  
-  const keys1 = Object.keys(obj1);
-  const keys2 = Object.keys(obj2);
-  
-  if (keys1.length !== keys2.length) return false;
-  
-  for (const key of keys1) {
-    if (!keys2.includes(key)) return false;
-    if (!deepEqual(obj1[key], obj2[key])) return false;
-  }
-  
-  return true;
+/**
+ * Format date to a readable string (e.g. "12 May 2023")
+ */
+export function formatDate(dateStr: string | Date): string {
+  const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+  return date.toLocaleDateString('pl-PL', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
 }
 
 /**
- * Funkcja prostego debounce do opóźniania wykonania funkcji
+ * Format time (24-hour format)
  */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-  
-  return function(...args: Parameters<T>): void {
-    const later = () => {
-      timeout = null;
-      func(...args);
+export function formatTime(hour: number): string {
+  return `${hour.toString().padStart(2, '0')}:00`;
+}
+
+/**
+ * Generate player link
+ */
+export async function generatePlayerLink(playerId: string): Promise<{ success: boolean, data?: { link: string } }> {
+  try {
+    return {
+      success: true,
+      data: {
+        link: `${window.location.origin}/player/${playerId}`
+      }
     };
-    
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
+  } catch (error) {
+    console.error('Error generating player link:', error);
+    return { success: false };
+  }
 }
