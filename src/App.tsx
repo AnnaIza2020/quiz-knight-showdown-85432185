@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import HomePage from '@/pages/HomePage'
 import NotFound from '@/pages/NotFound'
@@ -15,31 +14,34 @@ import UnifiedHostPanel from './components/UnifiedHostPanel'
 import SwitchableHostPanel from './components/SwitchableHostPanel'
 import HostAvailability from './pages/HostAvailability'
 import Setup from './pages/Setup'
+import { GameProvider } from './context/GameContext'
 import './App.css'
 
 function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <LogsProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<MainLayout />}>
-              <Route index element={<HomePage />} />
-              <Route path="about" element={<About />} />
-              <Route path="host" element={<Host />} />
-              <Route path="host-new" element={<UnifiedHostPanel />} />
-              <Route path="host-switch" element={<SwitchableHostPanel view="modern" />} />
-              <Route path="host-availability" element={<HostAvailability />} />
-              <Route path="settings/*" element={<Settings />} />
-              <Route path="setup" element={<Setup />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-            <Route path="/overlay" element={<Overlay />} />
-            <Route path="/player/:token" element={<PlayerView />} />
-          </Routes>
-        </BrowserRouter>
-        <Toaster />
-      </LogsProvider>
+      <GameProvider>
+        <LogsProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<MainLayout />}>
+                <Route index element={<HomePage />} />
+                <Route path="about" element={<About />} />
+                <Route path="host" element={<Host />} />
+                <Route path="host-new" element={<UnifiedHostPanel />} />
+                <Route path="host-switch" element={<SwitchableHostPanel view="modern" />} />
+                <Route path="host-availability" element={<HostAvailability />} />
+                <Route path="settings/*" element={<Settings />} />
+                <Route path="setup" element={<Setup />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+              <Route path="/overlay" element={<Overlay />} />
+              <Route path="/player/:token" element={<PlayerView />} />
+            </Routes>
+          </BrowserRouter>
+          <Toaster />
+        </LogsProvider>
+      </GameProvider>
     </ThemeProvider>
   )
 }
