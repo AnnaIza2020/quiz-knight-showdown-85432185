@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { GameRound } from '@/types/game-types';
 import { Button } from '@/components/ui/button';
@@ -50,8 +49,7 @@ const TopBar: React.FC<TopBarProps> = ({
   useEffect(() => {
     const loadEditions = async () => {
       try {
-        // We need to modify this to work with the current Supabase structure
-        // First, we fetch all game_settings records
+        // Use correct Supabase API
         const { data, error } = await supabase
           .from('game_settings')
           .select('id');
@@ -62,11 +60,13 @@ const TopBar: React.FC<TopBarProps> = ({
         }
         
         // Filter out records that start with 'edition_'
-        const editionIds = data
-          .filter(record => record.id.startsWith('edition_'))
-          .map(record => record.id.replace('edition_', ''));
-        
-        setAvailableEditions(editionIds);
+        if (data) {
+          const editionIds = data
+            .filter(record => record.id.startsWith('edition_'))
+            .map(record => record.id.replace('edition_', ''));
+          
+          setAvailableEditions(editionIds);
+        }
       } catch (err) {
         console.error('Failed to load editions:', err);
       }
@@ -79,11 +79,11 @@ const TopBar: React.FC<TopBarProps> = ({
   const getTimerDuration = (): number => {
     switch(round) {
       case GameRound.ROUND_ONE:
-        return roundSettings?.timerDurations?.round1 || 30;
+        return roundSettings?.[GameRound.ROUND_ONE]?.timerDuration || 30;
       case GameRound.ROUND_TWO:
-        return roundSettings?.timerDurations?.round2 || 5;
+        return roundSettings?.[GameRound.ROUND_TWO]?.timerDuration || 5;
       case GameRound.ROUND_THREE:
-        return roundSettings?.timerDurations?.round3 || 30;
+        return roundSettings?.[GameRound.ROUND_THREE]?.timerDuration || 30;
       default:
         return 30;
     }

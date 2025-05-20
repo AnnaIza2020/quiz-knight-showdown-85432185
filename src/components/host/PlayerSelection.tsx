@@ -38,10 +38,7 @@ const PlayerSelection: React.FC<PlayerSelectionProps> = ({
                 activePlayerId === player.id ? 'scale-105' : ''
               }`}
             >
-              <PlayerCard 
-                player={playerWithActive}
-                size="sm"
-              />
+              <PlayerCard player={playerWithActive} />
             </div>
           );
         })}
@@ -53,7 +50,7 @@ const PlayerSelection: React.FC<PlayerSelectionProps> = ({
           <div className="grid grid-cols-2 gap-4 opacity-60">
             {eliminatedPlayers.map(player => (
               <div key={player.id}>
-                <PlayerCard player={player} size="sm" />
+                <PlayerCard player={player} />
               </div>
             ))}
           </div>

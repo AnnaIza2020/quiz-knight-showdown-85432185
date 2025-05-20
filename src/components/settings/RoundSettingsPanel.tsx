@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -8,7 +7,6 @@ import { Cog, RotateCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { GameRound } from '@/types/game-types';
 import { toast } from 'sonner';
@@ -25,33 +23,26 @@ const RoundSettingsPanel: React.FC = () => {
   
   // Update a specific field in settings
   const updateField = (
-    roundKey: keyof RoundSettings | [keyof RoundSettings, string, string], 
+    path: string | number | (string | number)[], 
     value: any
   ) => {
     setLocalSettings((prev) => {
-      if (Array.isArray(roundKey)) {
-        // Handle nested updates like [GameRound.ROUND_ONE, 'pointsForCorrectAnswer']
-        const [round, field, subfield] = roundKey;
-        
-        return {
-          ...prev,
-          [round]: {
-            ...prev[round],
-            [field]: {
-              ...prev[round][field],
-              [subfield]: value
-            }
-          }
-        };
-      } else if (typeof roundKey === 'string' || typeof roundKey === 'number') {
-        // Handle direct updates like 'defaultTimerDuration'
-        return {
-          ...prev,
-          [roundKey]: value
-        };
+      const newSettings = { ...prev };
+      
+      if (Array.isArray(path)) {
+        // For nested paths like [GameRound.ROUND_ONE, 'pointsForCorrectAnswer']
+        let current = newSettings;
+        for (let i = 0; i < path.length - 1; i++) {
+          current = current[path[i] as keyof typeof current];
+        }
+        const lastKey = path[path.length - 1];
+        current[lastKey as keyof typeof current] = value;
+      } else {
+        // For simple paths like 'defaultTimerDuration'
+        newSettings[path as keyof RoundSettings] = value;
       }
       
-      return prev;
+      return newSettings;
     });
   };
   

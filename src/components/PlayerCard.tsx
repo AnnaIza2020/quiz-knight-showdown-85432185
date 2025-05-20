@@ -1,17 +1,15 @@
-
 import React from 'react';
-import { Player } from '@/types/game-types';
-import { motion } from 'framer-motion';
-import { useGameContext } from '@/context/GameContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Player } from '@/types/game-types';
+import { Heart } from 'lucide-react';
 import { getRandomNeonColor } from '@/utils/utils';
 
-interface PlayerCardProps {
+export interface PlayerCardProps {
   player: Player;
-  isSelected?: boolean;
+  size?: 'sm' | 'md' | 'lg';
 }
 
-const PlayerCard: React.FC<PlayerCardProps> = ({ player, isSelected = false }) => {
+const PlayerCard: React.FC<PlayerCardProps> = ({ player, size = 'md' }) => {
   const { playSound } = useGameContext();
   
   // Format health percentage for display

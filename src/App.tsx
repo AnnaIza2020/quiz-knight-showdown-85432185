@@ -29,7 +29,7 @@ function App() {
               <Route path="about" element={<About />} />
               <Route path="host" element={<Host />} />
               <Route path="host-new" element={<UnifiedHostPanel />} />
-              <Route path="host-switch" element={<SwitchableHostPanel />} />
+              <Route path="host-switch" element={<SwitchableHostPanel view="modern" />} />
               <Route path="host-availability" element={<HostAvailability />} />
               <Route path="settings/*" element={<Settings />} />
               <Route path="setup" element={<Setup />} />

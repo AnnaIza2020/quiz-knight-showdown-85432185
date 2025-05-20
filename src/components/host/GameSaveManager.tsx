@@ -1,248 +1,203 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Save, Download, Upload, Trash } from 'lucide-react';
 import { toast } from 'sonner';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from '@/components/ui/card';
-import { Save, Upload } from 'lucide-react';
 import { useGameContext } from '@/context/GameContext';
-import { useLogsContext } from '@/context/LogsContext';
+import { GameBackup } from '@/types/game-types';
 
-interface GameSaveManagerProps {
-  // Props if needed
-}
+const GameSaveManager: React.FC = () => {
+  const { createBackup, restoreBackup, getBackups, deleteBackup } = useGameContext();
+  const [open, setOpen] = useState(false);
+  const [backupName, setBackupName] = useState('');
+  const [backups, setBackups] = useState<GameBackup[]>([]);
+  const [selectedBackup, setSelectedBackup] = useState<GameBackup | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-const GameSaveManager: React.FC<GameSaveManagerProps> = () => {
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [gameName, setGameName] = useState('');
-  
-  const { addLog } = useLogsContext();
-  const { 
-    players, 
-    categories, 
-    round,
-    roundSettings,
-    specialCards,
-    specialCardRules,
-    gameLogo,
-    primaryColor,
-    secondaryColor
-  } = useGameContext();
-  
-  const handleSaveGame = () => {
-    if (!gameName.trim()) {
-      toast.error('Podaj nazwę zapisu gry');
+  // Load backups on component mount
+  React.useEffect(() => {
+    loadBackups();
+  }, []);
+
+  const loadBackups = async () => {
+    setIsLoading(true);
+    try {
+      const loadedBackups = await getBackups();
+      setBackups(loadedBackups);
+    } catch (error) {
+      console.error('Error loading backups:', error);
+      toast.error('Failed to load backups');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateBackup = async () => {
+    setIsLoading(true);
+    try {
+      await createBackup(backupName);
+      toast.success('Backup created successfully');
+      setOpen(false);
+      setBackupName('');
+      await loadBackups();
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      toast.error('Failed to create backup');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRestoreBackup = async () => {
+    if (!selectedBackup) {
+      toast.error('No backup selected');
       return;
     }
-    
+
+    setIsLoading(true);
     try {
-      // Create a game state object to save
-      const gameState = {
-        name: gameName,
-        timestamp: new Date().toISOString(),
-        players,
-        categories,
-        round,
-        roundSettings,
-        specialCards,
-        specialCardRules,
-        settings: {
-          gameLogo,
-          primaryColor,
-          secondaryColor
-        }
-      };
-      
-      // Convert to string for local storage
-      const gameStateString = JSON.stringify(gameState);
-      
-      // Save to localStorage with a specific key
-      localStorage.setItem(`game_save_${Date.now()}`, gameStateString);
-      
-      // Close dialog and show success message
-      setSaveDialogOpen(false);
-      setGameName('');
-      
-      toast.success('Gra została zapisana lokalnie');
-      addLog({
-        type: 'system',
-        action: 'Game saved locally',
-        value: gameName
-      });
-    } catch (error) {
-      console.error('Error saving game:', error);
-      toast.error('Nie udało się zapisać gry');
-    }
-  };
-  
-  const handleLoadGame = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const gameState = JSON.parse(e.target?.result as string);
-        
-        // Here you would implement the logic to update the game state
-        // with the loaded data, but this requires appropriate methods from GameContext
-        
-        toast.success('Gra została załadowana');
-        addLog({
-          type: 'system',
-          action: 'Game loaded from file',
-          value: file.name
-        });
-      } catch (error) {
-        console.error('Error loading game:', error);
-        toast.error('Nie udało się załadować gry');
+      const success = await restoreBackup(selectedBackup);
+      if (success) {
+        toast.success('Backup restored successfully');
+      } else {
+        toast.error('Failed to restore backup');
       }
-    };
-    
-    reader.onerror = () => {
-      toast.error('Błąd odczytu pliku');
-    };
-    
-    reader.readAsText(file);
-  };
-  
-  const exportGame = () => {
-    try {
-      // Create a game state object to export
-      const gameState = {
-        name: `Discord Game Show - ${new Date().toLocaleDateString()}`,
-        timestamp: new Date().toISOString(),
-        players,
-        categories,
-        round,
-        roundSettings,
-        specialCards,
-        specialCardRules,
-        settings: {
-          gameLogo,
-          primaryColor,
-          secondaryColor
-        }
-      };
-      
-      // Convert to string for download
-      const gameStateString = JSON.stringify(gameState, null, 2);
-      
-      // Create a download link
-      const blob = new Blob([gameStateString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      
-      // Format file name with timestamp
-      const fileName = `discord_game_show_${new Date().toISOString().split('T')[0]}.json`;
-      
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      
-      // Clean up
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      toast.success('Gra została wyeksportowana do pliku');
-      addLog({
-        type: 'system',
-        action: 'Game exported to file',
-        value: fileName
-      });
     } catch (error) {
-      console.error('Error exporting game:', error);
-      toast.error('Nie udało się wyeksportować gry');
+      console.error('Error restoring backup:', error);
+      toast.error('Failed to restore backup');
+    } finally {
+      setIsLoading(false);
     }
   };
-  
+
+  const handleDeleteBackup = async (backupId: string) => {
+    setIsLoading(true);
+    try {
+      const success = await deleteBackup(backupId);
+      if (success) {
+        toast.success('Backup deleted successfully');
+        await loadBackups();
+      } else {
+        toast.error('Failed to delete backup');
+      }
+    } catch (error) {
+      console.error('Error deleting backup:', error);
+      toast.error('Failed to delete backup');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="space-y-4 p-4 bg-black/30 rounded-lg border border-white/10">
-      <h3 className="text-lg font-semibold mb-2">Zapisz / Wczytaj Grę</h3>
+    <Card className="bg-black/40 border border-white/10">
+      <CardHeader>
+        <CardTitle>Zarządzanie Zapisami Gry</CardTitle>
+        <CardDescription>
+          Twórz i przywracaj kopie zapasowe stanu gry
+        </CardDescription>
+      </CardHeader>
       
-      <div className="grid grid-cols-2 gap-2">
-        <Button 
-          variant="outline" 
-          onClick={() => setSaveDialogOpen(true)}
-          className="bg-blue-900/10 hover:bg-blue-900/20 border-blue-500/30"
-        >
+      <CardContent className="space-y-4">
+        <Button onClick={() => setOpen(true)} className="w-full">
           <Save className="mr-2 h-4 w-4" />
-          Zapisz lokalnie
+          Utwórz Nowy Zapis
         </Button>
         
-        <Button 
-          variant="outline" 
-          onClick={exportGame}
-          className="bg-green-900/10 hover:bg-green-900/20 border-green-500/30"
-        >
-          <Save className="mr-2 h-4 w-4" />
-          Eksportuj do pliku
-        </Button>
-      </div>
+        {/* List of Backups */}
+        <div>
+          <h3 className="text-sm font-bold mb-2 text-white/80">Dostępne Zapisy</h3>
+          
+          {isLoading ? (
+            <p>Ładowanie zapisów...</p>
+          ) : backups.length === 0 ? (
+            <p>Brak dostępnych zapisów.</p>
+          ) : (
+            <div className="space-y-2">
+              {backups.map((backup) => (
+                <div
+                  key={backup.id}
+                  className={`p-3 rounded-md border ${selectedBackup?.id === backup.id ? 'border-neon-blue bg-black/50' : 'border-white/20 hover:bg-black/30'} cursor-pointer`}
+                  onClick={() => setSelectedBackup(backup)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">{backup.name}</p>
+                      <p className="text-xs text-white/50">
+                        {new Date(backup.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                    <Button 
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteBackup(backup.id);
+                      }}
+                    >
+                      <Trash className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* Restore Selected Backup */}
+        {selectedBackup && (
+          <Button 
+            onClick={handleRestoreBackup}
+            disabled={isLoading}
+            className="w-full bg-neon-green hover:bg-neon-green/80"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Przywróć Wybrany Zapis
+          </Button>
+        )}
+      </CardContent>
       
-      <div className="grid grid-cols-1">
-        <Label htmlFor="loadGame" className="w-full">
-          <div className="cursor-pointer bg-yellow-900/10 hover:bg-yellow-900/20 text-center p-2 rounded-md border border-yellow-500/30 flex items-center justify-center">
-            <Upload className="mr-2 h-4 w-4" />
-            Wczytaj z pliku
-            <Input
-              id="loadGame"
-              type="file"
-              onChange={handleLoadGame}
-              accept="application/json"
-              className="hidden"
-            />
-          </div>
-        </Label>
-      </div>
-      
-      {/* Save Dialog */}
-      {saveDialogOpen && (
-        <Dialog className="bg-black/90 rounded-lg border border-white/10">
+      {/* Create Backup Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-white">Zapisz grę</DialogTitle>
-            <DialogDescription className="text-white/60">
-              Zapisz aktualny stan gry w pamięci przeglądarki
+            <DialogTitle>Utwórz Nowy Zapis</DialogTitle>
+            <DialogDescription>
+              Nazwij swój zapis, aby łatwo go później odnaleźć.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="p-4">
-            <Label htmlFor="gameName">Nazwa zapisu</Label>
-            <Input
-              id="gameName"
-              value={gameName}
-              onChange={(e) => setGameName(e.target.value)}
-              className="mt-1 bg-black/50 border-white/20"
-              placeholder="np. Turniej Czerwiec 2025"
-            />
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Nazwa
+              </Label>
+              <Input 
+                id="name" 
+                value={backupName}
+                onChange={(e) => setBackupName(e.target.value)}
+                className="col-span-3" 
+              />
+            </div>
           </div>
           
-          <DialogFooter className="p-4 pt-0">
-            <Button
-              variant="ghost"
-              onClick={() => setSaveDialogOpen(false)}
-            >
-              Anuluj
-            </Button>
-            <Button
-              onClick={handleSaveGame}
-              disabled={!gameName.trim()}
-            >
-              Zapisz
+          <DialogFooter>
+            <Button type="submit" onClick={handleCreateBackup} disabled={isLoading}>
+              Utwórz
             </Button>
           </DialogFooter>
-        </Dialog>
-      )}
-    </div>
+        </DialogContent>
+      </Dialog>
+    </Card>
   );
 };
 

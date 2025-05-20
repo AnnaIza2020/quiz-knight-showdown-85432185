@@ -9,11 +9,11 @@ import { Maximize2, Minimize2, ExternalLink, Bell, X } from 'lucide-react';
 import EventsBar from '@/components/hostpanel/EventsBar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-interface SwitchableHostPanelProps {
+export interface SwitchableHostPanelProps {
   view: 'classic' | 'modern';
 }
 
-const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view }) => {
+const SwitchableHostPanel: React.FC<SwitchableHostPanelProps> = ({ view = 'modern' }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [events, setEvents] = useState<string[]>([]);
   const [showWelcome, setShowWelcome] = useState(true);

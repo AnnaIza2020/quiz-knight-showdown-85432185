@@ -1,18 +1,20 @@
 
-import React from 'react';
-import { ReactNode } from 'react';
+import React, { ReactNode } from 'react';
+import { Outlet } from 'react-router-dom';
+import { Toaster } from '@/components/ui/sonner';
+import SoundPreloader from '@/components/SoundPreloader';
 
-interface MainLayoutProps {
-  children: ReactNode;
+export interface MainLayoutProps {
+  children?: ReactNode;
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <main className="flex-grow container mx-auto px-4 py-8">
-        {children}
-      </main>
-    </div>
+    <>
+      {children || <Outlet />}
+      <Toaster position="top-right" richColors closeButton />
+      <SoundPreloader />
+    </>
   );
 };
 
