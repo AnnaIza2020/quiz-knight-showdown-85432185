@@ -3,7 +3,7 @@ import React, { createContext, useContext, ReactNode } from 'react';
 import { SpecialCard, CardSize } from '@/types/card-types';
 import { Player, SpecialCardAwardRule, SoundEffect } from '@/types/game-types';
 import { useSpecialCards } from '@/hooks/useSpecialCards';
-import { GameContext } from './GameContext';
+import { useGameContext } from './GameContext';
 
 // Define the Special Cards Context type
 interface SpecialCardsContextType {
@@ -37,7 +37,7 @@ interface SpecialCardsProviderProps {
 
 export const SpecialCardsProvider: React.FC<SpecialCardsProviderProps> = ({ children }) => {
   // Get game context data
-  const gameCtx = useContext(GameContext);
+  const gameCtx = useGameContext();
   
   // Safely access properties with defaults
   const players = gameCtx?.players || [];
@@ -56,7 +56,7 @@ export const SpecialCardsProvider: React.FC<SpecialCardsProviderProps> = ({ chil
     setSpecialCards, 
     specialCardRules, 
     setSpecialCardRules, 
-    playSound
+    playSound as (sound: SoundEffect, volume?: number) => void
   );
 
   // Value to provide to consumers

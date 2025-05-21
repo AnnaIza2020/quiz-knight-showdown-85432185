@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { useGameLogic } from '@/hooks/useGameLogic';
@@ -301,12 +300,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
   // Fix playSoundWithOptions to match the expected signature
   const playSoundWithOptionsWrapper = (sound: string, options: any) => {
-    playSoundWithOptions(options);
+    playSoundWithOptions(sound, options);
   };
 
   // Fix hasUndoHistory to return boolean
   const hasUndoHistoryFn = () => {
-    return hasUndoHistory as unknown as boolean;
+    return Boolean(hasUndoHistory);
   };
 
   // Context value with corrected types
@@ -348,8 +347,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     volume,
     setVolume,
     soundStatus,
-    availableSounds,
-    addCustomSound,
+    availableSounds: availableSounds as GameSound[],
+    addCustomSound: addCustomSound as (sound: GameSound) => void,
     
     // Error reporting
     reportError,

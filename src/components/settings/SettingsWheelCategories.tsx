@@ -1,85 +1,92 @@
 import React, { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { useGameContext } from '@/context/GameContext';
-import { Category, GameRound } from '@/types/game-types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
+import { Category, GameRound } from '@/types/game-types';
+import { useGameContext } from '@/context/GameContext';
 import { Trash2 } from 'lucide-react';
+import SettingsLayout from '../SettingsLayout';
 
-const SettingsWheelCategories = () => {
-  const gameContext = useGameContext();
+const SettingsWheelCategories: React.FC = () => {
+  const { categories, setCategories } = useGameContext();
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [wheelCategories, setWheelCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    if (gameContext) {
-      setCategories(gameContext.categories.filter(cat => cat.round === GameRound.ROUND_THREE));
-    }
-  }, [gameContext, gameContext?.categories]);
+    // Filter categories for Round 3 (Wheel)
+    const roundThreeCategories = categories.filter(cat => cat.round === GameRound.ROUND_THREE);
+    setWheelCategories(roundThreeCategories);
+  }, [categories]);
 
-  const addCategory = () => {
-    if (newCategoryName.trim() === '') {
-      toast.error('Podaj nazwę kategorii');
-      return;
-    }
+  const handleAddCategory = () => {
+    if (newCategoryName.trim() === '') return;
     
     const newCategory: Category = {
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       name: newCategoryName,
-      description: '', // Add the required description field
       round: GameRound.ROUND_THREE,
-      questions: []
+      questions: [],
+      description: '' // Add this required field
     };
     
-    gameContext.addCategory(newCategory);
+    setCategories(prevCategories => [...prevCategories, newCategory]);
     setNewCategoryName('');
+    toast.success(`Dodano kategorię "${newCategoryName}"`);
   };
 
-  const removeCategory = (categoryId: string) => {
-    gameContext.removeCategory(categoryId);
+  const handleRemoveCategory = (categoryId: string) => {
+    setCategories(prevCategories =>
+      prevCategories.filter(category => category.id !== categoryId)
+    );
+    toast.success('Kategoria została usunięta');
   };
 
   return (
-    <div>
-      <h3 className="text-lg font-semibold mb-4 text-white">Kategorie Rundy 3</h3>
-      
-      <div className="mb-4">
-        <div className="flex gap-2">
+    <SettingsLayout title="Kategorie Koła Fortuny" description="Zarządzaj kategoriami pytań dla rundy Koła Fortuny">
+      <div className="space-y-4">
+        {/* Add Category Form */}
+        <div className="flex items-center space-x-2">
           <Input
             type="text"
             placeholder="Nazwa nowej kategorii"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
-            className="bg-black/40 border-gray-700 text-white"
           />
-          <Button onClick={addCategory}>Dodaj</Button>
+          <Button onClick={handleAddCategory}>Dodaj kategorię</Button>
         </div>
-      </div>
-      
-      <div className="space-y-2">
-        {categories.map(category => (
-          <div
-            key={category.id}
-            className="p-3 rounded-md bg-black/30 border border-gray-700 text-white"
-          >
-            <div className="flex justify-between items-center">
-              {category.name}
-              <Button 
-                variant="ghost"
-                size="sm"
-                className="text-red-500 hover:bg-red-500/10"
-                onClick={() => removeCategory(category.id)}
-              >
-                <Trash2 size={16} />
-              </Button>
-            </div>
+
+        {/* Category List */}
+        <ScrollArea className="h-[300px] w-full rounded-md border">
+          <div className="p-4">
+            {wheelCategories.length > 0 ? (
+              <div className="grid gap-4">
+                {wheelCategories.map((category) => (
+                  <div
+                    key={category.id}
+                    className="flex items-center justify-between p-3 rounded-md bg-black/20"
+                  >
+                    <Label>{category.name}</Label>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleRemoveCategory(category.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground">
+                Brak kategorii dla Koła Fortuny
+              </div>
+            )}
           </div>
-        ))}
+        </ScrollArea>
       </div>
-    </div>
+    </SettingsLayout>
   );
 };
 

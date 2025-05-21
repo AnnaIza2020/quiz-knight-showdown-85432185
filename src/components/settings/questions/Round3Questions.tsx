@@ -1,254 +1,140 @@
-
-import React, { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useQuestionsContext } from '@/context/QuestionsContext';
+import { Question, Category, GameRound } from '@/types/game-types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { toast } from 'sonner';
-import { useGameContext } from '@/context/GameContext';
-import { Category } from '@/types/game-types';
-import { createQuestionWithDefaults } from '@/utils/createQuestionWithDefaults';
+import QuestionTable from './QuestionTable';
+import QuestionForm from './QuestionForm';
+import CategoryManager from './CategoryManager';
 
-const questionSchema = z.object({
-  questionText: z.string().min(1, { message: 'Pytanie jest wymagane' }),
-  answerText: z.string().min(1, { message: 'Odpowiedź jest wymagana' }),
-  category: z.string().min(1, { message: 'Kategoria jest wymagana' }),
-  difficulty: z.string().min(1, { message: 'Poziom trudności jest wymagany' }),
-});
-
-export { createQuestionWithDefaults };
-
-const Round3Questions = () => {
-  const { categories, addCategory, addQuestion, removeQuestion, removeCategory } = useGameContext();
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+const Round3Questions: React.FC = () => {
+  const { 
+    categories, 
+    addQuestion, 
+    removeQuestion, 
+    updateQuestion,
+    findCategoryByQuestionId
+  } = useQuestionsContext();
   
-  // Form configuration
-  const form = useForm({
-    resolver: zodResolver(questionSchema),
-    defaultValues: {
-      questionText: '',
-      answerText: '',
-      category: '',
-      difficulty: '1',
-    },
-  });
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   
-  const { handleSubmit, control, reset, setValue } = form;
+  // Filter categories for Round 3
+  const round3Categories = categories.filter(cat => cat.round === GameRound.ROUND_THREE);
   
-  // Local state for new question options
-  const [newQuestionText, setNewQuestionText] = useState('');
-  const [newAnswerText, setNewAnswerText] = useState('');
-  const [difficulty, setDifficulty] = useState('1');
+  // Get questions for selected category
+  const questions = selectedCategory 
+    ? round3Categories.find(cat => cat.id === selectedCategory)?.questions || []
+    : [];
   
-  // Add category
-  const handleAddCategory = () => {
-    if (newCategoryName.trim() === '') {
-      toast.error('Podaj nazwę kategorii');
-      return;
+  // Add question handler
+  const handleAddQuestion = (question: Question) => {
+    if (selectedCategory) {
+      addQuestion(selectedCategory, question);
+      setIsFormOpen(false);
+    } else {
+      toast.error('Wybierz kategorię, aby dodać pytanie');
     }
-    
-    const newCategory: Category = {
-      id: uuidv4(),
-      name: newCategoryName,
-      description: '', // Add the required description field
-      round: 'round3', // Use string value for round
-      questions: []
-    };
-    
-    addCategory(newCategory);
-    setNewCategoryName('');
-    toast.success(`Dodano kategorię: ${newCategory.name}`);
   };
   
-  // Fix question creation with proper difficulty conversion
-  const handleAddQuestion = () => {
-    if (!selectedCategory) {
-      toast.error('Wybierz kategorię');
-      return;
+  // Remove question handler
+  const handleRemoveQuestion = (questionId: string) => {
+    const category = findCategoryByQuestionId(questionId);
+    if (category) {
+      removeQuestion(category.id, questionId);
+    } else {
+      toast.error('Nie można znaleźć kategorii dla tego pytania');
     }
-    
-    if (!newQuestionText.trim() || !newAnswerText.trim()) {
-      toast.error('Wypełnij pytanie i odpowiedź');
-      return;
-    }
-    
-    const newQuestion = createQuestionWithDefaults({
-      text: newQuestionText,
-      correctAnswer: newAnswerText,
-      categoryId: selectedCategory,
-      category: categories.find(cat => cat.id === selectedCategory)?.name,
-      difficulty: parseInt(difficulty, 10), // Convert string to number
-      question: newQuestionText, // For backward compatibility
-      answer: newAnswerText, // For backward compatibility
-    });
-    
-    addQuestion(selectedCategory, newQuestion);
-    
-    setNewQuestionText('');
-    setNewAnswerText('');
-    setDifficulty('1');
-    setSelectedCategory('');
-    
-    toast.success('Pytanie dodane pomyślnie!');
   };
   
-  // Remove question
-  const handleRemoveQuestion = (categoryId: string, questionId: string) => {
-    removeQuestion(categoryId, questionId);
-    toast.success('Pytanie usunięte pomyślnie!');
+  // Update question handler
+  const handleUpdateQuestion = (question: Question) => {
+    const category = findCategoryByQuestionId(question.id);
+    if (category) {
+      updateQuestion(category.id, question);
+      setEditingQuestion(null);
+    } else {
+      toast.error('Nie można znaleźć kategorii dla tego pytania');
+    }
   };
   
-  // Remove category
-  const handleRemoveCategory = (categoryId: string) => {
-    removeCategory(categoryId);
-    toast.success('Kategoria usunięta pomyślnie!');
+  // Open form for adding a question
+  const handleOpenForm = () => {
+    setIsFormOpen(true);
+    setEditingQuestion(null);
+  };
+  
+  // Open form for editing a question
+  const handleEditQuestion = (question: Question) => {
+    setEditingQuestion(question);
+    setIsFormOpen(true);
+  };
+  
+  // Close form
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditingQuestion(null);
   };
   
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Add Category Section */}
-      <div className="bg-black/30 rounded-lg p-4 border border-white/10">
-        <h3 className="text-lg font-semibold text-white mb-4">Dodaj Kategorię</h3>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="categoryName" className="text-sm text-white/70">Nazwa kategorii</Label>
-          <Input
-            id="categoryName"
-            className="bg-black/50 border-white/20 text-white"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            placeholder="Wpisz nazwę kategorii"
-          />
-          <Button onClick={handleAddCategory} className="bg-neon-blue text-black hover:bg-neon-blue/80">
-            Dodaj kategorię
-          </Button>
+    <div className="space-y-6">
+      {/* Category Management */}
+      <CategoryManager round={GameRound.ROUND_THREE} />
+      
+      {/* Category Selection */}
+      <div>
+        <h3 className="text-xl font-semibold mb-4">Pytania na Runda 3</h3>
+        <div className="flex items-center space-x-4">
+          <label htmlFor="category" className="text-white block text-sm font-medium text-gray-700">
+            Wybierz kategorię:
+          </label>
+          <select
+            id="category"
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            value={selectedCategory || ''}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          >
+            <option value="">Wszystkie kategorie</option>
+            {round3Categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
       
-      {/* Add Question Section */}
-      <div className="bg-black/30 rounded-lg p-4 border border-white/10">
-        <h3 className="text-lg font-semibold text-white mb-4">Dodaj Pytanie</h3>
-        <form onSubmit={handleSubmit(handleAddQuestion)} className="flex flex-col gap-4">
-          <FormField
-            control={control}
-            name="category"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Wybierz kategorię</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="bg-black/50 border-white/20 text-white">
-                      <SelectValue placeholder="Wybierz kategorię" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="questionText" className="text-sm text-white/70">Treść pytania</Label>
-            <Input
-              id="questionText"
-              className="bg-black/50 border-white/20 text-white"
-              value={newQuestionText}
-              onChange={(e) => setNewQuestionText(e.target.value)}
-              placeholder="Wpisz treść pytania"
-            />
-          </div>
-          
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="answerText" className="text-sm text-white/70">Poprawna odpowiedź</Label>
-            <Input
-              id="answerText"
-              className="bg-black/50 border-white/20 text-white"
-              value={newAnswerText}
-              onChange={(e) => setNewAnswerText(e.target.value)}
-              placeholder="Wpisz poprawną odpowiedź"
-            />
-          </div>
-          
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="difficulty" className="text-sm text-white/70">Poziom trudności</Label>
-            <Select onValueChange={setDifficulty} defaultValue={difficulty}>
-              <SelectTrigger className="bg-black/50 border-white/20 text-white">
-                <SelectValue placeholder="Wybierz poziom trudności" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Łatwy</SelectItem>
-                <SelectItem value="2">Średni</SelectItem>
-                <SelectItem value="3">Trudny</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <Button type="submit" className="bg-neon-green text-black hover:bg-neon-green/80">
-            Dodaj pytanie
-          </Button>
-        </form>
-      </div>
+      {/* Add Question Button */}
+      <Button onClick={handleOpenForm}>Dodaj pytanie</Button>
       
-      {/* Categories and Questions List */}
-      <div className="col-span-2">
-        <h3 className="text-lg font-semibold text-white mb-4">Lista Kategorii i Pytań</h3>
-        {categories.length === 0 ? (
-          <p className="text-white/50">Brak kategorii. Dodaj kategorię powyżej.</p>
-        ) : (
-          <div className="space-y-4">
-            {categories.map((category) => (
-              <div key={category.id} className="bg-black/30 rounded-lg p-4 border border-white/10">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="text-md font-semibold text-white">{category.name}</h4>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-red-500 border-red-500 hover:bg-red-500/10"
-                    onClick={() => handleRemoveCategory(category.id)}
-                  >
-                    Usuń kategorię
-                  </Button>
-                </div>
-                
-                {category.questions.length === 0 ? (
-                  <p className="text-white/50">Brak pytań w tej kategorii.</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {category.questions.map((question) => (
-                      <li key={question.id} className="flex justify-between items-center bg-black/20 rounded-lg p-2">
-                        <span className="text-white">{question.text}</span>
-                        <div className="flex gap-2">
-                          <span className="text-sm text-white/60">{question.correctAnswer}</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-500 border-red-500 hover:bg-red-500/10"
-                            onClick={() => handleRemoveQuestion(category.id, question.id)}
-                          >
-                            Usuń
-                          </Button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Question Form */}
+      {isFormOpen && (
+        <div className="border rounded-md p-4">
+          <h4 className="text-lg font-semibold mb-4">
+            {editingQuestion ? 'Edytuj pytanie' : 'Dodaj nowe pytanie'}
+          </h4>
+          <QuestionForm
+            onSubmit={editingQuestion ? handleUpdateQuestion : handleAddQuestion}
+            initialData={editingQuestion}
+            categories={round3Categories}
+            currentCategoryId={selectedCategory || undefined}
+          />
+          <Button variant="secondary" onClick={handleCloseForm} className="mt-4">
+            Anuluj
+          </Button>
+        </div>
+      )}
+      
+      {/* Question Table */}
+      {selectedCategory && (
+        <QuestionTable
+          questions={questions}
+          onEdit={handleEditQuestion}
+          onDelete={handleRemoveQuestion}
+        />
+      )}
     </div>
   );
 };

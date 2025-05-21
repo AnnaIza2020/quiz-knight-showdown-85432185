@@ -7,7 +7,7 @@ export interface RoundOneSettings {
   eliminateCount: number;
   maxQuestions: number;
   timerDuration?: number;
-  luckyLoserEnabled?: boolean;
+  luckyLoserEnabled: boolean; // Making this required, not optional
 }
 
 export interface RoundTwoSettings {

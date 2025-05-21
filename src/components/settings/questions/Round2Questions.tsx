@@ -81,17 +81,14 @@ const Round2Questions = () => {
   };
   
   const handleAddCategory = () => {
-    if (newCategoryName.trim() === '') {
-      toast.error('Podaj nazwę kategorii');
-      return;
-    }
+    if (newCategoryName.trim() === '') return;
     
     const newCategory: Category = {
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       name: newCategoryName,
-      description: '', // Add the required description field
-      round: GameRound.ROUND_TWO, // Set the round explicitly
-      questions: []
+      round: GameRound.ROUND_TWO,
+      questions: [],
+      description: '' // Add this required field
     };
     
     addCategory(newCategory);

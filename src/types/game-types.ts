@@ -1,7 +1,7 @@
 
 import { RoundSettings } from './round-settings';
 import { PlayerAvailabilitySlot } from './availability-types';
-import { CardSize, SpecialCard as CardType } from './card-types';
+import { CardSize as CardSizeType, SpecialCard as CardType } from './card-types';
 
 export enum GameRound {
   SETUP = 'setup',
@@ -60,6 +60,9 @@ export interface Category {
 // Re-export SpecialCard from card-types
 export type SpecialCard = CardType;
 
+// Re-export CardSize from card-types
+export type CardSize = CardSizeType;
+
 export interface SpecialCardAwardRule {
   id: string;
   name: string;
@@ -101,13 +104,17 @@ export type SoundEffect =
   | 'wheel-tick'
   | string;
 
-// Add LogEntry type
+// Add LogEntry type with all required fields
 export interface LogEntry {
   id: string;
   message: string;
   timestamp: Date;
   level?: 'info' | 'warning' | 'error';
   details?: any;
+  type?: string;
+  action?: string;
+  player?: string;
+  value?: any;
 }
 
 export interface GameContextType {

@@ -22,28 +22,25 @@ export const AvailabilityProvider: React.FC<AvailabilityProviderProps> = ({ chil
     try {
       const { data, error } = await supabase
         .from('player_availability')
-        .select('*')
-        .order('date', { ascending: true });
+        .select('*');
 
-      if (error) {
-        console.error('Error fetching availability data:', error);
-        return [];
-      }
+      if (error) throw error;
 
-      // Convert database format to our expected format
-      return data.map(item => ({
+      // Transform the data to match our expected type
+      const transformedData: PlayerAvailabilitySlot[] = data.map(item => ({
         id: item.id,
         playerId: item.player_id,
         date: item.date,
-        timeSlots: convertTimeSlots(item.time_slots),
-        // Keep original fields for backwards compatibility
-        player_id: item.player_id,
-        time_slots: item.time_slots,
+        timeSlots: item.time_slots as Record<string, AvailabilityStatus>,
+        player_id: item.player_id, // For backward compatibility
+        time_slots: item.time_slots, // For backward compatibility
         created_at: item.created_at,
         updated_at: item.updated_at
       }));
+
+      return transformedData;
     } catch (error) {
-      console.error('Unexpected error fetching availability:', error);
+      console.error('Error fetching availability:', error);
       return [];
     }
   };
@@ -102,38 +99,19 @@ export const AvailabilityProvider: React.FC<AvailabilityProviderProps> = ({ chil
   // Update player availability
   const updateAvailability = async (data: PlayerAvailabilitySlot): Promise<{success: boolean}> => {
     try {
-      // Convert our format to database format
-      const dbRecord = {
-        player_id: data.playerId,
-        date: data.date,
-        time_slots: data.timeSlots
-      };
+      // Update the data
+      const { error } = await supabase
+        .from('player_availability')
+        .upsert({
+          player_id: data.playerId,
+          date: data.date,
+          time_slots: data.timeSlots,
+        });
 
-      // Check if record exists
-      if (data.id) {
-        const { error } = await supabase
-          .from('player_availability')
-          .update(dbRecord)
-          .eq('id', data.id);
-
-        if (error) {
-          console.error('Error updating availability:', error);
-          return { success: false };
-        }
-      } else {
-        const { error } = await supabase
-          .from('player_availability')
-          .insert(dbRecord);
-
-        if (error) {
-          console.error('Error inserting availability:', error);
-          return { success: false };
-        }
-      }
-      
+      if (error) throw error;
       return { success: true };
     } catch (error) {
-      console.error('Unexpected error updating availability:', error);
+      console.error('Error updating availability:', error);
       return { success: false };
     }
   };

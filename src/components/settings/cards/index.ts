@@ -11,4 +11,7 @@ export { default as EffectTypeEditor } from './editors/EffectTypeEditor';
 export { default as CodeEditor } from './editors/CodeEditor';
 
 // Dialogs
-export { DeckEditorDialog, DeleteConfirmationDialog } from './dialogs';
+import { default as DeckEditorDialog } from './dialogs/DeckEditorDialog';
+import { default as DeleteConfirmationDialog } from './dialogs/DeleteConfirmationDialog';
+
+export { DeckEditorDialog, DeleteConfirmationDialog };

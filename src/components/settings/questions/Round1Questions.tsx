@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useGameContext } from '@/context/GameContext';
@@ -44,17 +43,14 @@ const Round1Questions = () => {
   }, []);
   
   const handleAddCategory = () => {
-    if (newCategoryName.trim() === '') {
-      toast.error('Podaj nazwę kategorii');
-      return;
-    }
+    if (newCategoryName.trim() === '') return;
     
     const newCategory: Category = {
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       name: newCategoryName,
-      description: '', // Add the required description field
       round: GameRound.ROUND_ONE,
-      questions: []
+      questions: [],
+      description: '' // Add this required field
     };
     
     addCategory(newCategory);

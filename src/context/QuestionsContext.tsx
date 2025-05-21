@@ -2,7 +2,7 @@
 import React, { createContext, useContext, ReactNode, useCallback } from 'react';
 import { Question, Category, GameRound } from '@/types/game-types';
 import { toast } from 'sonner';
-import { GameContext } from './GameContext';
+import { useGameContext } from './GameContext';
 
 // Define the Questions Context type
 interface QuestionsContextType {
@@ -41,7 +41,7 @@ interface QuestionsProviderProps {
 
 export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({ children }) => {
   // Get game context data
-  const gameCtx = useContext(GameContext);
+  const gameCtx = useGameContext();
   
   // Safely access properties with defaults
   const categories = gameCtx?.categories || [];

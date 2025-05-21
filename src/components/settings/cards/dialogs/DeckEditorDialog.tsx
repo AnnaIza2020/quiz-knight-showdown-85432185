@@ -1,24 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { CardDisplay } from '@/components/cards';
 import { SpecialCard } from '@/types/card-types';
-import { Check, X } from 'lucide-react';
+import { PlusCircle, Trash2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-export interface CardDeck {
-  id: string;
-  name: string;
-  description?: string;
-  cards: string[];
-}
-
-export interface CardInDeck {
-  id: string;
-  included: boolean;
-}
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CardDeck, CardInDeck } from '../CardDecksManager';
 
 export interface DeckEditorDialogProps {
   open: boolean; 
@@ -44,8 +36,12 @@ const DeckEditorDialog: React.FC<DeckEditorDialogProps> = ({
   const [description, setDescription] = useState(currentDeck.description || '');
   const [selectedCardId, setSelectedCardId] = useState<string>('');
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
-  const [cards, setCards] = useState<{cardId: string, quantity: number}[]>(
-    currentDeck.cards || []
+  const [cards, setCards] = useState<CardInDeck[]>(
+    Array.isArray(currentDeck.cards) ? 
+      (typeof currentDeck.cards[0] === 'string' ? 
+        (currentDeck.cards as unknown as string[]).map(cardId => ({ cardId, quantity: 1 })) : 
+        currentDeck.cards as CardInDeck[]
+      ) : []
   );
 
   // Reset form when deck changes
@@ -53,7 +49,21 @@ const DeckEditorDialog: React.FC<DeckEditorDialogProps> = ({
     if (currentDeck) {
       setName(currentDeck.name);
       setDescription(currentDeck.description || '');
-      setCards(currentDeck.cards);
+      
+      // Handle different card formats
+      if (Array.isArray(currentDeck.cards)) {
+        if (currentDeck.cards.length > 0) {
+          if (typeof currentDeck.cards[0] === 'string') {
+            setCards((currentDeck.cards as unknown as string[]).map(cardId => ({ cardId, quantity: 1 })));
+          } else {
+            setCards(currentDeck.cards as CardInDeck[]);
+          }
+        } else {
+          setCards([]);
+        }
+      } else {
+        setCards([]);
+      }
     } else {
       setName('');
       setDescription('');
@@ -199,7 +209,7 @@ const DeckEditorDialog: React.FC<DeckEditorDialogProps> = ({
                     return cardDetails ? (
                       <div key={card.cardId} className="flex items-center justify-between p-2 border rounded-md">
                         <div className="flex items-center">
-                          <CardDisplay card={cardDetails} size="sm" />
+                          <CardDisplay card={cardDetails} size="small" />
                           <div className="ml-2">
                             <div className="font-semibold">{cardDetails.name}</div>
                             <div className="text-sm text-muted-foreground">x{card.quantity}</div>

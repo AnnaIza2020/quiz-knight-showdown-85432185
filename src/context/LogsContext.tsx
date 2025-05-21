@@ -7,6 +7,7 @@ interface LogsContextType {
   logs: LogEntry[];
   addLog: (log: string | Omit<LogEntry, 'id' | 'timestamp'>) => void;
   clearLogs: () => void;
+  downloadLogs: (format: 'json' | 'csv') => void;
 }
 
 const LogsContext = createContext<LogsContextType | undefined>(undefined);
@@ -32,12 +33,16 @@ export const LogsProvider: React.FC<LogsProviderProps> = ({ children }) => {
           id: crypto.randomUUID(),
           message: log,
           timestamp: new Date(),
-          level: 'info'
+          level: 'info',
+          type: 'system',
+          action: 'info'
         }
       : {
           id: crypto.randomUUID(),
           timestamp: new Date(),
           level: 'info',
+          type: 'system',
+          action: 'info',
           ...log
         };
 
@@ -53,8 +58,57 @@ export const LogsProvider: React.FC<LogsProviderProps> = ({ children }) => {
     setLogs([]);
   };
 
+  const downloadLogs = (format: 'json' | 'csv') => {
+    if (logs.length === 0) {
+      toast.error('No logs to download');
+      return;
+    }
+
+    let content: string;
+    let filename: string;
+    let mimeType: string;
+
+    if (format === 'json') {
+      content = JSON.stringify(logs, null, 2);
+      filename = `discord-game-show-logs-${new Date().toISOString()}.json`;
+      mimeType = 'application/json';
+    } else {
+      // CSV format
+      const headers = ['id', 'timestamp', 'level', 'type', 'action', 'player', 'message', 'value'].join(',');
+      const rows = logs.map(log => [
+        log.id,
+        log.timestamp.toISOString(),
+        log.level || '',
+        log.type || '',
+        log.action || '',
+        log.player || '',
+        `"${(log.message || '').replace(/"/g, '""')}"`,
+        log.value ? `"${JSON.stringify(log.value).replace(/"/g, '""')}"` : ''
+      ].join(','));
+      
+      content = [headers, ...rows].join('\n');
+      filename = `discord-game-show-logs-${new Date().toISOString()}.csv`;
+      mimeType = 'text/csv';
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    
+    // Cleanup
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success(`Logs downloaded as ${format.toUpperCase()}`);
+  };
+
   return (
-    <LogsContext.Provider value={{ logs, addLog, clearLogs }}>
+    <LogsContext.Provider value={{ logs, addLog, clearLogs, downloadLogs }}>
       {children}
     </LogsContext.Provider>
   );

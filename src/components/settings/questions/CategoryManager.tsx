@@ -14,24 +14,21 @@ const CategoryManager = () => {
   const [selectedRound, setSelectedRound] = useState<GameRound>(GameRound.ROUND_ONE);
   const [error, setError] = useState('');
   
-  const handleAddCategory = () => {
-    if (newCategoryName.trim() === '') {
-      setError('Nazwa kategorii nie może być pusta');
-      return;
-    }
+  const handleAddCategory = (name: string) => {
+    if (!name.trim()) return;
     
     const newCategory: Category = {
-      id: uuidv4(),
-      name: newCategoryName.trim(),
-      description: '',
-      round: selectedRound as unknown as GameRound, // Fix the type conversion
-      questions: []
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      questions: [],
+      round: selectedRound || GameRound.ROUND_ONE,
+      description: '' // Add required description field
     };
     
     addCategory(newCategory);
     setNewCategoryName('');
     setError('');
-    toast.success(`Kategoria "${newCategoryName}" została dodana pomyślnie`);
+    toast.success(`Kategoria "${name}" została dodana pomyślnie`);
   };
   
   return (
@@ -64,7 +61,7 @@ const CategoryManager = () => {
         </Select>
       </div>
       
-      <Button onClick={handleAddCategory} className="bg-neon-blue text-black hover:bg-neon-blue/80">
+      <Button onClick={() => handleAddCategory(newCategoryName)} className="bg-neon-blue text-black hover:bg-neon-blue/80">
         Dodaj kategorię
       </Button>
       

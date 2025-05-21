@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -70,6 +69,11 @@ const DiagnosticsPanel = () => {
       }, 1500);
     }
   };
+
+  // For displaying GameSounds
+  const renderGameSound = (gameSound: GameSound) => (
+    <span>{gameSound.name} ({gameSound.file})</span>
+  );
 
   return (
     <div className="space-y-6">
