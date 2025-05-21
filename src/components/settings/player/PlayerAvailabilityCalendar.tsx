@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,9 +41,9 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
     
     if (!existingData) {
       // Create default availability with all slots set to 'unknown'
-      const defaultTimeSlots: Record<string, boolean> = {};
+      const defaultTimeSlots: Record<string, AvailabilityStatus> = {};
       TIME_SLOTS.forEach(hour => {
-        defaultTimeSlots[hour] = false;
+        defaultTimeSlots[hour] = AvailabilityStatus.UNKNOWN;
       });
       
       setAvailabilityData(prevData => [
@@ -57,7 +58,7 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
   }, [selectedPlayer, selectedDate, availabilityData]);
   
   // Get current time slots for selected date & player
-  const getCurrentTimeSlots = (): Record<string, boolean> => {
+  const getCurrentTimeSlots = (): Record<string, AvailabilityStatus> => {
     if (!selectedPlayer || !selectedDate) return {};
     
     const dateString = format(selectedDate, 'yyyy-MM-dd');
@@ -83,8 +84,7 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
       if (dataIndex >= 0) {
         // Update existing entry
         const updatedTimeSlots = { ...updatedData[dataIndex].timeSlots };
-        // Convert status to boolean based on availability
-        updatedTimeSlots[hour] = status === AvailabilityStatus.AVAILABLE;
+        updatedTimeSlots[hour] = status;
         
         updatedData[dataIndex] = {
           ...updatedData[dataIndex],
@@ -92,9 +92,9 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
         };
       } else {
         // Create new entry
-        const newTimeSlots: Record<string, boolean> = {};
+        const newTimeSlots: Record<string, AvailabilityStatus> = {};
         TIME_SLOTS.forEach(h => {
-          newTimeSlots[h] = h === hour ? status === AvailabilityStatus.AVAILABLE : false;
+          newTimeSlots[h] = h === hour ? status : AvailabilityStatus.UNKNOWN;
         });
         
         updatedData.push({
@@ -116,7 +116,7 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
       
       if (updatedEntry) {
         const updatedTimeSlots = { ...updatedEntry.timeSlots };
-        updatedTimeSlots[hour] = status === AvailabilityStatus.AVAILABLE;
+        updatedTimeSlots[hour] = status;
         
         onSaveAvailability({
           ...updatedEntry,
@@ -129,13 +129,7 @@ const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
   // Render status cell with appropriate color
   const renderStatusCell = (hour: string) => {
     const timeSlots = getCurrentTimeSlots();
-    const isAvailable = timeSlots[hour];
-    
-    // For backward compatibility, convert boolean to status
-    let status = AvailabilityStatus.UNKNOWN;
-    if (hour in timeSlots) {
-      status = isAvailable ? AvailabilityStatus.AVAILABLE : AvailabilityStatus.UNAVAILABLE;
-    }
+    const status = timeSlots[hour] || AvailabilityStatus.UNKNOWN;
     
     let bgColor = 'bg-gray-200';
     if (status === AvailabilityStatus.AVAILABLE) bgColor = 'bg-green-200';

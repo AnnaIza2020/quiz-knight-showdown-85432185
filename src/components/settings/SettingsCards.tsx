@@ -15,9 +15,13 @@ const SettingsCards = () => {
     id: uuidv4(),
     name: '',
     description: '',
+    imageUrl: '',
     image_url: '',
+    soundEffect: '',
     sound_effect: '',
+    iconName: '',
     icon_name: '',
+    animationStyle: '',
     animation_style: '',
     type: 'bonus' // Set default type
   });
@@ -27,7 +31,18 @@ const SettingsCards = () => {
     if (selectedCardId) {
       const card = specialCards.find(c => c.id === selectedCardId);
       if (card) {
-        setNewCard(card);
+        setNewCard({
+          ...card,
+          // Make sure all fields are properly set for both legacy and new formats
+          imageUrl: card.imageUrl || card.image_url || '',
+          image_url: card.image_url || card.imageUrl || '',
+          soundEffect: card.soundEffect || card.sound_effect || '',
+          sound_effect: card.sound_effect || card.soundEffect || '',
+          iconName: card.iconName || card.icon_name || '',
+          icon_name: card.icon_name || card.iconName || '',
+          animationStyle: card.animationStyle || card.animation_style || '',
+          animation_style: card.animation_style || card.animationStyle || ''
+        });
         setIsEditing(true);
       }
     } else {
@@ -35,9 +50,13 @@ const SettingsCards = () => {
         id: uuidv4(),
         name: '',
         description: '',
+        imageUrl: '',
         image_url: '',
+        soundEffect: '',
         sound_effect: '',
+        iconName: '',
         icon_name: '',
+        animationStyle: '',
         animation_style: '',
         type: 'bonus'
       });
@@ -47,10 +66,19 @@ const SettingsCards = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setNewCard(prevCard => ({
-      ...prevCard,
-      [name]: value
-    }));
+    setNewCard(prevCard => {
+      // Handle special cases for dual-named fields
+      if (name === 'image_url') {
+        return { ...prevCard, image_url: value, imageUrl: value };
+      } else if (name === 'sound_effect') {
+        return { ...prevCard, sound_effect: value, soundEffect: value };
+      } else if (name === 'icon_name') {
+        return { ...prevCard, icon_name: value, iconName: value };
+      } else if (name === 'animation_style') {
+        return { ...prevCard, animation_style: value, animationStyle: value };
+      }
+      return { ...prevCard, [name]: value };
+    });
   };
 
   const handleAddCard = () => {
@@ -59,16 +87,21 @@ const SettingsCards = () => {
       return;
     }
     
-    // Convert legacy field names to new format
+    // Ensure all required fields are properly set
     const cardToAdd: SpecialCard = {
       id: newCard.id || uuidv4(),
       name: newCard.name,
       description: newCard.description || '',
       type: newCard.type,
-      image_url: newCard.image_url || newCard.imageUrl,
-      sound_effect: newCard.sound_effect || newCard.soundEffect,
-      icon_name: newCard.icon_name || newCard.iconName,
-      animation_style: newCard.animation_style || newCard.animationStyle,
+      // Set both formats for compatibility
+      imageUrl: newCard.imageUrl || newCard.image_url || '',
+      image_url: newCard.image_url || newCard.imageUrl || '',
+      soundEffect: newCard.soundEffect || newCard.sound_effect || '',
+      sound_effect: newCard.sound_effect || newCard.soundEffect || '',
+      iconName: newCard.iconName || newCard.icon_name || '',
+      icon_name: newCard.icon_name || newCard.iconName || '',
+      animationStyle: newCard.animationStyle || newCard.animation_style || '',
+      animation_style: newCard.animation_style || newCard.animationStyle || '',
       effectType: newCard.effectType || '',
       effectHook: newCard.effectHook || '',
       effectParams: newCard.effectParams || {}
@@ -81,9 +114,13 @@ const SettingsCards = () => {
       id: uuidv4(),
       name: '',
       description: '',
+      imageUrl: '',
       image_url: '',
+      soundEffect: '',
       sound_effect: '',
+      iconName: '',
       icon_name: '',
+      animationStyle: '',
       animation_style: '',
       type: 'bonus'
     });
@@ -102,16 +139,21 @@ const SettingsCards = () => {
       return;
     }
     
-    // Convert legacy field names to new format
+    // Ensure all required fields are properly set
     const cardToUpdate: SpecialCard = {
       id: newCard.id,
       name: newCard.name,
       description: newCard.description || '',
       type: newCard.type,
-      image_url: newCard.image_url || newCard.imageUrl,
-      sound_effect: newCard.sound_effect || newCard.soundEffect,
-      icon_name: newCard.icon_name || newCard.iconName,
-      animation_style: newCard.animation_style || newCard.animationStyle,
+      // Set both formats for compatibility
+      imageUrl: newCard.imageUrl || newCard.image_url || '',
+      image_url: newCard.image_url || newCard.imageUrl || '',
+      soundEffect: newCard.soundEffect || newCard.sound_effect || '',
+      sound_effect: newCard.sound_effect || newCard.soundEffect || '',
+      iconName: newCard.iconName || newCard.icon_name || '',
+      icon_name: newCard.icon_name || newCard.iconName || '',
+      animationStyle: newCard.animationStyle || newCard.animation_style || '',
+      animation_style: newCard.animation_style || newCard.animationStyle || '',
       effectType: newCard.effectType || '',
       effectHook: newCard.effectHook || '',
       effectParams: newCard.effectParams || {}

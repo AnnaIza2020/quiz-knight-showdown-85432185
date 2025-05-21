@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { PlayCircle } from 'lucide-react';
-import { SpecialCard, Player } from '@/types/game-types';
+import { SpecialCard } from '@/types/card-types';
 import { CardDisplay } from '@/components/cards';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -33,7 +33,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      <CardDisplay card={card} size="medium" showDescription={true} />
+      <CardDisplay card={card} size="md" showDescription={true} />
       
       <div className="mt-6 space-y-4">
         <div>

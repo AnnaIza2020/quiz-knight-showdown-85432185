@@ -32,3 +32,6 @@ export interface PlayerCard {
   used: boolean;
   usedAt?: Date;
 }
+
+// Card size type used throughout the application
+export type CardSize = 'tiny' | 'small' | 'medium' | 'large' | 'xl';

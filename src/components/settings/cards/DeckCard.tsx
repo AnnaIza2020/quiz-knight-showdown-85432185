@@ -72,7 +72,7 @@ const DeckCard: React.FC<DeckCardProps> = ({
               const card = getCardById(cardInDeck.cardId);
               return card ? (
                 <div key={cardInDeck.cardId} className="relative">
-                  <CardDisplay card={card} size="tiny" />
+                  <CardDisplay card={card} size="sm" />
                   <span className="absolute -top-2 -right-2 bg-black/80 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center border border-white/20">
                     {cardInDeck.quantity}
                   </span>

@@ -1,200 +1,222 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { ChevronUp, ChevronDown } from 'lucide-react';
-import { toast } from 'sonner';
-import CardDisplay from '@/components/cards/CardDisplay';
+import { Label } from '@/components/ui/label';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { CardDeck } from '../CardDecksManager';
+import { Trash2, Plus, PlusCircle } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 import { SpecialCard } from '@/types/card-types';
-import { CardDeck, CardInDeck } from '../CardDecksManager';
-import { addCardToDeck, getCardById, getTotalCards, removeCardFromDeck, validateDeck } from '@/utils/card-deck-utils';
+import CardDisplay from '@/components/cards/CardDisplay';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface DeckEditorDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  currentDeck: CardDeck;
+  isOpen: boolean;
+  onClose: () => void;
+  deck?: CardDeck;
   onSave: (deck: CardDeck) => void;
-  onCancel: () => void;
   availableCards: SpecialCard[];
-  isNewDeck: boolean;
 }
 
-const DeckEditorDialog: React.FC<DeckEditorDialogProps> = ({
-  open,
-  onOpenChange,
-  currentDeck,
-  onSave,
-  onCancel,
-  availableCards,
-  isNewDeck
-}) => {
-  const [deck, setDeck] = useState<CardDeck>(currentDeck);
-  
-  // Update local deck state when the passed deck changes
+const DeckEditorDialog = ({ 
+  isOpen, 
+  onClose, 
+  deck, 
+  onSave, 
+  availableCards 
+}: DeckEditorDialogProps) => {
+  // Initialize state with deck data or defaults
+  const [name, setName] = useState(deck?.name || '');
+  const [description, setDescription] = useState(deck?.description || '');
+  const [selectedCardId, setSelectedCardId] = useState<string>('');
+  const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
+  const [cards, setCards] = useState<{cardId: string, quantity: number}[]>(
+    deck?.cards || []
+  );
+
+  // Reset form when deck changes
   useEffect(() => {
-    setDeck(currentDeck);
-  }, [currentDeck]);
-  
-  // Handle save action
-  const handleSave = () => {
-    const validation = validateDeck(deck);
-    if (!validation.valid) {
-      toast.error(validation.message);
-      return;
+    if (deck) {
+      setName(deck.name);
+      setDescription(deck.description || '');
+      setCards(deck.cards);
+    } else {
+      setName('');
+      setDescription('');
+      setCards([]);
     }
-    onSave(deck);
+    setSelectedCardId('');
+    setSelectedQuantity(1);
+  }, [deck]);
+
+  // Add a card to the deck
+  const handleAddCard = () => {
+    if (!selectedCardId) return;
+    
+    // Check if card already exists in deck
+    const existingCardIndex = cards.findIndex(card => card.cardId === selectedCardId);
+    
+    if (existingCardIndex >= 0) {
+      // Update quantity if card exists
+      const updatedCards = [...cards];
+      updatedCards[existingCardIndex].quantity += selectedQuantity;
+      setCards(updatedCards);
+    } else {
+      // Add new card with quantity
+      setCards([...cards, { 
+        cardId: selectedCardId,
+        quantity: selectedQuantity
+      }]);
+    }
+    
+    // Reset selection
+    setSelectedCardId('');
+    setSelectedQuantity(1);
   };
 
-  // Handle adding card to deck
-  const handleAddCardToDeck = (cardId: string) => {
-    setDeck(prevDeck => addCardToDeck(prevDeck, cardId));
+  // Remove a card from the deck
+  const handleRemoveCard = (cardId: string) => {
+    setCards(cards.filter(card => card.cardId !== cardId));
   };
 
-  // Handle removing card from deck
-  const handleRemoveCardFromDeck = (cardId: string) => {
-    setDeck(prevDeck => removeCardFromDeck(prevDeck, cardId));
+  // Handle save
+  const handleSave = () => {
+    if (!name.trim()) {
+      return; // Name is required
+    }
+    
+    onSave({
+      id: deck?.id || uuidv4(),
+      name,
+      description,
+      cards,
+      isActive: deck?.isActive || false
+    });
+    
+    onClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isNewDeck ? 'Nowa talia kart' : 'Edytuj talię kart'}</DialogTitle>
+          <DialogTitle>{deck ? 'Edytuj talię' : 'Nowa talia'}</DialogTitle>
           <DialogDescription>
-            Dostosuj talię kart, które będą używane podczas gry
+            {deck ? 'Zmodyfikuj talię kart specjalnych' : 'Stwórz nową talię kart specjalnych'}
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="grid gap-6 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name">Nazwa talii</Label>
-              <Input 
-                id="name" 
-                value={deck.name} 
-                onChange={e => setDeck({...deck, name: e.target.value})} 
-                placeholder="np. Podstawowa talia"
-              />
-            </div>
-            <div>
-              <Label htmlFor="maxCards">Maksymalna liczba kart (opcjonalnie)</Label>
-              <Input 
-                id="maxCards" 
-                type="number" 
-                min="0"
-                value={deck.maxCards || ''} 
-                onChange={e => setDeck({
-                  ...deck, 
-                  maxCards: e.target.value ? parseInt(e.target.value) : undefined
-                })} 
-                placeholder="Bez limitu"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="description">Opis talii</Label>
-            <Textarea 
-              id="description" 
-              value={deck.description} 
-              onChange={e => setDeck({...deck, description: e.target.value})} 
-              placeholder="Opisz przeznaczenie talii..."
-              rows={3}
+
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 gap-4">
+            <Label className="col-span-1" htmlFor="name">Nazwa</Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="col-span-3"
             />
           </div>
-          
-          <div className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-4">Zawartość talii</h3>
+          <div className="grid grid-cols-4 gap-4">
+            <Label className="col-span-1" htmlFor="description">Opis</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+
+          <div className="border-t pt-4 mt-4">
+            <Label className="block mb-2">Karty w talii</Label>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="border-r pr-4">
-                <h4 className="text-sm font-medium mb-2">Dostępne karty</h4>
-                <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-2">
-                  {availableCards.map(card => (
-                    <div 
-                      key={card.id} 
-                      className="flex flex-col items-center border rounded p-2 cursor-pointer hover:bg-black/20"
-                      onClick={() => handleAddCardToDeck(card.id)}
-                    >
-                      <CardDisplay card={card} size="tiny" />
-                      <span className="text-xs mt-1">{card.name}</span>
-                    </div>
-                  ))}
-                </div>
+            <div className="grid grid-cols-4 gap-4 mb-4">
+              <div className="col-span-2">
+                <Select
+                  value={selectedCardId}
+                  onValueChange={setSelectedCardId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wybierz kartę" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCards.map(card => (
+                      <SelectItem key={card.id} value={card.id}>
+                        {card.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              
               <div>
-                <h4 className="text-sm font-medium mb-2">Karty w talii</h4>
-                {deck.cards.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Karta</TableHead>
-                        <TableHead>Ilość</TableHead>
-                        <TableHead className="w-[100px]">Akcje</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {deck.cards.map(cardInDeck => {
-                        const card = getCardById(cardInDeck.cardId, availableCards);
-                        return card ? (
-                          <TableRow key={cardInDeck.cardId}>
-                            <TableCell className="flex items-center gap-2">
-                              <CardDisplay card={card} size="tiny" />
-                              <span>{card.name}</span>
-                            </TableCell>
-                            <TableCell>{cardInDeck.quantity}</TableCell>
-                            <TableCell>
-                              <div className="flex space-x-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => handleAddCardToDeck(cardInDeck.cardId)}
-                                >
-                                  <ChevronUp className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => handleRemoveCardFromDeck(cardInDeck.cardId)}
-                                >
-                                  <ChevronDown className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ) : null;
-                      })}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="flex items-center justify-center h-40 border border-dashed rounded text-center p-4 text-muted-foreground">
-                    <div>
-                      <p>Kliknij karty po lewej stronie,</p>
-                      <p>aby dodać je do talii</p>
-                    </div>
-                  </div>
-                )}
+                <Select
+                  value={selectedQuantity.toString()}
+                  onValueChange={(val) => setSelectedQuantity(parseInt(val))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Ilość" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5].map(num => (
+                      <SelectItem key={num} value={num.toString()}>
+                        {num}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={handleAddCard}
+                  disabled={!selectedCardId}
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Dodaj
+                </Button>
               </div>
             </div>
             
-            <div className="mt-4 text-right text-sm text-muted-foreground">
-              Łącznie kart: {getTotalCards(deck)} | Typów kart: {deck.cards.length}
-            </div>
+            <ScrollArea className="h-[200px] border rounded-md p-2">
+              {cards.length > 0 ? (
+                <div className="grid grid-cols-1 gap-2">
+                  {cards.map(card => {
+                    const cardDetails = availableCards.find(c => c.id === card.cardId);
+                    return cardDetails ? (
+                      <div key={card.cardId} className="flex items-center justify-between p-2 border rounded-md">
+                        <div className="flex items-center">
+                          <CardDisplay card={cardDetails} size="sm" />
+                          <div className="ml-2">
+                            <div className="font-semibold">{cardDetails.name}</div>
+                            <div className="text-sm text-muted-foreground">x{card.quantity}</div>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleRemoveCard(card.cardId)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  Brak kart w talii
+                </div>
+              )}
+            </ScrollArea>
           </div>
         </div>
-        
+
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
-            Anuluj
-          </Button>
-          <Button onClick={handleSave}>
-            {isNewDeck ? 'Utwórz talię' : 'Zapisz zmiany'}
-          </Button>
+          <Button variant="outline" onClick={onClose} className="mr-2">Anuluj</Button>
+          <Button onClick={handleSave}>Zapisz</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

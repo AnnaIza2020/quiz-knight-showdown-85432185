@@ -1,6 +1,7 @@
 
-import React, { createContext, useContext, ReactNode } from 'react';
-import { SpecialCard, SpecialCardAwardRule, Player, SoundEffect } from '@/types/game-types';
+import React, { createContext, useContext, ReactNode, useState } from 'react';
+import { SpecialCard, CardSize } from '@/types/card-types';
+import { Player, SpecialCardAwardRule, SoundEffect } from '@/types/game-types';
 import { useSpecialCards } from '@/hooks/useSpecialCards';
 
 // Define the Special Cards Context type
@@ -31,25 +32,25 @@ export const useSpecialCardsContext = () => {
 
 interface SpecialCardsProviderProps {
   children: ReactNode;
-  players: Player[];
-  setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
-  specialCards: SpecialCard[];
-  setSpecialCards: React.Dispatch<React.SetStateAction<SpecialCard[]>>;
-  specialCardRules: SpecialCardAwardRule[];
-  setSpecialCardRules: React.Dispatch<React.SetStateAction<SpecialCardAwardRule[]>>;
-  playSound: (sound: SoundEffect, volume?: number) => void;
 }
 
-export const SpecialCardsProvider: React.FC<SpecialCardsProviderProps> = ({ 
-  children,
-  players,
-  setPlayers,
-  specialCards,
-  setSpecialCards,
-  specialCardRules,
-  setSpecialCardRules,
-  playSound
-}) => {
+export const SpecialCardsProvider: React.FC<SpecialCardsProviderProps> = ({ children }) => {
+  // Get game context data
+  const { 
+    players, setPlayers, 
+    specialCards, setSpecialCards, 
+    specialCardRules, setSpecialCardRules,
+    playSound
+  } = useContext(GameContext) || {
+    players: [],
+    setPlayers: () => {},
+    specialCards: [],
+    setSpecialCards: () => {},
+    specialCardRules: [],
+    setSpecialCardRules: () => {},
+    playSound: () => {}
+  };
+
   // Use the special cards hook
   const specialCardsHook = useSpecialCards(
     players, 
@@ -70,3 +71,6 @@ export const SpecialCardsProvider: React.FC<SpecialCardsProviderProps> = ({
 
   return <SpecialCardsContext.Provider value={value}>{children}</SpecialCardsContext.Provider>;
 };
+
+// Import this at the top, but due to circular dependency we have to define it here
+import { GameContext } from './GameContext';

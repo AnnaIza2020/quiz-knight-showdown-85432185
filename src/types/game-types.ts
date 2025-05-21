@@ -1,12 +1,13 @@
 
 import { RoundSettings } from './round-settings';
 import { PlayerAvailabilitySlot } from './availability-types';
+import { CardSize } from './card-types';
 
 export enum GameRound {
   SETUP = 'setup',
-  ROUND_ONE = 'round_1',
-  ROUND_TWO = 'round_2',
-  ROUND_THREE = 'round_3',
+  ROUND_ONE = 'round1',
+  ROUND_TWO = 'round2',
+  ROUND_THREE = 'round3',
   FINISHED = 'finished'
 }
 
@@ -74,7 +75,7 @@ export interface SpecialCard {
   animation_style?: string;
 }
 
-export interface SpecialCardRule {
+export interface SpecialCardAwardRule {
   id: string;
   name: string;
   description: string;
@@ -115,8 +116,6 @@ export type SoundEffect =
   | 'wheel-tick'
   | string;
 
-export type CardSize = 'sm' | 'md' | 'lg' | 'xl';
-
 export interface GameContextType {
   // State
   round: GameRound;
@@ -132,7 +131,7 @@ export interface GameContextType {
   secondaryColor: string;
   hostCameraUrl: string;
   specialCards: SpecialCard[];
-  specialCardRules: SpecialCardRule[];
+  specialCardRules: SpecialCardAwardRule[];
   usedQuestionIds: string[];
   gameTitle: string;
   
@@ -170,7 +169,7 @@ export interface GameContextType {
   removePlayer: (playerId: string) => void;
   addCategory: (category: Category) => void;
   removeCategory: (categoryId: string) => void;
-  selectQuestion: (categoryId: string, questionId: string) => void;
+  selectQuestion: (question: Question | null) => void;
   setActivePlayer: (playerId: string | null) => void;
   startTimer: (seconds: number) => void;
   stopTimer: () => void;
@@ -196,8 +195,8 @@ export interface GameContextType {
   addSpecialCard: (card: SpecialCard) => void;
   updateSpecialCard: (cardId: string, updates: Partial<SpecialCard>) => void;
   removeSpecialCard: (cardId: string) => void;
-  addSpecialCardRule: (rule: SpecialCardRule) => void;
-  updateSpecialCardRule: (ruleId: string, updates: Partial<SpecialCardRule>) => void;
+  addSpecialCardRule: (rule: SpecialCardAwardRule) => void;
+  updateSpecialCardRule: (ruleId: string, updates: Partial<SpecialCardAwardRule>) => void;
   removeSpecialCardRule: (ruleId: string) => void;
   giveCardToPlayer: (playerId: string, cardId: string) => void;
   usePlayerCard: (playerId: string, cardId: string) => void;

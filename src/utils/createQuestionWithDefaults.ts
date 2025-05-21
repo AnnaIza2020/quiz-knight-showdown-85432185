@@ -7,8 +7,8 @@ export const createQuestionWithDefaults = (
 ): Question => {
   return {
     id: partialQuestion.id || uuidv4(),
-    text: partialQuestion.text || '',
-    correctAnswer: partialQuestion.correctAnswer || '',
+    text: partialQuestion.text || partialQuestion.question || '',
+    correctAnswer: partialQuestion.correctAnswer || partialQuestion.answer || '',
     categoryId: partialQuestion.categoryId || '',
     options: partialQuestion.options || [],
     difficulty: partialQuestion.difficulty || 1,

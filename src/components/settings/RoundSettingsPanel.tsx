@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -8,8 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { useGameContext } from '@/context/GameContext';
 import { toast } from 'sonner';
-import { GameRound } from '@/types/game-types';
-import { RoundSettings, RoundOneSettings, RoundTwoSettings, RoundThreeSettings } from '@/types/round-settings';
+import { RoundSettings } from '@/types/round-settings';
 
 const RoundSettingsPanel = () => {
   const { roundSettings, updateRoundSettings } = useGameContext();
@@ -75,10 +75,10 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round1-timer"
                     type="number"
-                    value={localSettings[GameRound.ROUND_ONE].timerDuration}
+                    value={localSettings.timerDurations.round1}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_ONE, 
-                      'timerDuration', 
+                      'timerDurations', 
+                      'round1', 
                       parseInt(e.target.value)
                     )}
                   />
@@ -89,9 +89,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round1-points-correct"
                     type="number"
-                    value={localSettings[GameRound.ROUND_ONE].pointsForCorrectAnswer}
+                    value={localSettings.round1.pointsForCorrectAnswer}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_ONE, 
+                      'round1', 
                       'pointsForCorrectAnswer', 
                       parseInt(e.target.value)
                     )}
@@ -103,9 +103,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round1-points-incorrect"
                     type="number"
-                    value={localSettings[GameRound.ROUND_ONE].pointsForIncorrectAnswer}
+                    value={localSettings.round1.pointsForIncorrectAnswer}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_ONE, 
+                      'round1', 
                       'pointsForIncorrectAnswer', 
                       parseInt(e.target.value)
                     )}
@@ -117,9 +117,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round1-lives"
                     type="number"
-                    value={localSettings[GameRound.ROUND_ONE].livesCount}
+                    value={localSettings.round1.livesCount}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_ONE, 
+                      'round1', 
                       'livesCount', 
                       parseInt(e.target.value)
                     )}
@@ -131,9 +131,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round1-health-deduction"
                     type="number"
-                    value={localSettings[GameRound.ROUND_ONE].healthDeductionPercentage}
+                    value={localSettings.round1.healthDeductionPercentage}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_ONE, 
+                      'round1', 
                       'healthDeductionPercentage', 
                       parseInt(e.target.value)
                     )}
@@ -145,9 +145,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round1-eliminate-count"
                     type="number"
-                    value={localSettings[GameRound.ROUND_ONE].eliminateCount}
+                    value={localSettings.round1.eliminateCount}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_ONE, 
+                      'round1', 
                       'eliminateCount', 
                       parseInt(e.target.value)
                     )}
@@ -159,9 +159,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round1-max-questions"
                     type="number"
-                    value={localSettings[GameRound.ROUND_ONE].maxQuestions}
+                    value={localSettings.round1.maxQuestions}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_ONE, 
+                      'round1', 
                       'maxQuestions', 
                       parseInt(e.target.value)
                     )}
@@ -180,10 +180,10 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round2-timer"
                     type="number"
-                    value={localSettings[GameRound.ROUND_TWO].timerDuration}
+                    value={localSettings.timerDurations.round2}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_TWO, 
-                      'timerDuration', 
+                      'timerDurations', 
+                      'round2', 
                       parseInt(e.target.value)
                     )}
                   />
@@ -194,9 +194,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round2-points-correct"
                     type="number"
-                    value={localSettings[GameRound.ROUND_TWO].pointsForCorrectAnswer}
+                    value={localSettings.round2.pointsForCorrectAnswer}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_TWO, 
+                      'round2', 
                       'pointsForCorrectAnswer', 
                       parseInt(e.target.value)
                     )}
@@ -208,9 +208,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round2-points-incorrect"
                     type="number"
-                    value={localSettings[GameRound.ROUND_TWO].pointsForIncorrectAnswer}
+                    value={localSettings.round2.pointsForIncorrectAnswer}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_TWO, 
+                      'round2', 
                       'pointsForIncorrectAnswer', 
                       parseInt(e.target.value)
                     )}
@@ -222,9 +222,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round2-lives"
                     type="number"
-                    value={localSettings[GameRound.ROUND_TWO].livesCount}
+                    value={localSettings.round2.livesCount}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_TWO, 
+                      'round2', 
                       'livesCount', 
                       parseInt(e.target.value)
                     )}
@@ -236,9 +236,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round2-lives-deducted"
                     type="number"
-                    value={localSettings[GameRound.ROUND_TWO].livesDeductedOnIncorrectAnswer}
+                    value={localSettings.round2.livesDeductedOnIncorrectAnswer}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_TWO, 
+                      'round2', 
                       'livesDeductedOnIncorrectAnswer', 
                       parseInt(e.target.value)
                     )}
@@ -250,9 +250,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round2-max-questions"
                     type="number"
-                    value={localSettings[GameRound.ROUND_TWO].maxQuestions}
+                    value={localSettings.round2.maxQuestions}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_TWO, 
+                      'round2', 
                       'maxQuestions', 
                       parseInt(e.target.value)
                     )}
@@ -267,13 +267,27 @@ const RoundSettingsPanel = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="round3-timer">Timer Duration (seconds)</Label>
+                  <Input 
+                    id="round3-timer"
+                    type="number"
+                    value={localSettings.timerDurations.round3}
+                    onChange={(e) => updateLocalSetting(
+                      'timerDurations', 
+                      'round3', 
+                      parseInt(e.target.value)
+                    )}
+                  />
+                </div>
+                
+                <div className="space-y-2">
                   <Label htmlFor="round3-points-correct">Points for Correct Answer</Label>
                   <Input 
                     id="round3-points-correct"
                     type="number"
-                    value={localSettings[GameRound.ROUND_THREE].pointsForCorrectAnswer}
+                    value={localSettings.round3.pointsForCorrectAnswer}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_THREE, 
+                      'round3', 
                       'pointsForCorrectAnswer', 
                       parseInt(e.target.value)
                     )}
@@ -285,9 +299,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round3-points-incorrect"
                     type="number"
-                    value={localSettings[GameRound.ROUND_THREE].pointsForIncorrectAnswer}
+                    value={localSettings.round3.pointsForIncorrectAnswer}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_THREE, 
+                      'round3', 
                       'pointsForIncorrectAnswer', 
                       parseInt(e.target.value)
                     )}
@@ -299,9 +313,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round3-lives"
                     type="number"
-                    value={localSettings[GameRound.ROUND_THREE].livesCount}
+                    value={localSettings.round3.livesCount}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_THREE, 
+                      'round3', 
                       'livesCount', 
                       parseInt(e.target.value)
                     )}
@@ -313,9 +327,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round3-lives-deducted"
                     type="number"
-                    value={localSettings[GameRound.ROUND_THREE].livesDeductedOnIncorrectAnswer}
+                    value={localSettings.round3.livesDeductedOnIncorrectAnswer}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_THREE, 
+                      'round3', 
                       'livesDeductedOnIncorrectAnswer', 
                       parseInt(e.target.value)
                     )}
@@ -327,9 +341,9 @@ const RoundSettingsPanel = () => {
                   <Input 
                     id="round3-max-spins"
                     type="number"
-                    value={localSettings[GameRound.ROUND_THREE].maxSpins}
+                    value={localSettings.round3.maxSpins}
                     onChange={(e) => updateLocalSetting(
-                      GameRound.ROUND_THREE, 
+                      'round3', 
                       'maxSpins', 
                       parseInt(e.target.value)
                     )}
@@ -339,9 +353,9 @@ const RoundSettingsPanel = () => {
                 <div className="flex items-center space-x-2 pt-4">
                   <Checkbox 
                     id="round3-final-round"
-                    checked={localSettings[GameRound.ROUND_THREE].finalRoundEnabled}
+                    checked={localSettings.round3.finalRoundEnabled}
                     onCheckedChange={(checked) => updateLocalSetting(
-                      GameRound.ROUND_THREE, 
+                      'round3', 
                       'finalRoundEnabled', 
                       Boolean(checked)
                     )}
@@ -353,7 +367,6 @@ const RoundSettingsPanel = () => {
                     Enable Final Round
                   </label>
                 </div>
-                
               </div>
             </div>
           </TabsContent>

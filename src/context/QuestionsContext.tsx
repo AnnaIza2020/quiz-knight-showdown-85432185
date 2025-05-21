@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext, ReactNode, useState, useCallback } from 'react';
-import { Question, Category } from '@/types/game-types';
-import { useGameStateManagement } from '@/hooks/useGameStateManagement';
+import { Question, Category, GameRound } from '@/types/game-types';
 import { toast } from 'sonner';
 
 // Define the Questions Context type
@@ -37,22 +36,25 @@ export const useQuestionsContext = () => {
 
 interface QuestionsProviderProps {
   children: ReactNode;
-  gameState: ReturnType<typeof useGameStateManagement>;
-  usedQuestionIds: string[];
-  markQuestionAsUsed: (questionId: string) => void;
-  resetUsedQuestions: () => void;
-  isQuestionUsed: (questionId: string) => boolean;
 }
 
-export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({ 
-  children, 
-  gameState,
-  usedQuestionIds,
-  markQuestionAsUsed,
-  resetUsedQuestions,
-  isQuestionUsed
-}) => {
-  const { categories, setCategories, currentQuestion, selectQuestion } = gameState;
+export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({ children }) => {
+  // Get game context data
+  const { 
+    categories, setCategories, 
+    currentQuestion, selectQuestion,
+    usedQuestionIds, markQuestionAsUsed,
+    resetUsedQuestions, isQuestionUsed
+  } = useContext(GameContext) || {
+    categories: [],
+    setCategories: () => {},
+    currentQuestion: null,
+    selectQuestion: () => {},
+    usedQuestionIds: [],
+    markQuestionAsUsed: () => {},
+    resetUsedQuestions: () => {},
+    isQuestionUsed: () => false,
+  };
 
   // Helper to find a question by id across all categories
   const findQuestionById = useCallback((questionId: string): Question | null => {
@@ -147,3 +149,6 @@ export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({
 
   return <QuestionsContext.Provider value={value}>{children}</QuestionsContext.Provider>;
 };
+
+// Import this at the top, but due to circular dependency we have to define it here
+import { GameContext } from './GameContext';

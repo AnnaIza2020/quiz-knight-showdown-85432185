@@ -6,6 +6,7 @@ export interface RoundOneSettings {
   healthDeductionPercentage: number;
   eliminateCount: number;
   maxQuestions: number;
+  timerDuration?: number;
 }
 
 export interface RoundTwoSettings {
@@ -14,6 +15,7 @@ export interface RoundTwoSettings {
   livesCount: number;
   livesDeductedOnIncorrectAnswer: number;
   maxQuestions: number;
+  timerDuration?: number;
 }
 
 export interface RoundThreeSettings {
@@ -23,6 +25,7 @@ export interface RoundThreeSettings {
   livesDeductedOnIncorrectAnswer: number;
   maxSpins: number;
   finalRoundEnabled: boolean;
+  timerDuration?: number;
 }
 
 export interface RoundSettings {
@@ -43,14 +46,16 @@ export const defaultRoundSettings: RoundSettings = {
     livesCount: 3,
     healthDeductionPercentage: 25,
     eliminateCount: 4,
-    maxQuestions: 20
+    maxQuestions: 20,
+    timerDuration: 30
   },
   round2: {
     pointsForCorrectAnswer: 15,
     pointsForIncorrectAnswer: -10,
     livesCount: 3,
     livesDeductedOnIncorrectAnswer: 1,
-    maxQuestions: 15
+    maxQuestions: 15,
+    timerDuration: 20
   },
   round3: {
     pointsForCorrectAnswer: 20,
@@ -58,7 +63,8 @@ export const defaultRoundSettings: RoundSettings = {
     livesCount: 2,
     livesDeductedOnIncorrectAnswer: 1,
     maxSpins: 10,
-    finalRoundEnabled: true
+    finalRoundEnabled: true,
+    timerDuration: 15
   },
   timerDurations: {
     round1: 30,
