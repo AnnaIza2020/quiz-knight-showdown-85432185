@@ -20,8 +20,12 @@ export interface Player {
   specialCards: string[];
   color?: string;
   isActive?: boolean;
+  status?: string;
   avatar_url?: string;
   camera_url?: string;
+  uniqueLinkToken?: string;
+  avatar?: string; // For backward compatibility
+  cameraUrl?: string; // For backward compatibility
 }
 
 export interface Question {
@@ -36,6 +40,9 @@ export interface Question {
   time?: number;
   used?: boolean;
   type?: 'text' | 'multiple_choice' | 'true_false';
+  category?: string; // For backward compatibility
+  question?: string; // For backward compatibility
+  answer?: string; // For backward compatibility
 }
 
 export interface Category {
@@ -60,6 +67,11 @@ export interface SpecialCard {
   effectType?: string;
   effectHook?: string;
   effectParams?: Record<string, any>;
+  // Legacy field mappings
+  image_url?: string;
+  sound_effect?: string;
+  icon_name?: string;
+  animation_style?: string;
 }
 
 export interface SpecialCardRule {
@@ -76,6 +88,7 @@ export interface GameBackup {
   id: string;
   name: string;
   date: Date;
+  timestamp?: number;
   data: any;
 }
 
@@ -87,6 +100,22 @@ export interface GameSound {
   loop?: boolean;
   autoplay?: boolean;
 }
+
+export type SoundEffect = 
+  | 'success' 
+  | 'fail' 
+  | 'eliminate' 
+  | 'bonus' 
+  | 'card-reveal' 
+  | 'intro-music' 
+  | 'narrator'
+  | 'round-start'
+  | 'timeout'
+  | 'victory'
+  | 'wheel-tick'
+  | string;
+
+export type CardSize = 'sm' | 'md' | 'lg' | 'xl';
 
 export interface GameContextType {
   // State
@@ -117,7 +146,7 @@ export interface GameContextType {
   updateRoundSettings: (settings: Partial<RoundSettings>) => void;
   
   // Sound settings
-  playSound: (sound: string, volume?: number) => void;
+  playSound: (sound: SoundEffect, volume?: number) => void;
   stopSound: (sound: string) => void;
   stopAllSounds: () => void;
   soundsEnabled: boolean;
@@ -200,4 +229,7 @@ export interface GameContextType {
   // Availability methods
   fetchAvailability: () => Promise<PlayerAvailabilitySlot[]>;
   updateAvailability: (data: PlayerAvailabilitySlot) => Promise<{success: boolean}>;
+  saveAvailabilityBatch?: (data: PlayerAvailabilitySlot[]) => Promise<{success: boolean}>;
+  getPlayerAvailability?: (playerId: string) => Promise<PlayerAvailabilitySlot[]>;
+  deleteAvailability?: (id: string) => Promise<{success: boolean}>;
 }

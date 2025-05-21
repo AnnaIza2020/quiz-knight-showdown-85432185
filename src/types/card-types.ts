@@ -1,43 +1,34 @@
 
-import { Player, Question } from './game-types';
-
-export type CardEffectType = 
-  | 'shield'
-  | 'reflect'
-  | 'counter'
-  | 'wildcard'
-  | 'bonus'
-  | 'life'
-  | 'skip'
-  | string;
-
-export interface CardEffect {
-  type: CardEffectType;
-  sourcePlayerId: string;
-  targetPlayerId?: string;
-  soundEffect?: string;
-  animationDuration?: number;
-  points?: number;
-  question?: Question;
-}
-
-// Full SpecialCard definition that includes all needed properties
 export interface SpecialCard {
   id: string;
   name: string;
   description: string;
+  imageUrl: string;
+  soundEffect?: string;
+  iconName?: string;
+  animationStyle?: string;
   type: string;
+  effectType?: string;
+  effectHook?: string;
+  effectParams?: Record<string, any>;
+  // Legacy field mappings
   image_url?: string;
   sound_effect?: string;
   icon_name?: string;
   animation_style?: string;
-  // Legacy properties for backward compatibility
-  imageUrl?: string;
-  soundEffect?: string;
-  iconName?: string;
-  animationStyle?: string;
-  // Extended properties for card functionality
-  effectType?: string;
-  effectHook?: string;
-  effectParams?: any;
+}
+
+export interface CardEffect {
+  type: string;
+  value: number | string | boolean;
+  duration?: number;
+  target?: 'self' | 'opponent' | 'all';
+}
+
+export interface PlayerCard {
+  id: string;
+  cardId: string;
+  playerId: string;
+  used: boolean;
+  usedAt?: Date;
 }

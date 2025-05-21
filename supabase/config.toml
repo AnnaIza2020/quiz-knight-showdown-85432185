@@ -1,1 +1,5 @@
-project_id = "jkkvxlojgxlmbypulvtu"
+
+jkkvxlojgxlmbypulvtu = true
+
+[functions.game-settings]
+verify_jwt = false

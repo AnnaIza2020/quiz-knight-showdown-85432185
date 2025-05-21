@@ -4,15 +4,15 @@ import { useGameContext } from '@/context/GameContext';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Pencil, Save, X } from 'lucide-react';
 import { GameRound } from '@/types/game-types';
-import { supabase } from '@/lib/supabase';
+import { supabase, loadGameSetting, saveGameSetting } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 const TopBar = () => {
-  const { round, setRound, gameTitle, setGameTitle } = useGameContext();
+  const { round, gameTitle, setGameTitle } = useGameContext();
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
@@ -25,19 +25,9 @@ const TopBar = () => {
   useEffect(() => {
     const fetchPassword = async () => {
       try {
-        const { data, error } = await supabase
-          .from('game_settings')
-          .select('value')
-          .eq('key', 'game_password')
-          .single();
-          
-        if (error) {
-          console.error('Error loading game password:', error);
-          return;
-        }
-        
-        if (data) {
-          setStoredPassword(data.value);
+        const password = await loadGameSetting('game_password');
+        if (password) {
+          setStoredPassword(password);
         }
       } catch (error) {
         console.error('Error loading game password:', error);

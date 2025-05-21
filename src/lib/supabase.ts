@@ -14,21 +14,79 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
   }
 });
 
+// Helper function to generate a player link
+export const generatePlayerLink = async (playerId: string) => {
+  try {
+    // Check if the player exists
+    const { data: playerData, error: playerError } = await supabase
+      .from('players')
+      .select('unique_link_token')
+      .eq('id', playerId)
+      .single();
+      
+    if (playerError) {
+      console.error('Error fetching player:', playerError);
+      return { success: false, error: playerError };
+    }
+    
+    let uniqueToken = playerData?.unique_link_token;
+    
+    // If no token exists, generate one
+    if (!uniqueToken) {
+      try {
+        // Generate a unique token for player links
+        const { data: newToken, error: rpcError } = await supabase.rpc('generate_unique_player_token');
+        
+        if (rpcError || !newToken) {
+          throw new Error(rpcError?.message || 'Failed to generate unique token');
+        }
+        
+        uniqueToken = newToken;
+        
+        // Update the player with the new token
+        const { error: updateError } = await supabase
+          .from('players')
+          .update({ unique_link_token: uniqueToken })
+          .eq('id', playerId);
+          
+        if (updateError) {
+          throw new Error(updateError.message);
+        }
+      } catch (err) {
+        console.error('Error generating player link:', err);
+        return { success: false, error: err };
+      }
+    }
+    
+    // Build the player link
+    const baseUrl = window.location.origin;
+    const playerLink = `${baseUrl}/player/${uniqueToken}`;
+    
+    return { 
+      success: true, 
+      data: { 
+        link: playerLink,
+        token: uniqueToken
+      }
+    };
+  } catch (error) {
+    console.error('Error in generatePlayerLink:', error);
+    return { success: false, error };
+  }
+};
+
 // Helper function to load a game setting
 export const loadGameSetting = async (key: string): Promise<string | null> => {
   try {
     const { data, error } = await supabase
-      .from('game_settings')
-      .select('value')
-      .eq('key', key)
-      .single();
+      .rpc('get_game_setting', { setting_key: key });
       
     if (error) {
       console.error(`Error loading game setting ${key}:`, error);
       return null;
     }
     
-    return data?.value || null;
+    return data || null;
   } catch (error) {
     console.error(`Error loading game setting ${key}:`, error);
     return null;
@@ -39,9 +97,10 @@ export const loadGameSetting = async (key: string): Promise<string | null> => {
 export const saveGameSetting = async (key: string, value: string): Promise<boolean> => {
   try {
     const { data, error } = await supabase
-      .from('game_settings')
-      .upsert({ key, value })
-      .select();
+      .rpc('save_game_setting', { 
+        setting_key: key, 
+        setting_value: value 
+      });
       
     if (error) {
       console.error(`Error saving game setting ${key}:`, error);
@@ -59,10 +118,7 @@ export const saveGameSetting = async (key: string, value: string): Promise<boole
 export const loadGameData = async (key: string): Promise<any> => {
   try {
     const { data, error } = await supabase
-      .from('game_settings')
-      .select('value')
-      .eq('key', key)
-      .single();
+      .rpc('get_game_setting', { setting_key: key });
       
     if (error) {
       console.error(`Error loading game data ${key}:`, error);
@@ -71,9 +127,9 @@ export const loadGameData = async (key: string): Promise<any> => {
     
     // Parse JSON data or return as-is if not valid JSON
     try {
-      return JSON.parse(data?.value || 'null');
+      return JSON.parse(data || 'null');
     } catch (e) {
-      return data?.value || null;
+      return data || null;
     }
   } catch (error) {
     console.error(`Error loading game data ${key}:`, error);
@@ -88,9 +144,10 @@ export const saveGameData = async (key: string, value: any): Promise<boolean> =>
     const valueToSave = typeof value === 'object' ? JSON.stringify(value) : String(value);
     
     const { data, error } = await supabase
-      .from('game_settings')
-      .upsert({ key, value: valueToSave })
-      .select();
+      .rpc('save_game_setting', {
+        setting_key: key,
+        setting_value: valueToSave
+      });
       
     if (error) {
       console.error(`Error saving game data ${key}:`, error);

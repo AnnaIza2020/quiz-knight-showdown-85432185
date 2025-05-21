@@ -17,17 +17,21 @@ export const createQuestionWithDefaults = (
     time: partialQuestion.time || 30,
     used: partialQuestion.used || false,
     type: partialQuestion.type || 'multiple_choice',
+    // Backward compatibility fields
+    category: partialQuestion.category || '',
+    question: partialQuestion.question || partialQuestion.text || '',
+    answer: partialQuestion.answer || partialQuestion.correctAnswer || ''
   };
 };
 
 export const validateQuestion = (question: Partial<Question>): string[] => {
   const errors: string[] = [];
   
-  if (!question.text || question.text.trim() === '') {
+  if (!question.text && !question.question) {
     errors.push('Pytanie musi mieć treść');
   }
   
-  if (!question.correctAnswer || question.correctAnswer.trim() === '') {
+  if (!question.correctAnswer && !question.answer) {
     errors.push('Pytanie musi mieć poprawną odpowiedź');
   }
   
