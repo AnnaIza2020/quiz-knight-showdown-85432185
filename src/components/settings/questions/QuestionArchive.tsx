@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Category, Question } from '@/types/game-types';
-import { getUsedQuestions, restoreQuestion } from '@/lib/supabase';
+import { getUsedQuestions, restoreQuestion } from '@/lib';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -23,9 +22,14 @@ const QuestionArchive: React.FC<QuestionArchiveProps> = ({ categories, onRestore
   // Load used questions
   const loadUsedQuestions = async () => {
     setIsLoading(true);
-    const result = await getUsedQuestions();
-    if (result.success) {
-      setUsedQuestionIds(result.data);
+    try {
+      const result = await getUsedQuestions();
+      if (result.success) {
+        setUsedQuestionIds(result.data);
+      }
+    } catch (error) {
+      console.error("Error loading used questions:", error);
+      toast.error("Nie udało się załadować używanych pytań");
     }
     setIsLoading(false);
   };
@@ -50,8 +54,10 @@ const QuestionArchive: React.FC<QuestionArchiveProps> = ({ categories, onRestore
   // Apply filters
   const filteredQuestions = usedQuestions.filter(question => {
     const matchesSearch = 
-      question.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      question.answer.toLowerCase().includes(searchTerm.toLowerCase());
+      question.question?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      question.text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      question.answer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      question.correctAnswer?.toLowerCase().includes(searchTerm.toLowerCase());
       
     const matchesCategory = selectedCategory === 'all' || question.categoryName === selectedCategory;
     
@@ -60,14 +66,19 @@ const QuestionArchive: React.FC<QuestionArchiveProps> = ({ categories, onRestore
   
   // Handle restoring a question
   const handleRestoreQuestion = async (questionId: string) => {
-    const result = await restoreQuestion(questionId);
-    if (result.success) {
-      // Remove from used questions list
-      setUsedQuestionIds(prev => prev.filter(id => id !== questionId));
-      onRestoreQuestion(questionId);
-      toast.success('Pytanie przywrócone do puli');
-    } else {
-      toast.error('Nie udało się przywrócić pytania');
+    try {
+      const result = await restoreQuestion(questionId);
+      if (result.success) {
+        // Remove from used questions list
+        setUsedQuestionIds(prev => prev.filter(id => id !== questionId));
+        onRestoreQuestion(questionId);
+        toast.success('Pytanie przywrócone do puli');
+      } else {
+        toast.error('Nie udało się przywrócić pytania');
+      }
+    } catch (error) {
+      console.error("Error restoring question:", error);
+      toast.error('Wystąpił błąd podczas przywracania pytania');
     }
   };
   
@@ -131,8 +142,12 @@ const QuestionArchive: React.FC<QuestionArchiveProps> = ({ categories, onRestore
                 <span className="text-neon-blue text-sm">{question.categoryName}</span>
                 <QuestionDifficultyBadge difficulty={question.difficulty} />
               </div>
-              <div className="text-white font-medium mb-1">{question.question}</div>
-              <div className="text-white/70 text-sm mb-2">Odp: {question.answer}</div>
+              <div className="text-white font-medium mb-1">
+                {question.text || question.question}
+              </div>
+              <div className="text-white/70 text-sm mb-2">
+                Odp: {question.correctAnswer || question.answer}
+              </div>
               
               <div className="flex justify-end">
                 <Button 

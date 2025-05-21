@@ -1,61 +1,51 @@
 
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import HomePage from '@/pages/HomePage';
-import NotFound from '@/pages/NotFound';
-import Settings from '@/pages/Settings';
-import Host from '@/pages/Host';
-import Overlay from '@/pages/Overlay';
-import PlayerView from '@/pages/PlayerView';
-import About from '@/pages/About';
-import { ThemeProvider } from '@/components/ThemeProvider';
-import MainLayout from './layouts/MainLayout';
-import { LogsProvider } from './context/LogsContext';
-import HostAvailability from './pages/HostAvailability';
-import Setup from './pages/Setup';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './components/ThemeProvider';
 import { GameProvider } from './context/GameContext';
-import HostPanel from './pages/HostPanel';
 import { QuestionsProvider } from './context/QuestionsContext';
 import { SpecialCardsProvider } from './context/SpecialCardsContext';
+import { LogsProvider } from './context/LogsContext';
 import { AvailabilityProvider } from './context/AvailabilityContext';
-import './App.css';
 
-// Error boundary component to catch React errors
-const ErrorBoundary = ({ children }: { children: React.ReactNode }) => {
-  return <>{children}</>;
-};
+import MainLayout from './layouts/MainLayout';
+import Home from './pages/Home';
+import Host from './pages/Host';
+import HostPanel from './pages/HostPanel';
+import HostAvailability from './pages/HostAvailability';
+import Overlay from './pages/Overlay';
+import PlayerView from './pages/PlayerView';
+import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
+import './App.css';
 
 function App() {
   return (
-    <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="dark">
+      <LogsProvider>
         <GameProvider>
           <QuestionsProvider>
             <SpecialCardsProvider>
               <AvailabilityProvider>
-                <LogsProvider>
-                  <BrowserRouter>
-                    <Routes>
-                      <Route path="/" element={<MainLayout />}>
-                        <Route index element={<HomePage />} />
-                        <Route path="about" element={<About />} />
-                        <Route path="host" element={<Host />} />
-                        <Route path="host-panel" element={<HostPanel />} />
-                        <Route path="host-availability" element={<HostAvailability />} />
-                        <Route path="settings/*" element={<Settings />} />
-                        <Route path="setup" element={<Setup />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Route>
-                      <Route path="/overlay" element={<Overlay />} />
-                      <Route path="/player/:token" element={<PlayerView />} />
-                    </Routes>
-                  </BrowserRouter>
-                </LogsProvider>
+                <Router>
+                  <Routes>
+                    <Route path="/" element={<MainLayout />}>
+                      <Route index element={<Home />} />
+                      <Route path="host" element={<Host />} />
+                      <Route path="hostpanel" element={<HostPanel />} />
+                      <Route path="availability" element={<HostAvailability />} />
+                      <Route path="overlay" element={<Overlay />} />
+                      <Route path="player/:token" element={<PlayerView />} />
+                      <Route path="settings/*" element={<Settings />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Route>
+                  </Routes>
+                </Router>
               </AvailabilityProvider>
             </SpecialCardsProvider>
           </QuestionsProvider>
         </GameProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+      </LogsProvider>
+    </ThemeProvider>
   );
 }
 

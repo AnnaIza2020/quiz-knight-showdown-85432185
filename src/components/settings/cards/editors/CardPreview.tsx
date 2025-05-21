@@ -33,7 +33,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      <CardDisplay card={card} size="md" showDescription={true} />
+      <CardDisplay card={card} size="medium" showDescription={true} />
       
       <div className="mt-6 space-y-4">
         <div>

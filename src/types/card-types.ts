@@ -34,4 +34,4 @@ export interface PlayerCard {
 }
 
 // Card size type used throughout the application
-export type CardSize = 'tiny' | 'small' | 'medium' | 'large' | 'xl';
+export type CardSize = 'tiny' | 'sm' | 'small' | 'md' | 'medium' | 'large' | 'xl';

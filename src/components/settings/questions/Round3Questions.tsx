@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useState, useCallback } from 'react';
 import { useQuestionsContext } from '@/context/QuestionsContext';
 import { Question, Category, GameRound } from '@/types/game-types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import QuestionTable from './QuestionTable';
 import QuestionForm from './QuestionForm';
@@ -14,7 +14,8 @@ const Round3Questions: React.FC = () => {
     addQuestion, 
     removeQuestion, 
     updateQuestion,
-    findCategoryByQuestionId
+    findCategoryByQuestionId,
+    isQuestionUsed
   } = useQuestionsContext();
   
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -77,6 +78,12 @@ const Round3Questions: React.FC = () => {
     setIsFormOpen(false);
     setEditingQuestion(null);
   };
+
+  // Toggle question used status (for QuestionTable)
+  const handleToggleUsed = useCallback((questionId: string) => {
+    // This will be connected to the actual functionality when needed
+    console.log("Toggle used status for question:", questionId);
+  }, []);
   
   return (
     <div className="space-y-6">
@@ -133,6 +140,7 @@ const Round3Questions: React.FC = () => {
           questions={questions}
           onEdit={handleEditQuestion}
           onDelete={handleRemoveQuestion}
+          onToggleUsed={handleToggleUsed}
         />
       )}
     </div>

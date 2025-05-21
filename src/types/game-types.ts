@@ -1,4 +1,3 @@
-
 import { RoundSettings } from './round-settings';
 import { PlayerAvailabilitySlot } from './availability-types';
 import { CardSize as CardSizeType, SpecialCard as CardType } from './card-types';
@@ -81,41 +80,27 @@ export interface GameBackup {
   data: any;
 }
 
+// Define GameSound type
 export interface GameSound {
-  id: string;
   name: string;
   file: string;
   volume?: number;
-  loop?: boolean;
-  autoplay?: boolean;
+  category?: string;
 }
 
-export type SoundEffect = 
-  | 'success' 
-  | 'fail' 
-  | 'eliminate' 
-  | 'bonus' 
-  | 'card-reveal' 
-  | 'intro-music' 
-  | 'narrator'
-  | 'round-start'
-  | 'timeout'
-  | 'victory'
-  | 'wheel-tick'
-  | string;
-
-// Add LogEntry type with all required fields
+// Define LogEntry type
 export interface LogEntry {
   id: string;
-  message: string;
   timestamp: Date;
-  level?: 'info' | 'warning' | 'error';
-  details?: any;
+  message: string;
+  level?: 'info' | 'warning' | 'error' | 'success';
   type?: string;
   action?: string;
   player?: string;
   value?: any;
 }
+
+export type SoundEffect = string;
 
 export interface GameContextType {
   // State

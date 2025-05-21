@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -11,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useGameContext } from '@/context/GameContext';
-import { SoundEffect } from '@/types/game-types';
+import { SoundEffect, GameSound } from '@/types/game-types';
 import { supabase } from '@/lib/supabase';
 
 import SystemInfoPanel from './SystemInfoPanel';
@@ -70,10 +71,15 @@ const DiagnosticsPanel = () => {
     }
   };
 
-  // For displaying GameSounds
-  const renderGameSound = (gameSound: GameSound) => (
-    <span>{gameSound.name} ({gameSound.file})</span>
-  );
+  // Helper function to render a game sound as text
+  const renderGameSound = (sound: GameSound | string): React.ReactNode => {
+    if (typeof sound === 'string') {
+      return <span>{sound}</span>;
+    } else if (typeof sound === 'object' && sound !== null) {
+      return <span>{sound.name} ({sound.file})</span>;
+    }
+    return <span>Unknown sound format</span>;
+  };
 
   return (
     <div className="space-y-6">
@@ -161,7 +167,7 @@ const DiagnosticsPanel = () => {
                   {Array.isArray(availableSounds) && availableSounds.length > 0 ? (
                     availableSounds.map((sound, index) => (
                       <div key={index} className="flex justify-between items-center p-1">
-                        <span>{sound}</span>
+                        {renderGameSound(sound)}
                         <Badge variant="outline" className="bg-green-900/20 text-green-300">
                           Available
                         </Badge>

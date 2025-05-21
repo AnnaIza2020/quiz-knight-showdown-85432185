@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useQuestionsContext } from '@/context/QuestionsContext';
 import { Question, Category } from '@/types/game-types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QuestionDifficultyBadge } from './QuestionDifficultyBadge';
+import QuestionDifficultyBadge from './QuestionDifficultyBadge';
 import { toast } from 'sonner';
 import { createQuestionWithDefaults } from '@/utils/createQuestionWithDefaults';
 
@@ -31,7 +30,7 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
   const [difficulty, setDifficulty] = useState<number>(initialData.difficulty || 1);
   const [formState, setFormState] = useState<Partial<Question>>({
     ...initialData,
-    imageUrl: initialData.imageUrl || initialData.image_url || '' // Handle both property names
+    imageUrl: initialData.imageUrl || '' // Just use imageUrl
   });
   const [selectedCategory, setSelectedCategory] = useState<string>(
     initialData.categoryId || currentCategoryId || ''
@@ -39,11 +38,6 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
 
   // Handle form submission
   const handleSubmitForm = (question: Question) => {
-    // Ensure compatibility with both naming conventions
-    if (question.imageUrl) {
-      question.image_url = question.imageUrl;
-    }
-
     if (options.length > 0 && options.filter(Boolean).length > 0) {
       question.options = options.filter(Boolean);
     }
@@ -98,7 +92,7 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
       text: initialData.text || initialData.question || '',
       correctAnswer: initialData.correctAnswer || initialData.answer || '',
       categoryId: initialData.categoryId || currentCategoryId || '',
-      imageUrl: initialData.imageUrl || initialData.image_url || '',
+      imageUrl: initialData.imageUrl || '',
     },
   });
 

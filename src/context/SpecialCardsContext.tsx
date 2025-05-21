@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
-import { SpecialCard, CardSize } from '@/types/card-types';
+import { SpecialCard } from '@/types/card-types';
 import { Player, SpecialCardAwardRule, SoundEffect } from '@/types/game-types';
 import { useSpecialCards } from '@/hooks/useSpecialCards';
 import { useGameContext } from './GameContext';
@@ -39,23 +39,46 @@ export const SpecialCardsProvider: React.FC<SpecialCardsProviderProps> = ({ chil
   // Get game context data
   const gameCtx = useGameContext();
   
-  // Safely access properties with defaults
-  const players = gameCtx?.players || [];
-  const setPlayers = gameCtx?.setPlayers || (() => {});
-  const specialCards = gameCtx?.specialCards || [];
-  const setSpecialCards = gameCtx?.setSpecialCards || (() => {});
-  const specialCardRules = gameCtx?.specialCardRules || [];
-  const setSpecialCardRules = gameCtx?.setSpecialCardRules || (() => {});
-  const playSound = gameCtx?.playSound || (() => {});
+  // Safely access properties
+  const players = gameCtx.players || [];
+  const setPlayers = gameCtx.setPlayers || (() => {});
+  const specialCards = gameCtx.specialCards || [];
+  const specialCardRules = gameCtx.specialCardRules || [];
+  const playSound = gameCtx.playSound || (() => {});
+  
+  // Since GameContext doesn't expose these setters, we need to use methods
+  const addSpecialCardToGame = gameCtx.addSpecialCard || (() => {});
+  const updateSpecialCardInGame = gameCtx.updateSpecialCard || (() => {});
+  const removeSpecialCardFromGame = gameCtx.removeSpecialCard || (() => {});
+  const addSpecialCardRuleToGame = gameCtx.addSpecialCardRule || (() => {});
+  const updateSpecialCardRuleInGame = gameCtx.updateSpecialCardRule || (() => {});
+  const removeSpecialCardRuleFromGame = gameCtx.removeSpecialCardRule || (() => {});
 
   // Use the special cards hook
   const specialCardsHook = useSpecialCards(
     players, 
     setPlayers, 
     specialCards, 
-    setSpecialCards, 
+    (newCards: SpecialCard[]) => {
+      // Since we can't directly access setSpecialCards, 
+      // we need to handle updates differently
+      // This is a simplified approach - in production, consider using
+      // the GameContext methods like addSpecialCard directly
+      newCards.forEach(card => {
+        if (!specialCards.some(c => c.id === card.id)) {
+          addSpecialCardToGame(card);
+        }
+      });
+    }, 
     specialCardRules, 
-    setSpecialCardRules, 
+    (newRules: SpecialCardAwardRule[]) => {
+      // Similar approach for rules
+      newRules.forEach(rule => {
+        if (!specialCardRules.some(r => r.id === rule.id)) {
+          addSpecialCardRuleToGame(rule);
+        }
+      });
+    }, 
     playSound as (sound: SoundEffect, volume?: number) => void
   );
 

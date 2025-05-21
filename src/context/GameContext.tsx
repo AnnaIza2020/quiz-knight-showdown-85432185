@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { useGameLogic } from '@/hooks/useGameLogic';
@@ -98,8 +99,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setVolume,
     volume,
     soundStatus,
-    availableSounds,
-    addCustomSound
+    availableSounds: soundsArray,
+    addCustomSound: addCustomSoundFn
   } = useSoundEffects();
 
   // Game backup methods
@@ -298,14 +299,35 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     return result;
   };
 
-  // Fix playSoundWithOptions to match the expected signature
-  const playSoundWithOptionsWrapper = (sound: string, options: any) => {
-    playSoundWithOptions(sound, options);
+  // Safe conversion of sound arrays and functions
+  const availableSounds: GameSound[] = soundsArray ? 
+    (Array.isArray(soundsArray) ? 
+      soundsArray.map(sound => {
+        if (typeof sound === 'string') {
+          return { name: sound, file: `${sound}.mp3` };
+        }
+        return sound as GameSound;
+      }) 
+      : []
+    ) 
+    : [];
+
+  const addCustomSound = (sound: GameSound) => {
+    if (typeof addCustomSoundFn === 'function') {
+      addCustomSoundFn(sound.name, sound.file);
+    }
   };
 
-  // Fix hasUndoHistory to return boolean
-  const hasUndoHistoryFn = () => {
+  // Convert hasUndoHistory to function that returns boolean
+  const hasUndoHistoryFn = (): boolean => {
     return Boolean(hasUndoHistory);
+  };
+  
+  // Fix playSoundWithOptions to match the expected signature
+  const playSoundWithOptionsWrapper = (sound: string, options: any) => {
+    if (typeof playSoundWithOptions === 'function') {
+      playSoundWithOptions(sound, options);
+    }
   };
 
   // Context value with corrected types
@@ -347,8 +369,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     volume,
     setVolume,
     soundStatus,
-    availableSounds: availableSounds as GameSound[],
-    addCustomSound: addCustomSound as (sound: GameSound) => void,
+    availableSounds,
+    addCustomSound,
     
     // Error reporting
     reportError,

@@ -16,8 +16,8 @@ interface QuestionsContextType {
   addQuestion: (categoryId: string, question: Question) => void;
   removeQuestion: (categoryId: string, questionId: string) => void;
   updateQuestion: (categoryId: string, updatedQuestion: Question) => void;
-  markQuestionAsUsed: (questionId: string) => void;
-  resetUsedQuestions: () => void;
+  markQuestionAsUsed: (questionId: string) => Promise<{ success: boolean }>;
+  resetUsedQuestions: () => Promise<{ success: boolean }>;
   isQuestionUsed: (questionId: string) => boolean;
   
   // Helper methods
@@ -43,15 +43,15 @@ export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({ children }
   // Get game context data
   const gameCtx = useGameContext();
   
-  // Safely access properties with defaults
-  const categories = gameCtx?.categories || [];
-  const setCategories = gameCtx?.setCategories || (() => {});
-  const currentQuestion = gameCtx?.currentQuestion || null;
-  const selectQuestion = gameCtx?.selectQuestion || (() => {});
-  const usedQuestionIds = gameCtx?.usedQuestionIds || [];
-  const markQuestionAsUsed = gameCtx?.markQuestionAsUsed || (() => Promise.resolve({ success: true }));
-  const resetUsedQuestions = gameCtx?.resetUsedQuestions || (() => Promise.resolve({ success: true }));
-  const isQuestionUsed = gameCtx?.isQuestionUsed || (() => false);
+  // Access properties from gameCtx
+  const categories = gameCtx.categories || [];
+  const setCategories = gameCtx.setCategories || (() => {});
+  const currentQuestion = gameCtx.currentQuestion || null;
+  const selectQuestion = gameCtx.selectQuestion || (() => {});
+  const usedQuestionIds = gameCtx.usedQuestionIds || [];
+  const markQuestionAsUsed = gameCtx.markQuestionAsUsed || (() => Promise.resolve({ success: true }));
+  const resetUsedQuestions = gameCtx.resetUsedQuestions || (() => Promise.resolve({ success: true }));
+  const isQuestionUsed = gameCtx.isQuestionUsed || (() => false);
 
   // Helper to find a question by id across all categories
   const findQuestionById = useCallback((questionId: string): Question | null => {
@@ -83,7 +83,7 @@ export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({ children }
       question.id = crypto.randomUUID();
     }
 
-    setCategories(prevCategories => {
+    setCategories((prevCategories: Category[]) => {
       return prevCategories.map(category => {
         if (category.id === categoryId) {
           return {
@@ -99,7 +99,7 @@ export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({ children }
   }, [categories, setCategories]);
 
   const removeQuestion = useCallback((categoryId: string, questionId: string) => {
-    setCategories(prevCategories => {
+    setCategories((prevCategories: Category[]) => {
       return prevCategories.map(category => {
         if (category.id === categoryId) {
           return {
@@ -113,7 +113,7 @@ export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({ children }
   }, [setCategories]);
 
   const updateQuestion = useCallback((categoryId: string, updatedQuestion: Question) => {
-    setCategories(prevCategories => {
+    setCategories((prevCategories: Category[]) => {
       return prevCategories.map(category => {
         if (category.id === categoryId) {
           return {

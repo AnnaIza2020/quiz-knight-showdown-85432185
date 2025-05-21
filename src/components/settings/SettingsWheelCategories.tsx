@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +8,7 @@ import { toast } from 'sonner';
 import { Category, GameRound } from '@/types/game-types';
 import { useGameContext } from '@/context/GameContext';
 import { Trash2 } from 'lucide-react';
-import SettingsLayout from '../SettingsLayout';
+import SettingsLayout from '@/components/SettingsLayout';
 
 const SettingsWheelCategories: React.FC = () => {
   const { categories, setCategories } = useGameContext();
@@ -31,13 +32,13 @@ const SettingsWheelCategories: React.FC = () => {
       description: '' // Add this required field
     };
     
-    setCategories(prevCategories => [...prevCategories, newCategory]);
+    setCategories((prevCategories: Category[]) => [...prevCategories, newCategory]);
     setNewCategoryName('');
     toast.success(`Dodano kategorię "${newCategoryName}"`);
   };
 
   const handleRemoveCategory = (categoryId: string) => {
-    setCategories(prevCategories =>
+    setCategories((prevCategories: Category[]) =>
       prevCategories.filter(category => category.id !== categoryId)
     );
     toast.success('Kategoria została usunięta');

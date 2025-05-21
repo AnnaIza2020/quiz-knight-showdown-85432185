@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Bug, RefreshCw, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -164,6 +163,21 @@ const DebugPanel = () => {
     return error.count > 1 
       ? `${error.message} (${error.count}x)` 
       : error.message;
+  };
+  
+  // Helper function to ensure we have the message field
+  const ensureMessageField = (log: any) => {
+    if (typeof log === 'string') return log;
+    
+    // If it's an object without message field, add it
+    if (typeof log === 'object' && log !== null && !log.message) {
+      return {
+        ...log,
+        message: log.value || `${log.type}: ${log.action}`,
+      };
+    }
+    
+    return log;
   };
   
   return (
