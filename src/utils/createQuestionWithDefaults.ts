@@ -12,7 +12,7 @@ export const createQuestionWithDefaults = (
     categoryId: partialQuestion.categoryId || '',
     options: partialQuestion.options || [],
     difficulty: partialQuestion.difficulty || 1,
-    imageUrl: partialQuestion.imageUrl || '',
+    imageUrl: partialQuestion.imageUrl || partialQuestion.image_url || '',
     points: partialQuestion.points || 10,
     time: partialQuestion.time || 30,
     used: partialQuestion.used || false,
@@ -20,7 +20,8 @@ export const createQuestionWithDefaults = (
     // Backward compatibility fields
     category: partialQuestion.category || '',
     question: partialQuestion.question || partialQuestion.text || '',
-    answer: partialQuestion.answer || partialQuestion.correctAnswer || ''
+    answer: partialQuestion.answer || partialQuestion.correctAnswer || '',
+    image_url: partialQuestion.imageUrl || partialQuestion.image_url || ''
   };
 };
 

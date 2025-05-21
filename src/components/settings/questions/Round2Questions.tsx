@@ -69,6 +69,7 @@ const Round2Questions = () => {
       const defaultCategory: Category = {
         id: uuidv4(),
         name: 'Pytania 5 sekund',
+        description: '', // Add the required description field
         round: GameRound.ROUND_TWO,
         questions: []
       };
@@ -88,6 +89,7 @@ const Round2Questions = () => {
     const newCategory: Category = {
       id: uuidv4(),
       name: newCategoryName,
+      description: '', // Add the required description field
       round: GameRound.ROUND_TWO, // Set the round explicitly
       questions: []
     };

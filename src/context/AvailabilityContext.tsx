@@ -1,107 +1,199 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
-import { PlayerAvailabilitySlot, AvailabilityContextType } from '@/types/availability-types';
+import { PlayerAvailabilitySlot, AvailabilityStatus, AvailabilityContextType } from '@/types/availability-types';
 
-// Create context with a default value
-const AvailabilityContext = createContext<AvailabilityContextType>({
-  availability: [],
-  isLoading: false,
-  error: null,
-  fetchAvailability: async () => [],
-  updateAvailability: async () => false
-});
+const AvailabilityContext = createContext<AvailabilityContextType | undefined>(undefined);
 
-export const useAvailabilityContext = () => useContext(AvailabilityContext);
+export const useAvailabilityContext = () => {
+  const context = useContext(AvailabilityContext);
+  if (!context) {
+    throw new Error('useAvailabilityContext must be used within an AvailabilityProvider');
+  }
+  return context;
+};
 
 interface AvailabilityProviderProps {
   children: ReactNode;
 }
 
 export const AvailabilityProvider: React.FC<AvailabilityProviderProps> = ({ children }) => {
-  const [availability, setAvailability] = useState<PlayerAvailabilitySlot[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<any>(null);
-
+  // Fetch all availability data
   const fetchAvailability = async (): Promise<PlayerAvailabilitySlot[]> => {
-    setIsLoading(true);
     try {
-      const { data, error } = await supabase.from('player_availability').select('*');
+      const { data, error } = await supabase
+        .from('player_availability')
+        .select('*')
+        .order('date', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching availability data:', error);
+        return [];
+      }
 
-      // Transform the data to match our interface
-      const transformedData: PlayerAvailabilitySlot[] = data.map(item => ({
+      // Convert database format to our expected format
+      return data.map(item => ({
         id: item.id,
         playerId: item.player_id,
         date: item.date,
-        timeSlots: item.time_slots as Record<string, boolean>,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        // Keep original fields for compatibility
+        timeSlots: convertTimeSlots(item.time_slots),
+        // Keep original fields for backwards compatibility
         player_id: item.player_id,
-        time_slots: item.time_slots
+        time_slots: item.time_slots,
+        created_at: item.created_at,
+        updated_at: item.updated_at
       }));
-
-      setAvailability(transformedData);
-      setIsLoading(false);
-      return transformedData;
-    } catch (err) {
-      setError(err);
-      setIsLoading(false);
-      console.error('Error fetching availability:', err);
+    } catch (error) {
+      console.error('Unexpected error fetching availability:', error);
       return [];
     }
   };
 
-  const updateAvailability = async (data: PlayerAvailabilitySlot): Promise<boolean> => {
+  // Convert between different timeSlot formats
+  const convertTimeSlots = (slots: any): Record<string, AvailabilityStatus> => {
+    if (!slots) return {};
+    
+    const result: Record<string, AvailabilityStatus> = {};
+    
+    // Convert boolean values to AvailabilityStatus enum
+    Object.entries(slots).forEach(([key, value]) => {
+      if (typeof value === 'boolean') {
+        result[key] = value ? AvailabilityStatus.AVAILABLE : AvailabilityStatus.UNAVAILABLE;
+      } else if (typeof value === 'string' && Object.values(AvailabilityStatus).includes(value as AvailabilityStatus)) {
+        result[key] = value as AvailabilityStatus;
+      } else {
+        result[key] = AvailabilityStatus.UNKNOWN;
+      }
+    });
+    
+    return result;
+  };
+
+  // Get availability for a specific player
+  const getPlayerAvailability = async (playerId: string): Promise<PlayerAvailabilitySlot[]> => {
     try {
-      // Convert to database format
-      const dbData = {
+      const { data, error } = await supabase
+        .from('player_availability')
+        .select('*')
+        .eq('player_id', playerId)
+        .order('date', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching player availability:', error);
+        return [];
+      }
+
+      return data.map(item => ({
+        id: item.id,
+        playerId: item.player_id,
+        date: item.date,
+        timeSlots: convertTimeSlots(item.time_slots),
+        // Keep original fields for backwards compatibility
+        player_id: item.player_id,
+        time_slots: item.time_slots,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
+    } catch (error) {
+      console.error('Unexpected error fetching player availability:', error);
+      return [];
+    }
+  };
+
+  // Update player availability
+  const updateAvailability = async (data: PlayerAvailabilitySlot): Promise<{success: boolean}> => {
+    try {
+      // Convert our format to database format
+      const dbRecord = {
         player_id: data.playerId,
         date: data.date,
         time_slots: data.timeSlots
       };
 
+      // Check if record exists
       if (data.id) {
         const { error } = await supabase
           .from('player_availability')
-          .update(dbData)
+          .update(dbRecord)
           .eq('id', data.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating availability:', error);
+          return { success: false };
+        }
       } else {
         const { error } = await supabase
           .from('player_availability')
-          .insert([dbData]);
+          .insert(dbRecord);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error inserting availability:', error);
+          return { success: false };
+        }
       }
-
-      // Refresh data
-      await fetchAvailability();
-      return true;
-    } catch (err) {
-      setError(err);
-      console.error('Error updating availability:', err);
-      return false;
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Unexpected error updating availability:', error);
+      return { success: false };
     }
   };
 
-  // Initial fetch on component mount
-  useEffect(() => {
-    fetchAvailability();
-  }, []);
+  // Save batch of availability records
+  const saveAvailabilityBatch = async (dataArray: PlayerAvailabilitySlot[]): Promise<{success: boolean}> => {
+    try {
+      // Convert our format to database format
+      const dbRecords = dataArray.map(data => ({
+        player_id: data.playerId,
+        date: data.date,
+        time_slots: data.timeSlots
+      }));
+
+      const { error } = await supabase
+        .from('player_availability')
+        .insert(dbRecords);
+
+      if (error) {
+        console.error('Error saving batch availability:', error);
+        return { success: false };
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Unexpected error saving batch availability:', error);
+      return { success: false };
+    }
+  };
+
+  // Delete availability record
+  const deleteAvailability = async (id: string): Promise<{success: boolean}> => {
+    try {
+      const { error } = await supabase
+        .from('player_availability')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting availability:', error);
+        return { success: false };
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Unexpected error deleting availability:', error);
+      return { success: false };
+    }
+  };
+
+  const value: AvailabilityContextType = {
+    fetchAvailability,
+    updateAvailability,
+    saveAvailabilityBatch,
+    getPlayerAvailability,
+    deleteAvailability
+  };
 
   return (
-    <AvailabilityContext.Provider
-      value={{
-        availability,
-        isLoading,
-        error,
-        fetchAvailability,
-        updateAvailability
-      }}
-    >
+    <AvailabilityContext.Provider value={value}>
       {children}
     </AvailabilityContext.Provider>
   );

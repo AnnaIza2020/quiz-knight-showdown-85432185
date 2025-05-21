@@ -5,14 +5,15 @@ import { useGameLogic } from '@/hooks/useGameLogic';
 import { useGamePersistence } from '@/hooks/useGamePersistence';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
 import { useAvailabilityContext } from './AvailabilityContext';
-import { GameContextType, Question, GameBackup } from '@/types/game-types';
+import { GameContextType, Question, GameBackup, GameSound, SoundEffect } from '@/types/game-types';
 import { RoundSettings, defaultRoundSettings } from '@/types/round-settings';
 import { toast } from 'sonner';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { PlayerAvailabilitySlot } from '@/types/availability-types';
 import { supabase } from '@/lib/supabase';
 
-const GameContext = createContext<GameContextType | undefined>(undefined);
+// Export the context so it can be imported by other modules
+export const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const useGameContext = () => {
   const context = useContext(GameContext);
@@ -303,6 +304,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     playSoundWithOptions(options);
   };
 
+  // Fix hasUndoHistory to return boolean
+  const hasUndoHistoryFn = () => {
+    return hasUndoHistory as unknown as boolean;
+  };
+
   // Context value with corrected types
   const contextValue: GameContextType = {
     // State
@@ -375,7 +381,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     
     // Undo and manual point/health adjustment
     undoLastAction,
-    hasUndoHistory,
+    hasUndoHistory: hasUndoHistoryFn,
     addManualPoints,
     adjustHealthManually,
     

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useGameContext } from '@/context/GameContext';
@@ -31,6 +32,7 @@ const Round1Questions = () => {
       const defaultCategory: Category = {
         id: uuidv4(),
         name: 'Wiedza ogólna',
+        description: '', // Add the required description field
         round: GameRound.ROUND_ONE,
         questions: []
       };
@@ -50,6 +52,7 @@ const Round1Questions = () => {
     const newCategory: Category = {
       id: uuidv4(),
       name: newCategoryName,
+      description: '', // Add the required description field
       round: GameRound.ROUND_ONE,
       questions: []
     };

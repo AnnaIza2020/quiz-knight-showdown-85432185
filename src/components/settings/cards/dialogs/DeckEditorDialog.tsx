@@ -1,48 +1,59 @@
-
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { CardDeck } from '../CardDecksManager';
-import { Trash2, Plus, PlusCircle } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
+import { CardDisplay } from '@/components/cards';
 import { SpecialCard } from '@/types/card-types';
-import CardDisplay from '@/components/cards/CardDisplay';
+import { Check, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-interface DeckEditorDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  deck?: CardDeck;
-  onSave: (deck: CardDeck) => void;
-  availableCards: SpecialCard[];
+export interface CardDeck {
+  id: string;
+  name: string;
+  description?: string;
+  cards: string[];
 }
 
-const DeckEditorDialog = ({ 
-  isOpen, 
-  onClose, 
-  deck, 
-  onSave, 
-  availableCards 
-}: DeckEditorDialogProps) => {
+export interface CardInDeck {
+  id: string;
+  included: boolean;
+}
+
+export interface DeckEditorDialogProps {
+  open: boolean; 
+  onOpenChange: (value: boolean) => void;
+  currentDeck: CardDeck;
+  onSave: (deck: CardDeck) => void;
+  onCancel: () => void;
+  availableCards: SpecialCard[];
+  isNewDeck: boolean;
+}
+
+const DeckEditorDialog: React.FC<DeckEditorDialogProps> = ({ 
+  open,
+  onOpenChange,
+  currentDeck,
+  onSave,
+  onCancel,
+  availableCards,
+  isNewDeck 
+}) => {
   // Initialize state with deck data or defaults
-  const [name, setName] = useState(deck?.name || '');
-  const [description, setDescription] = useState(deck?.description || '');
+  const [name, setName] = useState(currentDeck.name || '');
+  const [description, setDescription] = useState(currentDeck.description || '');
   const [selectedCardId, setSelectedCardId] = useState<string>('');
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
   const [cards, setCards] = useState<{cardId: string, quantity: number}[]>(
-    deck?.cards || []
+    currentDeck.cards || []
   );
 
   // Reset form when deck changes
   useEffect(() => {
-    if (deck) {
-      setName(deck.name);
-      setDescription(deck.description || '');
-      setCards(deck.cards);
+    if (currentDeck) {
+      setName(currentDeck.name);
+      setDescription(currentDeck.description || '');
+      setCards(currentDeck.cards);
     } else {
       setName('');
       setDescription('');
@@ -50,7 +61,7 @@ const DeckEditorDialog = ({
     }
     setSelectedCardId('');
     setSelectedQuantity(1);
-  }, [deck]);
+  }, [currentDeck]);
 
   // Add a card to the deck
   const handleAddCard = () => {
@@ -89,23 +100,23 @@ const DeckEditorDialog = ({
     }
     
     onSave({
-      id: deck?.id || uuidv4(),
+      id: currentDeck.id,
       name,
       description,
       cards,
-      isActive: deck?.isActive || false
+      isActive: currentDeck.isActive || false
     });
     
-    onClose();
+    onCancel();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{deck ? 'Edytuj talię' : 'Nowa talia'}</DialogTitle>
+          <DialogTitle>{isNewDeck ? 'Nowa talia' : 'Edytuj talię'}</DialogTitle>
           <DialogDescription>
-            {deck ? 'Zmodyfikuj talię kart specjalnych' : 'Stwórz nową talię kart specjalnych'}
+            {isNewDeck ? 'Stwórz nową talię kart specjalnych' : 'Zmodyfikuj talię kart specjalnych'}
           </DialogDescription>
         </DialogHeader>
 
@@ -215,7 +226,7 @@ const DeckEditorDialog = ({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} className="mr-2">Anuluj</Button>
+          <Button variant="outline" onClick={onCancel} className="mr-2">Anuluj</Button>
           <Button onClick={handleSave}>Zapisz</Button>
         </DialogFooter>
       </DialogContent>

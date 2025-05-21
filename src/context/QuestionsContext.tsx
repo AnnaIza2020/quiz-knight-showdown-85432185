@@ -1,7 +1,8 @@
 
-import React, { createContext, useContext, ReactNode, useState, useCallback } from 'react';
+import React, { createContext, useContext, ReactNode, useCallback } from 'react';
 import { Question, Category, GameRound } from '@/types/game-types';
 import { toast } from 'sonner';
+import { GameContext } from './GameContext';
 
 // Define the Questions Context type
 interface QuestionsContextType {
@@ -40,21 +41,17 @@ interface QuestionsProviderProps {
 
 export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({ children }) => {
   // Get game context data
-  const { 
-    categories, setCategories, 
-    currentQuestion, selectQuestion,
-    usedQuestionIds, markQuestionAsUsed,
-    resetUsedQuestions, isQuestionUsed
-  } = useContext(GameContext) || {
-    categories: [],
-    setCategories: () => {},
-    currentQuestion: null,
-    selectQuestion: () => {},
-    usedQuestionIds: [],
-    markQuestionAsUsed: () => {},
-    resetUsedQuestions: () => {},
-    isQuestionUsed: () => false,
-  };
+  const gameCtx = useContext(GameContext);
+  
+  // Safely access properties with defaults
+  const categories = gameCtx?.categories || [];
+  const setCategories = gameCtx?.setCategories || (() => {});
+  const currentQuestion = gameCtx?.currentQuestion || null;
+  const selectQuestion = gameCtx?.selectQuestion || (() => {});
+  const usedQuestionIds = gameCtx?.usedQuestionIds || [];
+  const markQuestionAsUsed = gameCtx?.markQuestionAsUsed || (() => Promise.resolve({ success: true }));
+  const resetUsedQuestions = gameCtx?.resetUsedQuestions || (() => Promise.resolve({ success: true }));
+  const isQuestionUsed = gameCtx?.isQuestionUsed || (() => false);
 
   // Helper to find a question by id across all categories
   const findQuestionById = useCallback((questionId: string): Question | null => {
@@ -149,6 +146,3 @@ export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({ children }
 
   return <QuestionsContext.Provider value={value}>{children}</QuestionsContext.Provider>;
 };
-
-// Import this at the top, but due to circular dependency we have to define it here
-import { GameContext } from './GameContext';

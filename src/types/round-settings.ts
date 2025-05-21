@@ -7,6 +7,7 @@ export interface RoundOneSettings {
   eliminateCount: number;
   maxQuestions: number;
   timerDuration?: number;
+  luckyLoserEnabled?: boolean;
 }
 
 export interface RoundTwoSettings {
@@ -47,7 +48,8 @@ export const defaultRoundSettings: RoundSettings = {
     healthDeductionPercentage: 25,
     eliminateCount: 4,
     maxQuestions: 20,
-    timerDuration: 30
+    timerDuration: 30,
+    luckyLoserEnabled: true
   },
   round2: {
     pointsForCorrectAnswer: 15,

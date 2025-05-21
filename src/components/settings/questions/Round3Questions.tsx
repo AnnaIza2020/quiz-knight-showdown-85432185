@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
@@ -55,7 +56,8 @@ const Round3Questions = () => {
     const newCategory: Category = {
       id: uuidv4(),
       name: newCategoryName,
-      round: 3,
+      description: '', // Add the required description field
+      round: 'round3', // Use string value for round
       questions: []
     };
     
@@ -64,7 +66,7 @@ const Round3Questions = () => {
     toast.success(`Dodano kategorię: ${newCategory.name}`);
   };
   
-  // Fix question creation
+  // Fix question creation with proper difficulty conversion
   const handleAddQuestion = () => {
     if (!selectedCategory) {
       toast.error('Wybierz kategorię');
@@ -80,8 +82,8 @@ const Round3Questions = () => {
       text: newQuestionText,
       correctAnswer: newAnswerText,
       categoryId: selectedCategory,
-      category: categories.find(cat => cat.id === selectedCategory)?.name, // Added for backward compatibility
-      difficulty: parseInt(difficulty),
+      category: categories.find(cat => cat.id === selectedCategory)?.name,
+      difficulty: parseInt(difficulty, 10), // Convert string to number
       question: newQuestionText, // For backward compatibility
       answer: newAnswerText, // For backward compatibility
     });

@@ -1,8 +1,9 @@
 
-import React, { createContext, useContext, ReactNode, useState } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { SpecialCard, CardSize } from '@/types/card-types';
 import { Player, SpecialCardAwardRule, SoundEffect } from '@/types/game-types';
 import { useSpecialCards } from '@/hooks/useSpecialCards';
+import { GameContext } from './GameContext';
 
 // Define the Special Cards Context type
 interface SpecialCardsContextType {
@@ -36,20 +37,16 @@ interface SpecialCardsProviderProps {
 
 export const SpecialCardsProvider: React.FC<SpecialCardsProviderProps> = ({ children }) => {
   // Get game context data
-  const { 
-    players, setPlayers, 
-    specialCards, setSpecialCards, 
-    specialCardRules, setSpecialCardRules,
-    playSound
-  } = useContext(GameContext) || {
-    players: [],
-    setPlayers: () => {},
-    specialCards: [],
-    setSpecialCards: () => {},
-    specialCardRules: [],
-    setSpecialCardRules: () => {},
-    playSound: () => {}
-  };
+  const gameCtx = useContext(GameContext);
+  
+  // Safely access properties with defaults
+  const players = gameCtx?.players || [];
+  const setPlayers = gameCtx?.setPlayers || (() => {});
+  const specialCards = gameCtx?.specialCards || [];
+  const setSpecialCards = gameCtx?.setSpecialCards || (() => {});
+  const specialCardRules = gameCtx?.specialCardRules || [];
+  const setSpecialCardRules = gameCtx?.setSpecialCardRules || (() => {});
+  const playSound = gameCtx?.playSound || (() => {});
 
   // Use the special cards hook
   const specialCardsHook = useSpecialCards(
@@ -71,6 +68,3 @@ export const SpecialCardsProvider: React.FC<SpecialCardsProviderProps> = ({ chil
 
   return <SpecialCardsContext.Provider value={value}>{children}</SpecialCardsContext.Provider>;
 };
-
-// Import this at the top, but due to circular dependency we have to define it here
-import { GameContext } from './GameContext';

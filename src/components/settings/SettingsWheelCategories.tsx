@@ -1,142 +1,85 @@
-
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { v4 as uuidv4 } from 'uuid';
 import { useGameContext } from '@/context/GameContext';
 import { Category, GameRound } from '@/types/game-types';
-import { Plus, Trash2, Check } from 'lucide-react';
-import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+import { Trash2 } from 'lucide-react';
 
-const SettingsWheelCategories: React.FC = () => {
-  const { categories, addCategory, removeCategory } = useGameContext();
-  const [newCategory, setNewCategory] = useState<string>('');
-  const [editing, setEditing] = useState(false);
-  
-  // Filter categories for Round 3
-  const wheelCategories = categories.filter(c => {
-    // Check if the category has a round property set to 3 (ROUND_THREE)
-    if (typeof c.round === 'number') {
-      return c.round === GameRound.ROUND_THREE;
+const SettingsWheelCategories = () => {
+  const gameContext = useGameContext();
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    if (gameContext) {
+      setCategories(gameContext.categories.filter(cat => cat.round === GameRound.ROUND_THREE));
     }
-    // For backward compatibility, include categories without a round property
-    return true;
-  });
-  
-  // Add a new category for wheel
-  const handleAddCategory = () => {
-    if (!newCategory.trim()) {
-      toast.error('Nazwa kategorii nie może być pusta');
+  }, [gameContext, gameContext?.categories]);
+
+  const addCategory = () => {
+    if (newCategoryName.trim() === '') {
+      toast.error('Podaj nazwę kategorii');
       return;
     }
     
-    // Check if category already exists
-    if (wheelCategories.some(c => c.name.toLowerCase() === newCategory.trim().toLowerCase())) {
-      toast.error('Kategoria o tej nazwie już istnieje');
-      return;
-    }
-    
-    // Create new category object
-    const newCategoryObj: Category = {
-      id: crypto.randomUUID(),
-      name: newCategory.trim(),
-      round: GameRound.ROUND_THREE, // Set for Round 3 (wheel)
+    const newCategory: Category = {
+      id: uuidv4(),
+      name: newCategoryName,
+      description: '', // Add the required description field
+      round: GameRound.ROUND_THREE,
       questions: []
     };
     
-    // Add to context
-    addCategory(newCategoryObj);
-    
-    // Reset form
-    setNewCategory('');
-    
-    // Show success message
-    toast.success(`Dodano kategorię "${newCategory.trim()}" do koła fortuny`);
+    gameContext.addCategory(newCategory);
+    setNewCategoryName('');
   };
-  
-  // Remove a category
-  const handleRemoveCategory = (categoryId: string) => {
-    const category = categories.find(c => c.id === categoryId);
-    if (!category) return;
-    
-    // Check if there are questions in this category
-    if (category.questions.length > 0) {
-      toast.error(`Nie można usunąć kategorii "${category.name}" - zawiera pytania`);
-      return;
-    }
-    
-    // Remove category
-    removeCategory(categoryId);
-    
-    // Show success message
-    toast.success(`Usunięto kategorię "${category.name}"`);
+
+  const removeCategory = (categoryId: string) => {
+    gameContext.removeCategory(categoryId);
   };
-  
+
   return (
-    <Card className="bg-black/40 border border-white/10">
-      <CardHeader>
-        <CardTitle>Kategorie Koła Fortuny (Runda 3)</CardTitle>
-      </CardHeader>
+    <div>
+      <h3 className="text-lg font-semibold mb-4 text-white">Kategorie Rundy 3</h3>
       
-      <CardContent>
-        <div className="space-y-4">
-          {/* Add new category */}
-          <div className="flex space-x-2">
-            <Input
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
-              placeholder="Nazwa nowej kategorii"
-              className="bg-black/20"
-            />
-            <Button onClick={handleAddCategory} className="bg-neon-green hover:bg-neon-green/80 text-black">
-              <Plus className="h-4 w-4 mr-1" />
-              Dodaj
-            </Button>
-          </div>
-          
-          {/* Categories list */}
-          {wheelCategories.length > 0 ? (
-            <div>
-              <Label className="mb-2 block">Istniejące kategorie:</Label>
-              <div className="space-y-2">
-                {wheelCategories.map((category) => (
-                  <div 
-                    key={category.id} 
-                    className="flex items-center justify-between p-3 bg-black/30 border border-white/10 rounded-md"
-                  >
-                    <div>
-                      {category.name}
-                      <span className="text-sm text-white/50 ml-2">
-                        ({category.questions.length} pytań)
-                      </span>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleRemoveCategory(category.id)}
-                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                      disabled={category.questions.length > 0}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-4 text-white/50">
-              Brak kategorii. Dodaj kategorie, aby były dostępne w Kole Fortuny.
-            </div>
-          )}
-          
-          <div className="text-xs text-white/50">
-            Uwaga: Kategorie z pytaniami nie mogą zostać usunięte. 
-            Najpierw usuń lub przenieś wszystkie pytania z tej kategorii.
-          </div>
+      <div className="mb-4">
+        <div className="flex gap-2">
+          <Input
+            type="text"
+            placeholder="Nazwa nowej kategorii"
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            className="bg-black/40 border-gray-700 text-white"
+          />
+          <Button onClick={addCategory}>Dodaj</Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      
+      <div className="space-y-2">
+        {categories.map(category => (
+          <div
+            key={category.id}
+            className="p-3 rounded-md bg-black/30 border border-gray-700 text-white"
+          >
+            <div className="flex justify-between items-center">
+              {category.name}
+              <Button 
+                variant="ghost"
+                size="sm"
+                className="text-red-500 hover:bg-red-500/10"
+                onClick={() => removeCategory(category.id)}
+              >
+                <Trash2 size={16} />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
 

@@ -1,7 +1,7 @@
 
 import { RoundSettings } from './round-settings';
 import { PlayerAvailabilitySlot } from './availability-types';
-import { CardSize } from './card-types';
+import { CardSize, SpecialCard as CardType } from './card-types';
 
 export enum GameRound {
   SETUP = 'setup',
@@ -44,6 +44,7 @@ export interface Question {
   category?: string; // For backward compatibility
   question?: string; // For backward compatibility
   answer?: string; // For backward compatibility
+  image_url?: string; // For backward compatibility
 }
 
 export interface Category {
@@ -56,24 +57,8 @@ export interface Category {
   icon?: string;
 }
 
-export interface SpecialCard {
-  id: string;
-  name: string;
-  description: string;
-  imageUrl: string;
-  soundEffect?: string;
-  iconName?: string;
-  animationStyle?: string;
-  type: string;
-  effectType?: string;
-  effectHook?: string;
-  effectParams?: Record<string, any>;
-  // Legacy field mappings
-  image_url?: string;
-  sound_effect?: string;
-  icon_name?: string;
-  animation_style?: string;
-}
+// Re-export SpecialCard from card-types
+export type SpecialCard = CardType;
 
 export interface SpecialCardAwardRule {
   id: string;
@@ -115,6 +100,15 @@ export type SoundEffect =
   | 'victory'
   | 'wheel-tick'
   | string;
+
+// Add LogEntry type
+export interface LogEntry {
+  id: string;
+  message: string;
+  timestamp: Date;
+  level?: 'info' | 'warning' | 'error';
+  details?: any;
+}
 
 export interface GameContextType {
   // State

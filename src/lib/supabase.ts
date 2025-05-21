@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
 
@@ -159,4 +158,33 @@ export const saveGameData = async (key: string, value: any): Promise<boolean> =>
     console.error(`Error saving game data ${key}:`, error);
     return false;
   }
+};
+
+// Add these two functions which are used in QuestionArchive.tsx
+export const getUsedQuestions = async () => {
+  const { data, error } = await supabase
+    .from('questions')
+    .select('*')
+    .eq('used', true);
+  
+  if (error) {
+    console.error('Error fetching used questions:', error);
+    return { success: false, data: [] };
+  }
+  
+  return { success: true, data: data || [] };
+};
+
+export const restoreQuestion = async (questionId: string) => {
+  const { data, error } = await supabase
+    .from('questions')
+    .update({ used: false })
+    .eq('id', questionId);
+  
+  if (error) {
+    console.error('Error restoring question:', error);
+    return { success: false };
+  }
+  
+  return { success: true };
 };

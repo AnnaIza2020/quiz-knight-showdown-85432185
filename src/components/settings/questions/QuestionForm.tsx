@@ -14,7 +14,7 @@ interface QuestionFormProps {
   onClose: () => void;
   onSave: (question: Question) => void;
   categories: Category[];
-  editingQuestion: any | null;
+  editingQuestion: Question | null;
 }
 
 const QuestionForm: React.FC<QuestionFormProps> = ({
@@ -30,10 +30,10 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
     categoryId: '',
     difficulty: 1,
     options: [],
-    image_url: '',
+    imageUrl: '', // Changed from image_url to imageUrl
   });
 
-  const [roundFilter, setRoundFilter] = useState<number | null>(null);
+  const [roundFilter, setRoundFilter] = useState<GameRound | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Initialize form when editing a question
@@ -48,14 +48,14 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
         categoryId: editingQuestion.categoryId || '',
         difficulty: editingQuestion.difficulty || 1,
         options: editingQuestion.options || [],
-        image_url: editingQuestion.image_url || '',
+        imageUrl: editingQuestion.imageUrl || editingQuestion.image_url || '', // Handle both field names
       });
       
       // Set the round filter based on the category's round
       if (editingQuestion.categoryId) {
         const category = categories.find(c => c.id === editingQuestion.categoryId);
-        if (category) {
-          setRoundFilter(category.round);
+        if (category && category.round) {
+          setRoundFilter(category.round as GameRound);
         }
       }
     } else {
@@ -71,7 +71,7 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
       categoryId: '',
       difficulty: 1,
       options: [],
-      image_url: '',
+      imageUrl: '', // Changed from image_url to imageUrl
     });
     setRoundFilter(null);
     setErrors({});
@@ -91,7 +91,11 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: name === 'difficulty' ? parseInt(value) : value }));
+    // Convert string to number for difficulty
+    const processedValue = name === 'difficulty' ? parseInt(value, 10) : value;
+    
+    setFormData(prev => ({ ...prev, [name]: processedValue }));
+    
     // Clear error for this field if it exists
     if (errors[name]) {
       setErrors(prev => {
@@ -104,14 +108,14 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
     // When category changes, update options based on the round
     if (name === 'categoryId') {
       const selectedCategory = categories.find(c => c.id === value);
-      if (selectedCategory) {
-        setRoundFilter(selectedCategory.round);
+      if (selectedCategory && selectedCategory.round) {
+        setRoundFilter(selectedCategory.round as GameRound);
       }
     }
   };
 
   const handleRoundChange = (value: string) => {
-    const round = parseInt(value);
+    const round = value as GameRound;
     setRoundFilter(round);
     // Clear category selection when round changes
     setFormData(prev => ({ ...prev, categoryId: '' }));
@@ -145,7 +149,10 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
         categoryId: formData.categoryId || '',
         difficulty: formData.difficulty || 1,
         options: formData.options || [],
-        image_url: formData.image_url || undefined,
+        imageUrl: formData.imageUrl || undefined,
+        // For backward compatibility
+        image_url: formData.imageUrl || undefined,
+        category: categories.find(c => c.id === formData.categoryId)?.name || '',
       };
       
       onSave(questionToSave);
@@ -186,9 +193,9 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
                   <SelectValue placeholder="Wybierz rundę" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Runda 1</SelectItem>
-                  <SelectItem value="2">Runda 2</SelectItem>
-                  <SelectItem value="3">Runda 3</SelectItem>
+                  <SelectItem value={GameRound.ROUND_ONE}>Runda 1</SelectItem>
+                  <SelectItem value={GameRound.ROUND_TWO}>Runda 2</SelectItem>
+                  <SelectItem value={GameRound.ROUND_THREE}>Runda 3</SelectItem>
                 </SelectContent>
               </Select>
               {errors.round && <p className="text-red-400 text-sm mt-1">{errors.round}</p>}
@@ -281,14 +288,14 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
           
           {/* Image URL (optional) */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="image_url" className="text-right">
+            <Label htmlFor="imageUrl" className="text-right">
               URL obrazu (opcjonalnie)
             </Label>
             <div className="col-span-3">
               <Input
-                id="image_url"
-                name="image_url"
-                value={formData.image_url || ''}
+                id="imageUrl"
+                name="imageUrl"
+                value={formData.imageUrl || ''}
                 onChange={handleChange}
                 placeholder="https://przyklad.pl/obraz.png"
                 className="bg-black/30 border-gray-700 text-white"
