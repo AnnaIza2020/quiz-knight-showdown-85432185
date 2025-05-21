@@ -26,14 +26,18 @@ const TopBar = () => {
     const fetchPassword = async () => {
       try {
         const { data, error } = await supabase
-          .rpc('load_game_data', { key: 'game_password' });
+          .from('game_settings')
+          .select('value')
+          .eq('key', 'game_password')
+          .single();
           
         if (error) {
-          throw error;
+          console.error('Error loading game password:', error);
+          return;
         }
         
         if (data) {
-          setStoredPassword(data);
+          setStoredPassword(data.value);
         }
       } catch (error) {
         console.error('Error loading game password:', error);

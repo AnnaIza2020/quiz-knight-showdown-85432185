@@ -6,9 +6,9 @@ import TopBar from '@/components/hostpanel/TopBar';
 import RoundControls from '@/components/hostpanel/RoundControls';
 import ControlPanel from '@/components/hostpanel/ControlPanel';
 import EventsBar from '@/components/hostpanel/EventsBar';
-import PlayerGridContainer from '@/components/rounds/PlayerGridContainer';
-import PlayerCardsPanel from '@/components/cards/PlayerCardsPanel';
+import GameActions from '@/components/hostpanel/GameActions';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 const HostPanel = () => {
   const {
@@ -23,18 +23,26 @@ const HostPanel = () => {
     stopTimer,
     playSound,
     resetGame,
-    activePlayerId
+    activePlayerId,
+    soundsEnabled,
+    setSoundsEnabled,
+    saveGameData,
+    loadGameData,
+    setRound,
+    addLog
   } = useGameContext();
   
+  const navigate = useNavigate();
   const [isPaused, setIsPaused] = useState(false);
   const [lastEvents, setLastEvents] = useState<string[]>([
-    "Gra została uruchomiona",
-    "Przygotowanie do rundy 1"
+    "Panel prowadzącego uruchomiony",
+    "Przygotowanie do gry"
   ]);
 
   // Helper function to add an event to the notifications
   const addEvent = (event: string) => {
     setLastEvents(prev => [event, ...prev.slice(0, 4)]);
+    addLog(event);
   };
 
   // Round management
@@ -98,6 +106,60 @@ const HostPanel = () => {
     }
   };
   
+  // Game actions
+  const startGame = () => {
+    if (players.length < 2) {
+      toast.error('Potrzeba przynajmniej 2 graczy, aby rozpocząć grę');
+      return;
+    }
+    
+    setRound(GameRound.ROUND_ONE);
+    addEvent("Gra rozpoczęta! Runda 1");
+    playSound('round-start');
+    toast.success('Gra rozpoczęta!');
+  };
+  
+  const startNewGame = () => {
+    resetGame();
+    navigate('/setup');
+    toast.success('Nowa gra utworzona');
+  };
+  
+  const handleSaveLocal = async () => {
+    try {
+      const result = await saveGameData();
+      if (result && result.success) {
+        toast.success('Gra zapisana lokalnie');
+        addEvent("Gra zapisana lokalnie");
+      } else {
+        toast.error('Błąd podczas zapisywania gry');
+      }
+    } catch (error) {
+      console.error('Error saving game:', error);
+      toast.error('Błąd podczas zapisywania gry');
+    }
+  };
+  
+  const handleLoadLocal = async () => {
+    try {
+      const result = await loadGameData();
+      if (result && result.success) {
+        toast.success('Gra wczytana lokalnie');
+        addEvent("Gra wczytana lokalnie");
+      } else {
+        toast.error('Błąd podczas wczytywania gry');
+      }
+    } catch (error) {
+      console.error('Error loading game:', error);
+      toast.error('Błąd podczas wczytywania gry');
+    }
+  };
+  
+  const toggleSound = () => {
+    setSoundsEnabled(!soundsEnabled);
+    toast.info(soundsEnabled ? 'Dźwięki wyłączone' : 'Dźwięki włączone');
+  };
+  
   // Use effect to show round notification
   useEffect(() => {
     if (round === GameRound.ROUND_ONE) {
@@ -114,11 +176,17 @@ const HostPanel = () => {
   return (
     <div className="min-h-screen bg-neon-background p-4 flex flex-col">
       {/* Top Bar Component */}
-      <TopBar 
+      <TopBar />
+      
+      {/* Game Action Buttons */}
+      <GameActions 
         round={round}
-        handleStartTimer={handleStartTimer}
-        stopTimer={stopTimer}
-        handleAdvanceToRound={handleAdvanceToRound}
+        startGame={startGame}
+        startNewGame={startNewGame}
+        handleSaveLocal={handleSaveLocal}
+        handleLoadLocal={handleLoadLocal}
+        soundMuted={!soundsEnabled}
+        toggleSound={toggleSound}
       />
       
       {/* Main Layout with Players Grid and Right Column */}
@@ -130,13 +198,6 @@ const HostPanel = () => {
             round={round} 
             handleStartTimer={handleStartTimer} 
           />
-          
-          {/* Special Cards Panel if not in SETUP phase */}
-          {round !== GameRound.SETUP && (
-            <div className="mt-6">
-              <PlayerCardsPanel players={players} />
-            </div>
-          )}
         </div>
         
         {/* Right Control Column */}

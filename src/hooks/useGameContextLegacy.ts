@@ -46,6 +46,11 @@ export const useGameContextLegacy = (): GameContextType => {
     updateSpecialCardRule: specialCardsContext.updateSpecialCardRule,
     removeSpecialCardRule: specialCardsContext.removeSpecialCardRule,
     giveCardToPlayer: specialCardsContext.giveCardToPlayer,
-    usePlayerCard: specialCardsContext.usePlayerCard
+    usePlayerCard: specialCardsContext.usePlayerCard,
+    
+    // Logs functions (to match the updated GameContextType)
+    logs: gameContext.logs || [],
+    addLog: gameContext.addLog || ((log: string) => {}),
+    clearLogs: gameContext.clearLogs || (() => {})
   };
 };

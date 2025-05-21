@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { useGameLogic } from '@/hooks/useGameLogic';
@@ -9,6 +10,7 @@ import { RoundSettings, defaultRoundSettings } from '@/types/round-settings';
 import { toast } from 'sonner';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { PlayerAvailabilitySlot } from '@/types/availability-types';
+import { supabase } from '@/lib/supabase';
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
@@ -54,10 +56,24 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   // Round settings
   const [roundSettings, setRoundSettings] = useState<RoundSettings>(defaultRoundSettings);
   
+  // Logs for system events
+  const [logs, setLogs] = useState<string[]>([]);
+  
+  // Add a log entry
+  const addLog = (log: string) => {
+    setLogs(prev => [...prev, `${new Date().toISOString()} - ${log}`]);
+  };
+  
+  // Clear all logs
+  const clearLogs = () => {
+    setLogs([]);
+  };
+  
   // Error reporting
   const reportError = (message: string, settings?: any) => {
     console.error(message);
     toast.error(message, settings);
+    addLog(`Error: ${message}`);
   };
 
   // Game logic from the game logic hook
@@ -190,8 +206,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   };
 
   // Update round settings
-  const handleUpdateRoundSettings = (newSettings: RoundSettings) => {
-    setRoundSettings(newSettings);
+  const handleUpdateRoundSettings = (newSettings: Partial<RoundSettings>) => {
+    setRoundSettings(prev => ({
+      ...prev,
+      ...newSettings
+    }));
     updateGameRoundSettings(newSettings);
   };
   
@@ -258,8 +277,29 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
   };
 
+  // Create Promise-returning versions of functions
+  const markQuestionAsUsedPromise = async (questionId: string) => {
+    markQuestionAsUsed(questionId);
+    return { success: true };
+  };
+  
+  const resetUsedQuestionsPromise = async () => {
+    resetUsedQuestions();
+    return { success: true };
+  };
+  
+  const loadGameDataPromise = async () => {
+    const result = await loadGameData();
+    return result;
+  };
+  
+  const saveGameDataPromise = async () => {
+    const result = await saveGameData();
+    return result;
+  };
+
   // Fix playSoundWithOptions to match the expected signature
-  const playSoundWithOptionsWrapper = (sound: any, options: any) => {
+  const playSoundWithOptionsWrapper = (sound: string, options: any) => {
     playSoundWithOptions(options);
   };
 
@@ -282,6 +322,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     specialCardRules,
     usedQuestionIds,
     gameTitle,
+    
+    // Logs
+    logs,
+    addLog,
+    clearLogs,
     
     // Round settings
     roundSettings,
@@ -351,15 +396,15 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setHostCameraUrl,
     
     // Data persistence with Promise return types
-    loadGameData,
-    saveGameData,
+    loadGameData: loadGameDataPromise,
+    saveGameData: saveGameDataPromise,
     
     // Question methods with Promise return types
     addQuestion,
     removeQuestion,
     updateQuestion,
-    markQuestionAsUsed,
-    resetUsedQuestions,
+    markQuestionAsUsed: markQuestionAsUsedPromise,
+    resetUsedQuestions: resetUsedQuestionsPromise,
     isQuestionUsed,
     
     // Game backup methods

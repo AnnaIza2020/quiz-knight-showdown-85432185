@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import HomePage from '@/pages/HomePage'
 import NotFound from '@/pages/NotFound'
@@ -15,6 +16,7 @@ import SwitchableHostPanel from './components/SwitchableHostPanel'
 import HostAvailability from './pages/HostAvailability'
 import Setup from './pages/Setup'
 import { GameProvider } from './context/GameContext'
+import HostPanel from './pages/HostPanel'
 import './App.css'
 
 function App() {
@@ -28,6 +30,7 @@ function App() {
                 <Route index element={<HomePage />} />
                 <Route path="about" element={<About />} />
                 <Route path="host" element={<Host />} />
+                <Route path="host-panel" element={<HostPanel />} />
                 <Route path="host-new" element={<UnifiedHostPanel />} />
                 <Route path="host-switch" element={<SwitchableHostPanel view="modern" />} />
                 <Route path="host-availability" element={<HostAvailability />} />

@@ -1,6 +1,4 @@
 
-import { Json } from '@/lib/database.types';
-
 export enum AvailabilityStatus {
   AVAILABLE = 'available',
   UNAVAILABLE = 'unavailable',
@@ -9,7 +7,7 @@ export enum AvailabilityStatus {
 }
 
 export interface TimeSlot {
-  hour: string;
+  hour: number;
   status: AvailabilityStatus;
 }
 
@@ -17,23 +15,21 @@ export interface PlayerAvailabilitySlot {
   id?: string;
   playerId: string;
   date: string;
-  timeSlots: Record<string, boolean>;
-  created_at?: string;
-  updated_at?: string;
-  // Additional fields to match database columns
-  player_id?: string;
-  time_slots?: Json;
+  timeSlots: Record<string, AvailabilityStatus>;
 }
 
 export interface PlayerAvailability {
-  playerId: string;
-  slots: PlayerAvailabilitySlot[];
+  player: {
+    id: string;
+    name: string;
+  };
+  availabilitySlots: PlayerAvailabilitySlot[];
 }
 
 export interface AvailabilityContextType {
-  availability: PlayerAvailabilitySlot[];
-  isLoading: boolean;
-  error: any;
   fetchAvailability: () => Promise<PlayerAvailabilitySlot[]>;
-  updateAvailability: (data: PlayerAvailabilitySlot) => Promise<boolean>;
+  updateAvailability: (data: PlayerAvailabilitySlot) => Promise<{success: boolean}>;
+  saveAvailabilityBatch: (data: PlayerAvailabilitySlot[]) => Promise<{success: boolean}>;
+  getPlayerAvailability: (playerId: string) => Promise<PlayerAvailabilitySlot[]>;
+  deleteAvailability: (id: string) => Promise<{success: boolean}>;
 }
