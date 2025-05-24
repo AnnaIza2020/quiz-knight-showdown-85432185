@@ -1,10 +1,10 @@
+
 import { useState, useMemo, useCallback } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { useQuestionsContext } from '@/context/QuestionsContext';
 import { Question } from '@/types/game-types';
 import { QuestionFilterOptions, QuestionImportExport } from '@/types/questions-types';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
 import { GameRound } from '@/types/game-types';
 
 /**
@@ -181,37 +181,6 @@ export const useQuestions = () => {
       };
     }
   }, [filteredQuestions, questions, categories]);
-
-  // Load categories from database
-  const loadCategoriesFromDatabase = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
-
-      if (error) {
-        console.error('Error loading categories:', error);
-        return;
-      }
-
-      if (data) {
-        // Map round numbers to GameRound enum values
-        const mappedCategories = data.map(cat => ({
-          id: cat.id,
-          name: cat.name,
-          round: cat.round === 1 ? GameRound.ROUND_ONE : 
-                 cat.round === 2 ? GameRound.ROUND_TWO : 
-                 cat.round === 3 ? GameRound.ROUND_THREE : 
-                 GameRound.ROUND_ONE // Default fallback
-        }));
-        
-        setCategories(mappedCategories);
-      }
-    } catch (error) {
-      console.error('Error in loadCategoriesFromDatabase:', error);
-    }
-  }, [setCategories]);
 
   return {
     questions,

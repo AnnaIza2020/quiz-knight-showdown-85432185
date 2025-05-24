@@ -4,7 +4,6 @@ import { useGameState } from '@/hooks/useGameState';
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { useGamePersistence } from '@/hooks/useGamePersistence';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
-import { useAvailabilityContext } from './AvailabilityContext';
 import { GameContextType, Question, GameBackup, GameSound, SoundEffect } from '@/types/game-types';
 import { RoundSettings, defaultRoundSettings } from '@/types/round-settings';
 import { toast } from 'sonner';
@@ -264,17 +263,50 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     );
   };
 
-  // Get availability context
-  const { fetchAvailability, updateAvailability } = useAvailabilityContext();
-
-  // Fixed version of fetchAvailability to ensure it returns the expected type
+  // Simple fetchAvailability that returns empty array (remove dependency on AvailabilityContext)
   const fetchPlayerAvailability = async (): Promise<PlayerAvailabilitySlot[]> => {
     try {
-      const playerAvailabilityData = await fetchAvailability();
-      return playerAvailabilityData;
+      const { data, error } = await supabase
+        .from('player_availability')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching availability:', error);
+        return [];
+      }
+
+      return data.map(item => ({
+        id: item.id,
+        playerId: item.player_id,
+        date: item.date,
+        timeSlots: item.time_slots,
+        player_id: item.player_id,
+        time_slots: item.time_slots,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      })) || [];
     } catch (error) {
       console.error("Error fetching availability:", error);
       return [];
+    }
+  };
+
+  // Simple updateAvailability function
+  const updateAvailability = async (data: PlayerAvailabilitySlot) => {
+    try {
+      const { error } = await supabase
+        .from('player_availability')
+        .upsert({
+          player_id: data.playerId,
+          date: data.date,
+          time_slots: data.timeSlots,
+        });
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating availability:', error);
+      return { success: false };
     }
   };
 

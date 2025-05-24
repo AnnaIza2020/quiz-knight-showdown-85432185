@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { useAvailabilityContext } from '@/context/AvailabilityContext';
@@ -18,13 +17,27 @@ const TIME_SLOTS = [
 
 const HostAvailability = () => {
   const { players } = useGameContext();
-  const { fetchAvailability, playerAvailability, isLoading } = useAvailabilityContext();
+  const { fetchAvailability } = useAvailabilityContext();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [weekDays, setWeekDays] = useState<Date[]>([]);
+  const [playerAvailability, setPlayerAvailability] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {
     // Pobierz dane o dostępności graczy
-    fetchAvailability();
+    const loadAvailability = async () => {
+      setIsLoading(true);
+      try {
+        const data = await fetchAvailability();
+        setPlayerAvailability(data);
+      } catch (error) {
+        console.error('Error loading availability:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadAvailability();
   }, [fetchAvailability]);
   
   useEffect(() => {
@@ -33,7 +46,7 @@ const HostAvailability = () => {
   }, [selectedDate]);
   
   // Pobierz dni tygodnia dla wybranej daty
-  const getWeekDays = (date: Date) => {
+  function getWeekDays(date: Date) {
     const day = date.getDay();
     const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Dostosuj do początku tygodnia w poniedziałek
     
@@ -48,34 +61,34 @@ const HostAvailability = () => {
     }
     
     return weekDays;
-  };
+  }
   
   // Format daty do wyświetlenia
-  const formatDate = (date: Date) => {
+  function formatDate(date: Date) {
     return format(date, 'EEEE, dd MMMM', { locale: pl });
-  };
+  }
   
   // Format daty do przechowywania
-  const formatDateForStorage = (date: Date) => {
+  function formatDateForStorage(date: Date) {
     return format(date, 'yyyy-MM-dd');
-  };
+  }
   
   // Poprzedni tydzień
-  const goToPreviousWeek = () => {
+  function goToPreviousWeek() {
     const prevWeek = new Date(selectedDate);
     prevWeek.setDate(prevWeek.getDate() - 7);
     setSelectedDate(prevWeek);
-  };
+  }
   
   // Następny tydzień
-  const goToNextWeek = () => {
+  function goToNextWeek() {
     const nextWeek = new Date(selectedDate);
     nextWeek.setDate(nextWeek.getDate() + 7);
     setSelectedDate(nextWeek);
-  };
+  }
   
   // Pobierz procent dostępnych graczy dla danego dnia i godziny
-  const getAvailabilityPercentage = (date: Date, timeSlot: string) => {
+  function getAvailabilityPercentage(date: Date, timeSlot: string) {
     const dateStr = formatDateForStorage(date);
     let availableCount = 0;
     
@@ -83,19 +96,18 @@ const HostAvailability = () => {
       // Znajdź dostępność gracza
       const playerAvail = playerAvailability.find(a => a.playerId === player.id);
       if (playerAvail) {
-        // Znajdź slot dla danego dnia
-        const dateSlot = playerAvail.slots.find(s => s.date === dateStr);
-        if (dateSlot && dateSlot.timeSlots[timeSlot] === 'available') {
+        // Sprawdź czy slot dla tego dnia istnieje i czy gracz jest dostępny
+        if (playerAvail.timeSlots && playerAvail.timeSlots[timeSlot] === 'available') {
           availableCount++;
         }
       }
     });
     
     return players.length > 0 ? Math.round((availableCount / players.length) * 100) : 0;
-  };
+  }
   
   // Pobierz dostępnych graczy dla danego dnia i godziny
-  const getAvailablePlayers = (date: Date, timeSlot: string) => {
+  function getAvailablePlayers(date: Date, timeSlot: string) {
     const dateStr = formatDateForStorage(date);
     const availablePlayers: string[] = [];
     
@@ -103,19 +115,18 @@ const HostAvailability = () => {
       // Znajdź dostępność gracza
       const playerAvail = playerAvailability.find(a => a.playerId === player.id);
       if (playerAvail) {
-        // Znajdź slot dla danego dnia
-        const dateSlot = playerAvail.slots.find(s => s.date === dateStr);
-        if (dateSlot && dateSlot.timeSlots[timeSlot] === 'available') {
+        // Sprawdź czy slot dla tego dnia istnieje i czy gracz jest dostępny
+        if (playerAvail.timeSlots && playerAvail.timeSlots[timeSlot] === 'available') {
           availablePlayers.push(player.name);
         }
       }
     });
     
     return availablePlayers;
-  };
+  }
   
   // Eksportuj dane jako CSV
-  const exportAsCSV = () => {
+  function exportAsCSV() {
     // Utwórz nagłówek
     let csvContent = "Data,Godzina,Dostępność (%),Dostępni gracze\n";
     
@@ -140,7 +151,7 @@ const HostAvailability = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }
   
   return (
     <div className="min-h-screen bg-black text-white p-4">
