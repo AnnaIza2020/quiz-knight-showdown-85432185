@@ -39,7 +39,7 @@ export interface RoundSettings {
     round3: number;
   };
   pointValues: {
-    round1: number;
+    round1: { easy: number; medium: number; hard: number; expert: number };
     round2: number;
     round3: number;
   };
@@ -85,9 +85,9 @@ export const defaultRoundSettings: RoundSettings = {
     round3: 15
   },
   pointValues: {
-    round1: 10,
+    round1: { easy: 5, medium: 10, hard: 15, expert: 20 },
     round2: 15,
-    round3: 20
+    round3: 25
   },
   lifePenalties: {
     round1: 25,

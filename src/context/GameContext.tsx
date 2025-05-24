@@ -82,8 +82,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     advanceToRoundTwo, advanceToRoundThree, finishGame,
     checkRoundThreeEnd, resetGame, markQuestionAsUsed,
     resetUsedQuestions, isQuestionUsed, usedQuestionIds,
-    undoLastAction, hasUndoHistory, addManualPoints, adjustHealthManually,
-    updateRoundSettings: updateGameRoundSettings
+    undoLastAction, hasUndoHistory, addManualPoints, adjustHealthManually
   } = gameLogic;
   
   // Sound effects

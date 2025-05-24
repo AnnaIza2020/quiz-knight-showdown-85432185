@@ -109,7 +109,7 @@ const Overlay = () => {
   // Show round transition animation when round changes
   useEffect(() => {
     const lastRoundStr = localStorage.getItem('lastGameRound');
-    const lastRound = lastRoundStr ? parseInt(lastRoundStr, 10) : null;
+    const lastRound = lastRoundStr ? parseInt(lastRoundStr, 10) as GameRound : null;
     
     // Only show transition if the round has actually changed and is a valid GameRound
     if (lastRound !== null && lastRound !== round) {
