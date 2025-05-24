@@ -1,0 +1,2040 @@
+Przygotowanie kompletnej, szczegółowej dokumentacji, zawierającej makiety, opisy i checklisty dla każdej zakładki osobno, jest obszernym zadaniem. Będę generować tę dokumentację sekcja po sekcji, aby zachować spójność i szczegółowość.
+Zacznę od Wstępu i Wizji Projektu, a następnie przejdę do poszczególnych paneli i zakładek, tak jak to było omawiane.
+Ważne uwagi przed rozpoczęciem:
+ * Makiety: Nie jestem w stanie generować grafik (makiet) w sensie wizualnym. Zamiast tego, w miejscach, gdzie makieta byłaby wskazana, dostarczę szczegółowy opis tekstowy jej układu i elementów, który będzie można wykorzystać do stworzenia graficznych makiet przez projektanta UI/UX.
+ * Checklisty: Dla każdej sekcji lub zakładki przygotuję checklistę elementów, które powinny zostać zaimplementowane.
+ * Formatowanie: Będę używać formatowania Markdown dla czytelności.
+ * Iteracyjność: Proszę pamiętaj, że to jest duży projekt. Jeśli podczas czytania jakiejś sekcji zauważysz potrzebę doprecyzowania, poprawki lub rozszerzenia, proszę o informację.
+Dokumentacja Projektu: Discord Game Show
+Wstęp i Wizja Projektu
+1.1. Cel Projektu
+Discord Game Show to innowacyjna aplikacja webowa zaprojektowana, by przekształcić interakcję w teleturniejach online. Integrując się z Discordem i platformami streamingowymi (takimi jak Twitch, YouTube, OBS), stworzy dynamiczne środowisko dla graczy i hostów. Aplikacja ma na celu umożliwienie prowadzenia profesjonalnych, angażujących teleturniejów na żywo, z zaawansowaną kontrolą nad rozgrywką, pytaniami, graczami i wizualizacją.
+1.2. Grupa Docelowa
+ * Twórcy treści (Streamerzy, Youtuberzy): Poszukujący narzędzi do tworzenia interaktywnych i unikalnych wydarzeń dla swojej społeczności.
+ * Organizatorzy eventów online: Firmy i osoby prywatne chcące zorganizować profesjonalne teleturnieje, quizy, szkolenia z elementami grywalizacji.
+ * Społeczności Discorda: Administratorzy serwerów Discord, którzy chcą wzbogacić ofertę dla swoich członków.
+ * Prowadzący teleturnieje (Hosts): Potrzebujący intuicyjnego narzędzia do zarządzania przebiegiem gry.
+ * Uczestnicy (Gracze): Poszukujący angażujących i interaktywnych doświadczeń w rozgrywce online.
+1.3. Kluczowe Wartości i Unikalne Cechy
+ * Real-time Interakcja: Natychmiastowa synchronizacja stanu gry między hostem, graczami i widzem (overlay).
+ * Intuicyjny Interfejs: Proste i estetyczne panele dla hosta i gracza, zapewniające komfort użytkowania.
+ * Personalizacja: Szerokie możliwości konfiguracji wyglądu, pytań, rund i mechanik gry.
+ * Grywalizacja: System punktów, życia, kart specjalnych i rankingów, zwiększający zaangażowanie.
+ * Integracja Streamingu: Bezproblemowe włączenie w ekosystem OBS, Discord, Twitch, YouTube.
+ * Elastyczność: Możliwość dostosowania do różnych formatów teleturniejów i rodzajów pytań.
+1.4. Wizja Długoterminowa
+Discord Game Show ma stać się wiodącym narzędziem do organizacji interaktywnych teleturniejów online, rozwijając się w kierunku platformy z gotowymi szablonami gier, rozbudowanymi modułami społecznościowymi i marketplace'em dla twórców treści.
+2. Architektura Systemu i Przepływ Danych
+2.1. Ogólny Diagram Architektury
+graph TD
+    A[Host Panel] -->|HTTP/S| B(Backend Server)
+    P[Player Panels] -->|HTTP/S| B
+    O[OBS Overlay] -->|HTTP/S| B
+
+    B -->|WebSocket| A
+    B -->|WebSocket| P
+    B -->|WebSocket| O
+
+    B --o C[Database]
+    B --o D[External APIs]
+    D --o E[Discord API]
+    D --o F[Twitch/YouTube API]
+    D --o G[VOD.ninja]
+
+    subgraph Backend Server
+        B1[Express.js App]
+        B2[WebSocket Server (Socket.IO)]
+        B3[Question Logic Module]
+        B4[Player State Manager]
+        B5[Card Effects Engine]
+        B6[Game State Manager]
+        B7[Authentication Module]
+        B8[API Endpoints]
+        B1 --- B2
+        B1 --- B3
+        B1 --- B4
+        B1 --- B5
+        B1 --- B6
+        B1 --- B7
+        B1 --- B8
+    end
+
+    subgraph Database
+        C1[MongoDB / PostgreSQL]
+    end
+
+Opis komponentów:
+ * Host Panel (A): Interfejs webowy dla prowadzącego grę, zbudowany w technologii frontendowej (np. React). Wysyła komendy do backendu i odbiera aktualizacje stanu gry.
+ * Player Panels (P): Indywidualne interfejsy webowe dla każdego gracza, również zbudowane w technologii frontendowej (np. React). Wysyłają akcje gracza i odbierają aktualizacje stanu gry.
+ * OBS Overlay (O): Aplikacja webowa wyświetlana w OBS jako źródło przeglądarki. Wyświetla wizualny stan gry (pytania, kamery graczy, timery, animacje kart) i otrzymuje aktualizacje od backendu.
+ * Backend Server (B): Centralny serwer aplikacji, odpowiedzialny za logikę gry, zarządzanie stanem, komunikację z bazą danych i zewnętrznymi API.
+   * Express.js App (B1): Podstawowy framework webowy do obsługi żądań HTTP/S (np. dostarczanie plików frontendu, obsługa API REST).
+   * WebSocket Server (Socket.IO) (B2): Obsługuje komunikację dwukierunkową w czasie rzeczywistym, zapewniając natychmiastową synchronizację stanu gry.
+   * Question Logic Module (B3): Zarządza pulą pytań, logiką losowania, oznaczaniem pytań jako użytych.
+   * Player State Manager (B4): Utrzymuje i aktualizuje stan każdego gracza (punkty, życie, posiadane karty, status).
+   * Card Effects Engine (B5): Wykonuje logikę powiązaną z użyciem kart specjalnych, modyfikując stan gry i graczy.
+   * Game State Manager (B6): Nadzoruje ogólny stan gry (aktualna runda, faza rundy, aktywny gracz, globalny timer).
+   * Authentication Module (B7): Zarządza uwierzytelnianiem i autoryzacją hosta/admina.
+   * API Endpoints (B8): Zestaw interfejsów RESTful do zarządzania danymi (pytania, gracze, ustawienia) z Panelu Ustawień.
+ * Database (C): Baza danych przechowująca wszystkie dane gry (pytania, gracze, ustawienia, logi). Zalecane są rozwiązania NoSQL (np. MongoDB) ze względu na elastyczność schematu danych lub relacyjne (np. PostgreSQL) dla bardziej złożonych relacji.
+ * External APIs (D): Moduły do integracji z zewnętrznymi usługami.
+   * Discord API (E): Integracja z botem Discord do zbierania odpowiedzi, wyświetlania statusu, powiadomień.
+   * Twitch/YouTube API (F): Opcjonalne integracje do odczytu czatu, synchronizacji wydarzeń na platformach streamingowych.
+   * VOD.ninja (G): Integracja do synchronizacji podglądów kamer graczy na Overlayu.
+2.2. Przepływ Danych i Interakcji (Przykłady)
+Komunikacja między komponentami odbywa się głównie poprzez HTTP/S (dla inicjalnych żądań i operacji CRUD z Panelu Ustawień) oraz WebSockets (dla dynamicznych aktualizacji stanu gry).
+Przykład 1: Rozpoczęcie rundy przez Hosta
+sequenceDiagram
+    participant H as Host Panel
+    participant B as Backend Server
+    participant G as Game State Manager
+    participant P as Player Panels
+    participant O as OBS Overlay
+
+    H->>B: WebSocket: startGame({ round: 1 })
+    activate B
+    B->>G: updateGameState({ currentRound: 1, status: "active" })
+    activate G
+    G-->>B: stateUpdated
+    deactivate G
+    B->>P: WebSocket: gameStarted({ round: 1 })
+    B->>O: WebSocket: gameStarted({ round: 1 })
+    deactivate B
+
+Opis: Host wysyła komendę rozpoczęcia gry do backendu. Backend aktualizuje globalny stan gry i rozsyła powiadomienia do wszystkich podłączonych Paneli Graczy i Overlayu, które odpowiednio aktualizują swój interfejs.
+Przykład 2: Gracz odpowiada na pytanie (Runda 1)
+sequenceDiagram
+    participant P as Player Panel
+    participant B as Backend Server
+    participant QM as Question Logic Module
+    participant PS as Player State Manager
+    participant O as OBS Overlay
+    participant H as Host Panel
+
+    P->>B: WebSocket: submitAnswer({ questionId: "q123", answer: "Moja odpowiedź" })
+    activate B
+    B->>QM: validateAnswer({ questionId: "q123", answer: "Moja odpowiedź" })
+    activate QM
+    QM-->>B: { isCorrect: true, points: 10 }
+    deactivate QM
+    B->>PS: updatePlayerState({ playerId: P, points: +10 })
+    activate PS
+    PS-->>B: playerStateUpdated({ playerId: P, newPoints: ... })
+    deactivate PS
+    B->>P: WebSocket: answerResult({ isCorrect: true, points: 10 })
+    B->>O: WebSocket: playerAnswered({ playerId: P, isCorrect: true, points: 10 })
+    B->>H: WebSocket: playerAnswered({ playerId: P, isCorrect: true, points: 10, answer: "Moja odpowiedź" })
+    deactivate B
+
+Opis: Gracz wysyła swoją odpowiedź. Backend sprawdza jej poprawność, aktualizuje punkty gracza, a następnie wysyła odpowiednie komunikaty zwrotne do Panelu Gracza (wynik), Overlayu (wizualizacja wyniku) i Panelu Hosta (szczegóły odpowiedzi gracza).
+Przykład 3: Host aktywuje kartę specjalną
+sequenceDiagram
+    participant H as Host Panel
+    participant B as Backend Server
+    participant CE as Card Effects Engine
+    participant PS as Player State Manager
+    participant O as OBS Overlay
+    participant P as Player Panel
+
+    H->>B: WebSocket: activateCard({ playerId: "player1", cardId: "turbo" })
+    activate B
+    B->>CE: executeCardEffect({ playerId: "player1", cardId: "turbo" })
+    activate CE
+    CE->>PS: applyEffectToPlayer({ playerId: "player1", effect: "doubleNextPoints" })
+    activate PS
+    PS-->>CE: playerStateUpdated
+    deactivate PS
+    CE-->>B: cardEffectApplied({ cardName: "Turbo" })
+    deactivate CE
+    B->>O: WebSocket: cardUsed({ playerId: "player1", cardName: "Turbo", animation: "turbo_anim" })
+    B->>P: WebSocket: yourCardActivated({ cardName: "Turbo" })
+    B->>H: WebSocket: cardActivatedConfirmation({ playerId: "player1", cardName: "Turbo" })
+    deactivate B
+
+Opis: Host aktywuje kartę dla gracza. Backend przekazuje to do silnika efektów kart, który modyfikuje stan gracza. Następnie wysyłane są powiadomienia do Overlayu (animacja), Panelu Gracza (potwierdzenie) i Panelu Hosta.
+2.3. Szczegółowa Architektura Backendu
+Backend systemu będzie zbudowany w oparciu o Node.js z frameworkiem Express.js do obsługi żądań HTTP/S i biblioteką Socket.IO do komunikacji WebSocket. Jako bazę danych rekomendowana jest MongoDB ze względu na elastyczność i skalowalność, idealną dla dynamicznych danych gry.
+Struktura Projektu (Przykładowa):
+/
+├── app.js                   # Główny plik aplikacji, inicjalizacja serwera Express i Socket.IO
+├── server.js                # Konfiguracja serwera HTTP/S i WebSocket
+├── config/
+│   ├── index.js             # Konfiguracja środowiskowa (porty, klucze API, połączenie DB)
+│   └── constants.js         # Stałe aplikacji (np. limity graczy, domyślne timery)
+├── controllers/             # Logika biznesowa dla API endpoints
+│   ├── authController.js
+│   ├── playerController.js
+│   ├── questionController.js
+│   ├── gameController.js
+│   └── settingsController.js
+├── models/                  # Definicje schematów bazy danych (np. Mongoose dla MongoDB)
+│   ├── User.js              # Host/Admin
+│   ├── Player.js
+│   ├── Question.js
+│   ├── Card.js
+│   └── GameSession.js
+├── routes/                  # Definicje tras API (RESTful)
+│   ├── authRoutes.js
+│   ├── playerRoutes.js
+│   ├── questionRoutes.js
+│   ├── gameRoutes.js
+│   └── settingsRoutes.js
+├── services/                # Moduły z logiką pomocniczą, logiką zewnętrznych API
+│   ├── gameLogic.js         # Game State Manager, obsługa rund, timery
+│   ├── cardEffects.js       # Card Effects Engine (interpretacja i wykonanie JS hooks)
+│   ├── discordService.js    # Integracja z Discord API
+│   ├── twitchService.js     # Integracja z Twitch API
+│   ├── db.js                # Połączenie z bazą danych
+│   └── logger.js            # Moduł logowania
+├── middlewares/             # Middleware dla Express (np. autoryzacja, walidacja)
+│   ├── authMiddleware.js
+│   └── validationMiddleware.js
+├── sockets/                 # Obsługa zdarzeń WebSocket (Socket.IO)
+│   ├── gameSocket.js        # Zdarzenia związane z rozgrywką
+│   ├── hostSocket.js        # Zdarzenia specyficzne dla hosta
+│   └── playerSocket.js      # Zdarzenia specyficzne dla gracza
+├── public/                  # Statyczne pliki frontendu (HTML, CSS, JS)
+├── scripts/                 # Skrypty pomocnicze (np. import danych początkowych)
+└── tests/                   # Testy jednostkowe/integracyjne
+
+Kluczowe Moduły Backendu:
+ * Game State Manager:
+   * Centralny obiekt przechowujący aktualny stan całej gry (np. currentRound, gameStatus, activePlayerId, questionTimer, scoreBoard).
+   * Wszystkie zmiany stanu gry są propagowane przez WebSockets do wszystkich podłączonych klientów.
+   * Odpowiedzialny za logikę przejść między rundami, stanami (lobby, pytanie, odpowiedź, koniec rundy).
+ * Player State Manager:
+   * Zarządza indywidualnym stanem każdego gracza (punkty, życie, posiadane karty, status online/offline, historyczne dane).
+   * Odpowiedzialny za aktualizację statystyk graczy po akcjach (poprawna/błędna odpowiedź, użycie karty).
+ * Question Logic Module:
+   * Interfejs do bazy danych pytań.
+   * Implementuje logikę losowania pytań dla każdej rundy zgodnie ze specyfikacją.
+   * Zarządza flagą used dla pytań i ich resetowaniem.
+   * Zawiera logikę walidacji odpowiedzi na pytania.
+ * Card Effects Engine:
+   * Kluczowy moduł do dynamicznego wykonywania efektów kart specjalnych.
+   * Przyjmuje JavaScript Hook (kod JS z definicji karty) i wykonuje go w bezpiecznym środowisku (np. vm module w Node.js lub poprzez izolowane środowiska JS).
+   * Hooki będą miały dostęp do predefiniowanego API gry (np. api.addPoints(playerId, amount), api.removeLife(playerId, percentage), api.changeTimer(newTime)), które manipuluje Game State Managerem i Player State Managerem.
+   * Zapewnia walidację składni JS dla hooków oraz mechanizmy obsługi błędów podczas ich wykonania.
+ * WebSocket (Socket.IO) Handler:
+   * Definiuje listę zdarzeń WebSocket (emit, on) dla Host Panela, Player Paneli i OBS Overlay.
+   * Obsługuje komunikację w czasie rzeczywistym, wysyłając aktualizacje stanu gry do klientów i odbierając akcje od nich.
+   * Przykładowe zdarzenia: gameStarted, questionDisplayed, playerAnswered, cardUsed, updateScoreboard, playerJoined, playerLeft.
+ * Database Integration:
+   * Moduł odpowiedzialny za połączenie z bazą danych (np. MongoDB z Mongoose).
+   * Obsługuje operacje CRUD na kolekcjach pytań, graczy, ustawień, użytkowników (host/admin).
+   * Zapewnia spójność danych i integralność.
+ * Authentication & Authorization:
+   * Dla Host Panela i Panelu Ustawień: uwierzytelnianie oparte na sesjach lub tokenach JWT.
+   * Dla Player Paneli: uwierzytelnianie na podstawie unikalnego, jednorazowego linku (JWT) generowanego przez hosta, który wygasa po sesji gry.
+Zarządzanie Błędami:
+ * Backend będzie implementować centralne mechanizmy obsługi błędów (globalne middleware dla Express, try-catch w logice biznesowej).
+ * Logowanie błędów do plików lub zewnętrznych serwisów (np. Sentry, Papertrail).
+ * Gwarancja, że błędne dane z frontendu nie wpłyną na integralność danych (walidacja po stronie serwera).
+Skalowalność:
+ * Architektura Node.js i MongoDB jest z natury skalowalna horyzontalnie.
+ * Możliwość uruchomienia wielu instancji backendu za load balancerem.
+ * Użycie Redis do zarządzania stanem WebSocket, jeśli w przyszłości planowane jest klastrowanie Socket.IO.
+2.4. REST API Endpoints (Express + TypeScript)
+Główne zasoby i ich operacje:
+ * User (Użytkownicy - Host/Admin)
+   * GET /api/users/:id – Pobierz dane użytkownika.
+   * POST /api/users – Dodaj nowego użytkownika (np. rejestracja admina).
+   * PATCH /api/users/:id – Aktualizuj dane użytkownika (np. hasło, uprawnienia).
+   * DELETE /api/users/:id – Usuń użytkownika.
+   * POST /api/auth/login – Logowanie użytkownika (zwraca token JWT lub sesję).
+ * GameSession (Pojedyncze sesje gry)
+   * POST /api/games – Utwórz nową sesję gry.
+     * Payload: { name: string, configId?: string }
+     * Response: { gameId: string, hostUrl: string }
+   * GET /api/games/:gameId – Pobierz dane sesji (runda, status, lista graczy, aktualne pytanie).
+   * PATCH /api/games/:gameId – Aktualizuj status sesji (np. zakończenie gry).
+     * Payload: { status: "finished" | "paused" }
+   * DELETE /api/games/:gameId – Zakończ i usuń sesję gry.
+ * Round (Rundy w ramach gry)
+   * GET /api/games/:gameId/rounds – Pobierz listę rund w danej sesji (historia).
+   * POST /api/games/:gameId/rounds – Rozpocznij kolejną rundę w sesji.
+     * Payload: { roundNumber: number }
+     * Response: { currentRound: number, status: "started" }
+   * PATCH /api/games/:gameId/rounds/:roundId – Aktualizuj stan konkretnej rundy (timer, wyniki, przejścia faz).
+     * Payload: { timer: number, status: "active" | "paused" | "finished", questionId?: string }
+ * Question (Pytania)
+   * GET /api/questions – Pobierz listę pytań z filtrowaniem (round, category, difficulty, used).
+     * Query params: ?round=1&category=YouTube&difficulty=10&used=false
+   * GET /api/questions/:id – Pobierz szczegóły konkretnego pytania.
+   * POST /api/questions – Dodaj nowe pytanie.
+     * Payload: { round: number, category: string, difficulty: number, text: string, options: string[], answer: string, timeLimit?: number, hints?: string[] }
+   * PATCH /api/questions/:id – Edytuj istniejące pytanie.
+   * DELETE /api/questions/:id – Usuń pytanie.
+   * POST /api/questions/import – Importuj pytania z pliku (CSV/JSON).
+     * Payload: multipart/form-data z plikiem i mode ("add" | "overwrite").
+   * GET /api/questions/export – Eksportuj pytania do pliku (CSV/JSON).
+     * Query params: ?format=csv&round=1
+ * Player (Gracze w danej sesji gry)
+   * POST /api/games/:gameId/players – Dodaj nowego gracza do sesji.
+     * Payload: { name: string, avatarUrl?: string, streamUrl?: string, playerColor: string }
+     * Response: { playerId: string, playerUrl: string }
+   * GET /api/games/:gameId/players – Pobierz listę graczy w danej sesji wraz z ich aktualnym stanem (punkty, życie, karty).
+   * GET /api/games/:gameId/players/:playerId – Pobierz szczegóły konkretnego gracza w sesji.
+   * PATCH /api/games/:gameId/players/:playerId – Aktualizuj status gracza (punkty, życie, wykluczenie, dodaj/usuń karty).
+     * Payload: { points?: number, lives?: number, status?: "active" | "eliminated", cardsToAdd?: string[], cardsToRemove?: string[] }
+   * DELETE /api/games/:gameId/players/:playerId – Usuń gracza z sesji.
+ * Card (Definicje Kart Specjalnych - globalne)
+   * GET /api/cards – Pobierz listę wszystkich zdefiniowanych kart specjalnych.
+   * GET /api/cards/:id – Pobierz szczegóły definicji karty.
+   * POST /api/cards – Dodaj nową definicję karty.
+     * Payload: { name: string, description: string, iconUrl: string, effectScript: string, soundId: string, animationId: string, effectType: string, params: object }
+   * PATCH /api/cards/:id – Edytuj definicję karty.
+   * DELETE /api/cards/:id – Usuń definicję karty.
+ * CardDeck (Definicje Talii Kart)
+   * GET /api/card-decks – Pobierz listę wszystkich zdefiniowanych talii kart.
+   * GET /api/card-decks/:id – Pobierz szczegóły definicji talii.
+   * POST /api/card-decks – Dodaj nową talię kart.
+     * Payload: { name: string, description?: string, cards: { cardId: string, quantity: number }[] }
+   * PATCH /api/card-decks/:id – Edytuj definicję talii.
+   * DELETE /api/card-decks/:id – Usuń definicję talii.
+ * Setting (Ustawienia globalne i specyficzne dla gry)
+   * GET /api/settings – Pobierz wszystkie ustawienia.
+   * PATCH /api/settings – Aktualizuj ustawienia.
+     * Payload: { gameName?: string, defaultTimer?: number, ... }
+   * GET /api/settings/categories – Pobierz listę kategorii pytań.
+   * POST /api/settings/categories – Dodaj nową kategorię.
+   * PATCH /api/settings/categories/:id – Edytuj kategorię.
+   * DELETE /api/settings/categories/:id – Usuń kategorię.
+2.5. WebSocket API – Komunikacja Real-time (Socket.IO)
+WebSocket API służy do utrzymywania stanu gry w czasie rzeczywistym między backendem a wszystkimi połączonymi klientami (Host, Gracze, Overlay).
+Główne zdarzenia (Events):
+ * Zdarzenia od Klienta do Serwera (emit):
+   * connect: Klient łączy się z serwerem WebSocket.
+   * join_game: Gracz lub host dołącza do konkretnej sesji gry.
+     * Payload: { gameId: string, userId: string, role: "host" | "player" | "overlay" } (token JWT dla hosta/admina, JWT z linku dla gracza).
+   * leave_game: Klient opuszcza sesję gry.
+     * Payload: { gameId: string, userId: string }
+   * player_action: Akcje wykonywane przez gracza.
+     * Payload: { gameId: string, playerId: string, actionType: "submit_answer" | "use_card" | "report_problem", data: any }
+       * submit_answer: { questionId: string, answer: string }
+       * use_card: { cardId: string }
+       * report_problem: { message: string }
+   * host_command: Polecenia wysyłane przez hosta do kontroli gry.
+     * Payload: { gameId: string, commandType: "start_round" | "next_question" | "end_round" | "pause_timer" | "resume_timer" | "reset_timer" | "award_points" | "deduct_life" | "eliminate_player" | "activate_card_for_player" | "undo_card_effect", data: any }
+       * start_round: { roundNumber: number }
+       * next_question: { }
+       * award_points: { playerId: string, amount: number }
+       * deduct_life: { playerId: string, amount: number }
+       * eliminate_player: { playerId: string }
+       * activate_card_for_player: { playerId: string, cardId: string }
+       * undo_card_effect: { playerId: string, cardId: string, transactionId: string }
+ * Zdarzenia od Serwera do Klienta (on):
+   * game_state_update: Globalna aktualizacja stanu gry, wysyłana do wszystkich klientów w danej sesji. Zawiera pełen, bieżący stan gry.
+     * Payload (przykład):
+       {
+  "gameId": "abc123",
+  "round": 2, // Aktualna runda
+  "status": "active", // np. "active", "paused", "finished", "lobby"
+  "phase": "question", // np. "question", "answer_reveal", "summary"
+  "timer": 45, // Aktualny czas na zegarze
+  "currentQuestion": { // Obecnie wyświetlane pytanie (jeśli faza="question")
+    "id": "q789",
+    "text": "Jakie jest stolica Polski?",
+    "options": ["Warszawa", "Kraków", "Gdańsk", "Wrocław"],
+    "correctAnswerIndex": 0 // Indeks poprawnej odpowiedzi
+  },
+  "players": [ // Lista graczy z ich aktualnym stanem
+    {
+      "id": "p1",
+      "name": "Anna",
+      "points": 10,
+      "lives": 3,
+      "cards": ["Dejavu", "Skip"], // Nazwy posiadanych kart
+      "status": "active", // "active", "eliminated", "winner"
+      "avatarUrl": "...",
+      "streamUrl": "..."
+    },
+    // ... inni gracze
+  ],
+  "tickerMessage": { "text": "Gracz Anna użył karty Turbo!", "type": "card_used" } // Komunikat na tickerze
+}
+
+   * player_state_changed: Aktualizacja stanu konkretnego gracza (może być częścią game_state_update, ale dla specyficznych, szybkich aktualizacji może być osobnym eventem).
+     * Payload: { gameId: string, playerId: string, updates: { points?: number, lives?: number, cards?: string[], status?: string } }
+   * question_displayed: Nowe pytanie zostało wyświetlone.
+     * Payload: { gameId: string, question: { id: string, text: string, options: string[] }, timer: number }
+   * answer_revealed: Wyniki odpowiedzi zostały ujawnione.
+     * Payload: { gameId: string, questionId: string, correctAnswerIndex: number, playerResults: { playerId: string, isCorrect: boolean, pointsAwarded: number }[] }
+   * card_activated: Karta specjalna została aktywowana.
+     * Payload: { gameId: string, playerId: string, cardName: string, animationId: string, soundId: string, description: string, effect: string }
+   * timer_tick: Wysyłane co sekundę w trakcie odliczania timera.
+     * Payload: { gameId: string, remainingTime: number }
+   * round_ended: Runda została zakończona.
+     * Payload: { gameId: string, roundNumber: number, results: any }
+   * game_ended: Gra została zakończona.
+     * Payload: { gameId: string, finalResults: any, winnerId?: string }
+   * notification: Ogólne powiadomienia (np. "Problem zgłoszony przez gracza X").
+     * Payload: { type: "info" | "warning" | "error" | "player_report", message: string, data?: any }
+2.6. Autoryzacja i Uwierzytelnianie
+ * Host/Admin (Panel Hosta, Panel Ustawień):
+   * Uwierzytelnianie oparte na tokenach JWT (JSON Web Tokens) lub sesjach po pomyślnym zalogowaniu (login/hasło).
+   * Każde żądanie HTTP do API backendu i połączenie WebSocket wymagają dołączenia tokena JWT w nagłówku Authorization (Bearer Token).
+   * Middleware po stronie serwera weryfikuje token i rolę użytkownika, zapewniając dostęp tylko do autoryzowanych zasobów i komend.
+ * Gracze (Panel Gracza):
+   * Uwierzytelnianie bez logowania, oparte na unikalnym, jednorazowym linku wygenerowanym przez hosta (/player/[unique-id]).
+   * Ten [unique-id] jest tokenem JWT zawierającym playerId i gameId, a także datę ważności (np. 24h lub do zakończenia sesji gry).
+   * Połączenie WebSocket z Panelu Gracza używa tego tokena do autoryzacji w sesji gry.
+   * Token jest weryfikowany przez backend, aby upewnić się, że gracz ma dostęp tylko do swojego panelu i może wykonywać jedynie dozwolone akcje.
+ * OBS Overlay:
+   * Może działać w trybie tylko do odczytu, łącząc się z sesją gry tylko za pomocą gameId, lub z tokenem JWT dla większego bezpieczeństwa i kontroli dostępu, generowanym również przez hosta.
+
+
+
+
+
+3. Panel Hosta (/host)
+Panel Hosta to centralny interfejs dla prowadzącego teleturniej. Zapewnia pełną kontrolę nad przebiegiem gry, zarządzaniem graczami, pytaniami, timerami oraz interakcją z systemem. Panel jest responsywny i dostosowuje się do różnych rozdzielczości, zachowując spójny styl graficzny z resztą aplikacji (neon glow, ciemne tło).
+3.1. Makieta UI Panelu Hosta (Opis Tekstowy)
+Panel Hosta będzie podzielony na trzy główne sekcje:
+ * Górny Pasek Sterowania (Top Bar):
+   * Lewa strona: Logo Discord Game Show.
+   * Środek:
+     * Nazwa Gry / Sesji: Wyraźny tekst, np. "Discord Game Show - Sesja #123".
+     * Status Gry: Ikona i tekst, np. "Lobby", "Runda 1 - Pytanie Aktywne", "Pauza".
+     * Timer Główny: Duży, czytelny zegar odliczający czas na pytanie lub rundę.
+   * Prawa strona:
+     * Przyciski Akcji Globalnych:
+       * Start Gry (lub Rozpocznij Rundę)
+       * Pauza/Wznów Grę
+       * Zakończ Grę
+       * Reset Gry (wymaga potwierdzenia)
+     * Link do OBS Overlay: Ikona "łańcucha" lub "ekranu", po kliknięciu kopiuje URL overlayu do schowka.
+     * Przycisk "Settings" (Ustawienia): Przenosi do Panelu Ustawień.
+     * Przycisk "Logout" (Wyloguj).
+ * Główny Obszar Panelu (Main Content Area):
+   * Ten obszar dynamicznie zmienia zawartość w zależności od aktualnego stanu gry.
+ * Pasek Boczny (Side Bar - rozwijany/chowany lub stały):
+   * Sekcja "Gracze":
+     * Lista wszystkich aktywnych graczy w sesji.
+     * Dla każdego gracza:
+       * Mini-avatar i Nick.
+       * Aktualne Punkty.
+       * Aktualne Życie (ikony serc lub liczba).
+       * Ikony posiadanych Kart Specjalnych (po najechaniu kursorem - tooltip z krótkim opisem karty).
+       * Przyciski akcji dla gracza:
+         * + Punkty (otwiera małe pole input do wpisania ilości, lub predefiniowane +10, +50, +100).
+         * - Życie (np. -1 życie lub otwiera input do wpisania procentu).
+         * Zużyj Kartę (rozwijane menu z listą posiadanych przez gracza kart do manualnej aktywacji).
+         * Eliminuj Gracza (przycisk z ikoną "X" lub "odpadnięcia", wymaga potwierdzenia).
+         * Cofnij użycie karty (przycisk dostępny tylko po ostatnim użyciu karty przez gracza).
+   * Sekcja "Logi Systemowe / Chat":
+     * Przewijane okno wyświetlające logi akcji graczy, hosta i systemu (np. "Gracz X odpowiedział", "Karta Y została aktywowana", "Timer zresetowany").
+     * Może zawierać również opcję czatu z graczami (jeśli przewidziana).
+3.2. Stany Interfejsu (UI States)
+Panel Hosta dynamicznie dostosowuje swój widok do aktualnego stanu gry.
+ * 3.2.1. Lobby (Pre-Game State)
+   * Cel: Oczekiwanie na dołączenie graczy, przygotowanie do startu gry.
+   * Główny Obszar:
+     * Duży napis "LOBBY" lub "Oczekiwanie na Graczy".
+     * Lista Graczy: Centralnie wyświetlana lista graczy, którzy już dołączyli. Dla każdego gracza: avatar, nick, link do Panelu Gracza (przycisk kopiowania).
+     * Przycisk "Start Gry": Główny przycisk akcji.
+     * Przycisk "Generate Player Links": Generuje/odświeża linki dla graczy.
+   * Pasek Boczny: Widoczna lista graczy z ich statusami połączenia (online/offline).
+ * 3.2.2. Countdown (Odliczanie)
+   * Cel: Odliczanie do rozpoczęcia rundy/pytania.
+   * Główny Obszar:
+     * Duży, centralny timer odliczający (np. 3, 2, 1...).
+     * Nazwa rozpoczynającej się rundy.
+   * Górny Pasek: Główny Timer odliczający jest aktywny.
+   * Pasek Boczny: Niewielkie zmiany, może być zablokowany.
+ * 3.2.3. Question Active (Pytanie Aktywne)
+   * Cel: Wyświetlanie bieżącego pytania i zarządzanie nim.
+   * Główny Obszar:
+     * Treść Pytania: Duże, czytelne pole tekstowe z aktualnym pytaniem.
+     * Opcje Odpowiedzi (jeśli są): Lista opcji do wyboru (A, B, C, D).
+     * Timer Pytania: Mniejszy, dedykowany timer do pytania (synchronizowany z głównym timerem).
+     * Przyciski Kontroli Pytania:
+       * Pokaż Podpowiedź (jeśli dostępne, może być wielokrotne, jeśli wiele podpowiedzi).
+       * Odkryj Odpowiedź (przejście do fazy ujawniania odpowiedzi).
+       * Pomiń Pytanie (przejście do następnego pytania bez oceny).
+       * Reset Pytania (resetuje timer i pytanie do stanu początkowego, np. w razie błędu hosta).
+       * Wylosuj Następne Pytanie (przycisk losowania dla Rund 1, 2, 3 - w R3 po wylosowaniu kategorii).
+   * Pasek Boczny: Aktywna lista graczy, pokazująca ich status (np. "oczekuje", "odpowiedział").
+ * 3.2.4. Answer Reveal (Ujawnienie Odpowiedzi)
+   * Cel: Prezentacja poprawnej odpowiedzi i wyników graczy.
+   * Główny Obszar:
+     * Treść Pytania i Opcje Odpowiedzi.
+     * Podświetlona Poprawna Odpowiedź: Wyraźne oznaczenie, która opcja jest poprawna.
+     * Wyniki Graczy: Lista graczy z informacją, czy odpowiedzieli poprawnie/błędnie, ile punktów zdobyli/stracili, i ich nowy stan życia/punktów.
+     * Przyciski Akcji:
+       * Zakończ Pytanie (przejście do podsumowania lub następnego pytania).
+       * Korekta Wyników (opcjonalnie, dostęp do edycji punktów/życia graczy dla tego pytania, np. w razie pomyłki).
+   * Pasek Boczny: Aktualizacja punktów i życia graczy.
+ * 3.2.5. End Round (Koniec Rundy)
+   * Cel: Podsumowanie wyników rundy, przygotowanie do kolejnej.
+   * Główny Obszar:
+     * Duży napis "KONIEC RUNDY X".
+     * Tabela Wyników Rundy: Lista graczy posortowana wg punktów, z informacją o ich stanie (odpadli/przeszli).
+     * Przyciski Akcji:
+       * Rozpocznij Rundę Y (jeśli są kolejne rundy).
+       * Przejdź do Podsumowania Gry (jeśli to ostatnia runda).
+       * Przyznaj Karty Automatycznie (przycisk do wywołania mechanizmów przyznawania kart po rundzie).
+       * Ręczne Przydzielanie Kart (przycisk przenoszący do sekcji "Ręczne Przydzielanie Kart" w Ustawieniach, lub otwierający modal).
+   * Pasek Boczny: Odzwierciedla zaktualizowane stany graczy (punkty, życie, karty).
+ * 3.2.6. Game Summary (Podsumowanie Gry)
+   * Cel: Końcowe podsumowanie i ogłoszenie zwycięzcy.
+   * Główny Obszar:
+     * Duży napis "KONIEC GRY" lub "ZWYCIĘZCA!".
+     * Ranking Końcowy: Finalna tabela wyników wszystkich graczy, z wyraźnie wyróżnionym zwycięzcą.
+     * Przyciski Akcji:
+       * Zakończ Sesję (usuwa sesję, czyści dane).
+       * Rozpocznij Nową Grę.
+       * Eksportuj Wyniki.
+3.3. Funkcje Sterujące Grą
+ * Start/Stop Gry:
+   * Start Game: Inicjuje sesję gry, przechodzi do pierwszej rundy lub stanu lobby.
+   * Stop Game: Natychmiastowe zakończenie bieżącej gry.
+ * Pauza/Wznów: Tymczasowe wstrzymanie/wznowienie odliczania timerów i akcji w grze.
+ * Reset Timerów: Resetuje aktualny timer rundy/pytania do wartości domyślnej.
+ * Zmiana Timera w Locie: Host może manualnie zmienić czas na aktualnym timerze (np. dodając/odejmując sekundy).
+ * Przejścia Między Fazami: Manualne wyzwalanie przejść między pytaniem a ujawnieniem odpowiedzi, lub między rundami.
+ * Manualne Przyznawanie/Odejmowanie Punktów/Życia: Bezpośrednia edycja statystyk graczy.
+ * Manualne Przydzielanie/Używanie Kart: Host może przydzielić kartę dowolnemu graczowi lub aktywować posiadana przez gracza kartę.
+ * Losowanie Następnego Pytania: Przycisk wymuszający wylosowanie kolejnego pytania zgodnie z logiką danej rundy.
+3.4. Zarządzanie Graczami w Locie
+ * Karta Gracza: Każdy gracz w Panelu Hosta posiada swoją "kartę" (sekcja w pasku bocznym), na której widoczne są najważniejsze informacje i akcje.
+ * Status Gracza: Obok nicku gracza ikona statusu (np. zielona kropka dla online, czerwona dla offline).
+ * Zarządzanie Życiem i Punktami: Bezpośrednie inputy lub przyciski +/- dla szybkiej modyfikacji.
+ * Zarządzanie Kartami:
+   * Lista ikon posiadanych kart z tooltipami.
+   * Przycisk Zużyj Kartę – po kliknięciu wyświetla dostępne karty gracza do aktywacji.
+   * Przycisk Cofnij Użycie Karty – cofnięcie ostatnio aktywowanej karty przez tego gracza (np. w razie pomyłki).
+ * Eliminacja Gracza: Przycisk oznaczający gracza jako wyeliminowanego, usuwający go z aktywnej rozgrywki.
+3.5. Integracja z OBS Overlay
+ * Link do Overlayu: Panel Hosta generuje i wyświetla unikalny URL dla OBS Overlayu.
+ * Podgląd na Żywo (opcjonalnie): W przyszłości: mały podgląd na żywo z OBS Overlayu bezpośrednio w Panelu Hosta, aby host mógł widzieć, co jest transmitowane.
+ * Sterowanie Overlayem: Akcje hosta automatycznie aktualizują Overlay poprzez WebSocket.
+3.6. Pasek Kontrolny Rundy (pod głównym timerem)
+ * Graficzny lub tekstowy pasek postępu rundy, pokazujący np. "Pytanie 5 z 10".
+ * Może również wyświetlać nazwę aktualnej kategorii lub trudności (dla Rundy 1).
+3.7. Panel Logów / Historii Akcji
+ * Przewijane okno logów: Wyświetla chronologiczną listę istotnych zdarzeń w grze:
+   * "Gracz X odpowiedział: Y"
+   * "Gracz Z użył karty [Nazwa Karty]"
+   * "Host aktywował pytanie: [Treść pytania]"
+   * "Timer zatrzymany/wznowiony"
+   * "Runda X zakończona"
+   * "Gracz W otrzymał X punktów"
+   * "Gracz K stracił Y życia"
+ * Filtrowanie Logów: Opcjonalnie: możliwość filtrowania logów według typu zdarzenia (np. tylko akcje graczy, tylko akcje hosta).
+ * Eksport Logów: Opcjonalnie: przycisk do eksportu logów do pliku tekstowego.
+3.8. Checklista Implementacji Panelu Hosta
+ * [ ] Projekt UI zgodny ze specyfikacją stylistyczną.
+ * [ ] Implementacja wszystkich stanów interfejsu (Lobby, Countdown, Question Active, Answer Reveal, End Round, Game Summary).
+ * [ ] Pasek górny z nazwą sesji, statusem gry, głównym timerem, przyciskami globalnych akcji.
+ * [ ] Pasek boczny z listą graczy, ich statystykami (punkty, życie, karty).
+ * [ ] Funkcjonalność manualnego zarządzania punktami i życiem graczy.
+ * [ ] Wyświetlanie ikon posiadanych kart i tooltipów dla graczy.
+ * [ ] Funkcjonalność manualnej aktywacji kart i cofania użycia karty dla graczy.
+ * [ ] Funkcjonalność eliminacji graczy.
+ * [ ] Dynamiczne wyświetlanie treści pytania i opcji odpowiedzi.
+ * [ ] Przyciski kontroli pytania (Pokaż Podpowiedź, Odkryj Odpowiedź, Pomiń, Reset, Wylosuj Następne).
+ * [ ] Podświetlanie poprawnej odpowiedzi w fazie Answer Reveal.
+ * [ ] Wyświetlanie wyników graczy po pytaniu/rundzie.
+ * [ ] Tabela wyników na koniec rundy/gry.
+ * [ ] Przycisk "Start Gry" / "Rozpocznij Rundę".
+ * [ ] Przycisk "Pauza/Wznów".
+ * [ ] Przycisk "Zakończ Grę".
+ * [ ] Przycisk "Reset Gry" z potwierdzeniem.
+ * [ ] Kopiowanie URL OBS Overlay do schowka.
+ * [ ] Panel logów z chronologiczną listą zdarzeń.
+ * [ ] Integracja WebSocket dla wszystkich zdarzeń sterujących grą (od Hosta do Backendu) i aktualizacji stanu (od Backendu do Hosta).
+ * [ ] Zabezpieczenie Panelu Hosta przez uwierzytelnianie (token JWT).
+ * [ ] Obsługa responsywności UI.
+ * [ ] Walidacja akcji hosta (np. brak możliwości startu rundy bez graczy).
+
+
+4. Panel Gracza (/player)
+Panel Gracza to interfejs dla każdego indywidualnego uczestnika teleturnieju. Zapewnia graczowi możliwość interakcji z grą (odpowiadanie na pytania, używanie kart) oraz wgląd w jego aktualny status i przebieg rozgrywki. Panel jest dostępny poprzez unikalny link, co eliminuje potrzebę logowania i upraszcza dołączenie do gry.
+4.1. Makieta UI Panelu Gracza (Opis Tekstowy)
+Panel Gracza będzie posiadał przejrzysty i dynamicznie zmieniający się układ, skupiony na bieżących informacjach i akcjach gracza.
+ * Górny Pasek Informacyjny:
+   * Lewa strona:
+     * Avatar Gracza: Okrągły avatar gracza.
+     * Nick Gracza: Wyraźna nazwa gracza.
+     * Punkty: Aktualna liczba punktów gracza.
+     * Życie: Ikony serc lub liczba reprezentująca pozostałe życie.
+   * Prawa strona:
+     * Ikony Posiadanych Kart Specjalnych: Wyświetlane małe ikony kart, które gracz aktualnie posiada. Po najechaniu kursorem - tooltip z nazwą karty.
+     * Przycisk "Użyj Karty": (Opcjonalnie, jeśli gracz może używać kart w dowolnym momencie). Po kliknięciu rozwija listę dostępnych kart do użycia.
+ * Główny Obszar Panelu (Main Content Area):
+   * Ten obszar dynamicznie wyświetla treść w zależności od fazy gry.
+ * Pasek Dolny (Timer i Komunikaty/Chat):
+   * Timer: Duży, centralny zegar odliczający czas na odpowiedź.
+   * Sekcja Komunikatów / Czat (Opcjonalnie):
+     * Małe okno przewijania wyświetlające krótkie komunikaty systemowe (np. "Odpowiedź zaakceptowana", "Niepoprawna odpowiedź", "Otrzymałeś kartę X").
+     * Opcjonalnie: pole tekstowe do wysyłania krótkich wiadomości do hosta/czatu gry.
+4.2. Dostęp i Autoryzacja
+ * Unikalny Link: Gracz uzyskuje dostęp do swojego panelu poprzez unikalny link (/player/[unique-jwt-token]), generowany przez Hosta w Panelu Ustawień.
+ * JWT Token: [unique-jwt-token] zawiera ID gracza, ID sesji gry oraz datę wygaśnięcia. Jest on weryfikowany przez backend przy każdym połączeniu.
+ * Brak Logowania: Gracz nie musi się logować. Wejście na link automatycznie autoryzuje go w danej sesji.
+ * Status Online/Offline: Backend monitoruje status połączenia gracza. Host widzi, czy gracz jest online.
+4.3. Stylistyka i Układ
+ * Minimalizm: Interfejs jest zaprojektowany tak, aby był jak najbardziej intuicyjny i nie rozpraszał gracza.
+ * Feedback Wizualny: Wyraźne animacje i zmiany kolorów informujące o stanie (np. migający timer, zielone/czerwone tło po odpowiedzi).
+ * Neon Glow: Zgodny z ogólną stylistyką projektu.
+ * Rozdzielczość: Panel Gracza powinien być w pełni responsywny, dostosowujący się do różnych rozmiarów ekranu (komputery, tablety, telefony).
+4.4. Stany Aplikacji (UI States)
+Panel Gracza dynamicznie zmienia swój widok w zależności od bieżącego stanu gry i działań gracza.
+ * 4.4.1. Loading / Połączenie
+   * Cel: Informowanie o nawiązywaniu połączenia z serwerem.
+   * Główny Obszar:
+     * Animacja ładowania (spinner).
+     * Komunikat: "Łączenie z grą..." / "Oczekiwanie na hosta...".
+   * Uwaga: Jeśli token wygasł lub jest niepoprawny, wyświetla komunikat o błędzie i prośbę o nowy link.
+ * 4.4.2. Lobby (Pre-Game State)
+   * Cel: Oczekiwanie na rozpoczęcie gry przez hosta.
+   * Główny Obszar:
+     * Wyraźny napis: "Lobby" lub "Oczekiwanie na rozpoczęcie gry...".
+     * Imię i avatar gracza na środku.
+     * Może wyświetlać listę innych graczy, którzy dołączyli (opcjonalnie, tylko nicki).
+   * Pasek Dolny: Może wyświetlać komunikat "Gra nie została jeszcze rozpoczęta".
+ * 4.4.3. Countdown (Odliczanie do Rundu/Pytania)
+   * Cel: Wizualne odliczanie przed aktywną fazą.
+   * Główny Obszar:
+     * Duże, centralne cyfry odliczające (3... 2... 1... START!).
+     * Nazwa rozpoczynającej się rundy.
+   * Pasek Dolny: Timer odliczający jest widoczny.
+ * 4.4.4. Question Active (Pytanie Aktywne)
+   * Cel: Wyświetlenie pytania i umożliwienie graczowi odpowiedzi.
+   * Górny Pasek: Widoczne punkty, życie, ikony kart.
+   * Główny Obszar:
+     * Treść Pytania: Duże, czytelne pole tekstowe z pytaniem.
+     * Opcje Odpowiedzi (jeśli są):
+       * Jeśli pytanie wielokrotnego wyboru: duże przyciski z opcjami. Przyciski są aktywne do kliknięcia. Po kliknięciu przycisk blokuje się, a gracz nie może zmienić odpowiedzi.
+       * Jeśli pytanie otwarte: pole tekstowe do wpisania odpowiedzi i przycisk Wyślij Odpowiedź.
+     * Status Odpowiedzi: Po wysłaniu: "Twoja odpowiedź została wysłana. Oczekiwanie na wyniki."
+   * Pasek Dolny: Aktywny Timer odliczający czas na odpowiedź. Kolor timera może zmieniać się na czerwony, gdy zostało mało czasu.
+ * 4.4.5. Answer Reveal (Ujawnienie Odpowiedzi)
+   * Cel: Wyświetlenie poprawnej odpowiedzi i poinformowanie gracza o jego wyniku.
+   * Górny Pasek: Aktualizacja punktów i życia.
+   * Główny Obszar:
+     * Treść Pytania i Opcje Odpowiedzi.
+     * Wizualny Feedback:
+       * Jeśli gracz odpowiedział poprawnie: zielone tło lub animacja sukcesu, komunikat "Poprawna odpowiedź!" i ile punktów zdobył.
+       * Jeśli gracz odpowiedział błędnie: czerwone tło lub animacja porażki, komunikat "Niepoprawna odpowiedź!" i informacja o utracie życia/punktów.
+     * Podświetlona Poprawna Odpowiedź: Opcja oznaczona jako poprawna.
+   * Pasek Dolny: Timer jest zatrzymany. Mogą pojawić się krótkie komunikaty systemowe.
+ * 4.4.6. End Round (Koniec Rundy)
+   * Cel: Podsumowanie wyników rundy dla gracza.
+   * Główny Obszar:
+     * Komunikat: "Koniec Rundy X".
+     * Aktualny ranking graczy lub pozycja gracza w rankingu.
+     * Informacja o awansie/eliminacji.
+   * Pasek Dolny: Informacja "Oczekiwanie na Host".
+ * 4.4.7. Game Summary / Game Over (Podsumowanie Gry / Koniec Gry)
+   * Cel: Wyświetlenie finalnych wyników i statusu gracza.
+   * Główny Obszar:
+     * Komunikat: "Koniec Gry!" / "Gratulacje, jesteś Zwycięzcą!" / "Dziękujemy za udział!".
+     * Finalny ranking lub pozycja gracza.
+     * Jeśli gracz został wyeliminowany wcześniej, komunikat o tym.
+   * Pasek Dolny: Brak aktywnego timera.
+4.5. Elementy UI i Interakcje
+ * Avatar i Nick: Wyświetlane w górnym pasku.
+ * Punkty i Życie: Wyraźnie widoczne, aktualizujące się w czasie rzeczywistym.
+ * Karty Specjalne:
+   * Ikony posiadanych kart.
+   * Przycisk Użyj Karty (jeśli dostępny):
+     * Po kliknięciu wysuwa menu z listą posiadanych kart.
+     * Kliknięcie karty w menu wysyła zdarzenie player_action: use_card do backendu.
+     * Karta znika z UI gracza po użyciu i przetworzeniu przez backend.
+ * Timer: Odliczający czas na pytanie, z wyraźnym wizualnym feedbackiem (np. zmiana koloru na czerwony, gdy mało czasu).
+ * Przyciski Akcji:
+   * Odpowiedź: Duże, łatwe do kliknięcia przyciski z opcjami lub pole tekstowe z przyciskiem Wyślij.
+   * Blokada Po Odpowiedzi: Po wysłaniu odpowiedzi, przyciski/pole tekstowe blokują się do końca fazy pytania.
+ * Feedback Wizualny:
+   * Poprawna/Błędna Odpowiedź: Zmiana koloru tła (zielony/czerwony) lub animacja potwierdzająca.
+   * Użycie Karty: Krótka animacja lub komunikat potwierdzający użycie karty.
+ * Chat i Komunikaty Systemowe (Opcjonalnie):
+   * Małe okno przewijania na dole ekranu.
+   * Wiadomości systemowe (np. "Host wznawia grę", "Otrzymałeś punkty bonusowe").
+   * Jeśli czat z hostem jest włączony, pole tekstowe do wysyłania wiadomości.
+4.6. Checklista Implementacji Panelu Gracza
+ * [ ] Dostęp do panelu poprzez unikalny link z tokenem JWT.
+ * [ ] Zabezpieczenie Panelu Gracza przez weryfikację tokena JWT.
+ * [ ] Projekt UI zgodny ze specyfikacją stylistyczną (neon glow, ciemne tło).
+ * [ ] Implementacja wszystkich stanów interfejsu (Loading, Lobby, Countdown, Question Active, Answer Reveal, End Round, Game Summary).
+ * [ ] Górny pasek z avatarem, nickiem, punktami, życiem i ikonami kart.
+ * [ ] Dynamiczne aktualizowanie punktów i życia.
+ * [ ] Wyświetlanie treści pytania i opcji odpowiedzi.
+ * [ ] Interaktywne przyciski odpowiedzi dla pytań wielokrotnego wyboru.
+ * [ ] Pole tekstowe i przycisk wysyłania dla pytań otwartych.
+ * [ ] Blokowanie możliwości odpowiedzi po jej wysłaniu.
+ * [ ] Wyświetlanie timera odliczającego czas na odpowiedź.
+ * [ ] Wizualny feedback (kolor, animacja) dla poprawnej/błędnej odpowiedzi.
+ * [ ] Wyświetlanie poprawnej odpowiedzi w fazie Answer Reveal.
+ * [ ] Lista posiadanych kart i funkcjonalność ich użycia.
+ * [ ] Integracja WebSocket do odbierania aktualizacji stanu gry (game_state_update, question_displayed, answer_revealed, card_activated, timer_tick, round_ended, game_ended, notification).
+ * [ ] Integracja WebSocket do wysyłania akcji gracza (player_action).
+ * [ ] Obsługa komunikatów systemowych.
+ * [ ] Obsługa responsywności UI dla różnych urządzeń.
+ * [ ] Przyciski akcji (jeśli są) mają odpowiednie stany (disabled/enabled).
+
+
+
+
+
+
+5. OBS Overlay (/overlay)
+OBS Overlay to dynamiczna strona internetowa zaprojektowana do wyświetlania w programach do streamingu (np. OBS Studio, Streamlabs Desktop) jako "Źródło przeglądarki" (Browser Source). Służy jako główny interfejs wizualny dla widzów, prezentując bieżący stan gry, pytania, graczy, timery, animacje i inne kluczowe informacje. Overlay jest w pełni synchronizowany z backendem poprzez WebSockets, zapewniając płynne i natychmiastowe aktualizacje.
+5.1. Makieta UI OBS Overlay (Opis Tekstowy)
+Overlay będzie responsywny i zaprojektowany do rozdzielczości bazowej 1920x1080px, z możliwością skalowania. Będzie charakteryzować się estetyką "neon glow" i ciemnym tłem, spójną z Panelami Hosta i Graczy. Układ elementów będzie dynamicznie zmieniał się w zależności od fazy i rundy gry.
+Elementy Stałe / Wspólne dla wszystkich rund:
+ * Logo Gry: W górnym lewym lub prawym rogu (konfigurowalne).
+ * Pasek Graczy (Leaderboard/Scoreboard):
+   * Poziomy pasek na górze lub dole ekranu, lub pionowy pasek boczny.
+   * Wyświetla Nick Gracza, Avatar, Punkty, Życie (ikony serc).
+   * Dynamiczne sortowanie według punktów lub statusu.
+   * Może zawierać sekcje dla wyeliminowanych graczy.
+ * Pasek Informacyjny (Ticker/News Ticker):
+   * Przewijany pasek na dole lub górze ekranu.
+   * Wyświetla komunikaty systemowe (np. "Gracz X użył karty Y", "Nowa runda rozpoczęta", "Zostało X sekund na odpowiedź").
+   * Konfigurowalne kolory i prędkość przewijania.
+ * Główne Tło: Gradientowe ciemne tło z subtelnymi animacjami neonowymi.
+ * Dźwięki Systemowe: Dźwięki dołączania graczy, startu rundy, poprawnej/błędnej odpowiedzi, użycia kart (zarządzane przez backend, odtwarzane przez overlay).
+Elementy Dynamiczne / Specyficzne dla Rund:
+5.2. Układ dla Rundy 1 (Eliminacje / Pytania z Kategorii)
+ * Cel: Wyraźne wyświetlenie pytania, opcji, timera i stanu graczy.
+ * Główny Układ:
+   * Główna Sekcja Pytania (centralnie):
+     * Treść Pytania: Duży, czytelny tekst pytania.
+     * Opcje Odpowiedzi: 3-4 wyraźnie oznaczone opcje (A, B, C, D) w formie przycisków lub paneli.
+       * Podczas fazy Question Active: opcje są neutralne.
+       * Podczas fazy Answer Reveal: poprawna odpowiedź podświetla się na zielono, a niepoprawne na czerwono (jeśli gracz odpowiedział błędnie).
+     * Timer Pytania: Duży, centralny zegar odliczający czas, często pulsujący lub zmieniający kolor na czerwony, gdy czas się kończy.
+   * Pasek Graczy: Widoczny (najczęściej na dole lub po bokach), aktualizujący się w czasie rzeczywistym. Może wyróżniać aktywnego gracza lub graczy, którzy już odpowiedzieli.
+   * Sekcje Kamer Graczy (opcjonalnie, z VOD.ninja):
+     * Dla każdego aktywnego gracza, mały kwadratowy podgląd z kamery, umieszczony wokół głównej sekcji pytania lub w dedykowanych slotach.
+     * Może wyświetlać nick gracza pod kamerą.
+     * Wyróżnienie gracza, który odpowiada lub zbliżenie na gracza, który odpowiedział poprawnie/błędnie.
+   * Informacje o Kategorii/Trudności: Mała etykieta nad pytaniem, np. "Kategoria: Film | Trudność: 10 pkt".
+ * Animacje: Animacje pojawiania się pytania, znikania, podświetlenia odpowiedzi, spadania punktów.
+5.3. Układ dla Rundy 2 (Krótkie Pytania / Tak/Nie)
+ * Cel: Szybkie, dynamiczne pytania z minimalnym rozpraszaniem.
+ * Główny Układ:
+   * Treść Pytania: Bardzo duży tekst pytania, centralnie na ekranie. Opcje "TAK" / "NIE" (jeśli to pytanie Tak/Nie) lub brak opcji (dla otwartych).
+   * Timer Pytania: Mały, zintegrowany z pytaniem lub w górnym rogu, bardzo szybkie odliczanie (5 sekund).
+   * Panel Wyników (Dynamiczny): Po lewej/prawej stronie lub na dole, lista graczy z ich szybkim statusem odpowiedzi ("Odpowiedział", "Oczekiwanie", "Poprawnie", "Błędnie").
+   * Brak lub Minimalistyczne Opcje: Ze względu na naturę pytań, brak widocznych opcji wyboru na overlayu, chyba że są to proste przyciski TAK/NIE.
+   * Animacje: Szybkie przejścia pytań, pulsujący timer, natychmiastowe zmiany statusu graczy.
+5.4. Układ dla Rundy 3 (Koło Fortuny / Wybór Kategorii)
+ * Cel: Wizualizacja Koła Fortuny, wyświetlanie kategorii i finalnego pytania.
+ * Główny Układ:
+   * Koło Fortuny (centralnie):
+     * Duże, interaktywne koło z aktywnymi kategoriami jako segmentami.
+     * Animacja obracania się koła i zatrzymywania na wybranej kategorii.
+     * Wyróżniony segment z wylosowaną kategorią.
+   * Sekcja Pytania (po wylosowaniu kategorii):
+     * Po zatrzymaniu koła, koło może się zminiaturyzować lub zjechać na bok, a w centrum pojawi się Treść Pytania (jak w Rundzie 1, ale bez opcji).
+     * Timer Pytania: Aktywny timer (30 sekund).
+   * Wizualizacja Punktacji: Może pokazywać potencjalną wartość punktową pytania.
+   * Pasek Graczy: Widoczny, z aktualizowanymi wynikami.
+ * Animacje: Efektowne animacje obracania się koła, zwycięski segment, pojawianie się pytania.
+5.5. Efekty Wizualne i Dźwiękowe
+ * Neon Glow: Wszystkie elementy UI (paski, ramki, tekst) mają efekt neonowego podświetlenia, którego kolor może być konfigurowalny (np. z Panelu Ustawień).
+ * Animacje Przejść: Płynne animacje pomiędzy stanami gry (np. "Question Active" -> "Answer Reveal"), pojawianiem się i znikanie elementów.
+ * Animacje Kart Specjalnych: Każda aktywowana karta specjalna (np. "Turbo", "Dejavu") wyzwala dedykowaną animację i efekt dźwiękowy na Overlayu, podkreślając jej użycie. Animacje te powinny być konfigurowalne (np. pliki wideo/gif).
+ * Dźwięki Systemowe: Odtwarzanie dźwięków dla kluczowych wydarzeń:
+   * Start/Koniec Rundu
+   * Początek/Koniec Timera
+   * Poprawna/Błędna Odpowiedź
+   * Użycie Karty Specjalnej (specyficzny dźwięk dla każdej karty)
+   * Dołączenie Gracza
+   * Zwycięstwo/Eliminacja Gracza
+   * Dźwięki mogą być konfigurowalne (ścieżki plików audio).
+ * Integracja VOD.ninja: Wykorzystanie <iframe> lub podobnej techniki do osadzania podglądów kamer graczy z VOD.ninja. Backend dostarcza URL-e dla poszczególnych kamer.
+5.6. Integracja z OBS / Streamlabs
+ * Browser Source: Overlay jest ładowany jako źródło przeglądarki, co umożliwia pełną integrację.
+ * URL: Host kopiuje wygenerowany unikalny URL z Panelu Hosta do OBS. URL zawiera gameId i token do autoryzacji.
+ * CORS/Security: Backend musi być odpowiednio skonfigurowany, aby zezwalać na połączenia z domen OBS/Streamlabs (localhost lub specyficzne domeny przeglądarek).
+ * Wydajność: Overlay musi być zoptymalizowany pod kątem wydajności, aby nie obciążać CPU/GPU streamera. Minimalizacja animacji, gdy nie są aktywne.
+5.7. Checklista Implementacji OBS Overlay
+ * [ ] Projekt UI zgodny ze stylistyką neon glow i rozdzielczością 1920x1080px.
+ * [ ] Implementacja elementów stałych: Logo, Pasek Graczy (Scoreboard), Pasek Informacyjny (Ticker).
+ * [ ] Dynamiczne sortowanie graczy na scoreboardzie.
+ * [ ] Implementacja układu dla Rundy 1 (Pytanie, Opcje, Timer, Kamery Graczy).
+ * [ ] Implementacja układu dla Rundy 2 (Duże pytanie, szybki timer, minimalistyczne opcje).
+ * [ ] Implementacja układu dla Rundy 3 (Koło Fortuny, sekcja pytania).
+ * [ ] Animacje przejść między pytaniami i fazami.
+ * [ ] Wizualny feedback dla poprawnych/błędnych odpowiedzi (podświetlenia, kolory).
+ * [ ] Animacje aktywacji kart specjalnych (zgodne z animationId z definicji karty).
+ * [ ] Odtwarzanie dźwięków systemowych (zgodne z soundId z definicji karty, dźwięki startu/końca rundy, timera, etc.).
+ * [ ] Integracja z VOD.ninja dla wyświetlania kamer graczy.
+ * [ ] Wyświetlanie timera odliczającego czas.
+ * [ ] Obsługa aktualizacji stanu gry z backendu poprzez WebSocket (game_state_update, question_displayed, answer_revealed, card_activated, timer_tick, round_ended, game_ended, notification).
+ * [ ] Optymalizacja wydajności overlayu.
+ * [ ] Obsługa błędów połączenia/autoryzacji (np. informacja o braku połączenia).
+
+
+
+6. Panel Ustawień (/settings)
+Panel Ustawień to centralne miejsce konfiguracji Discord Game Show, dostępne dla hosta/admina. Umożliwia zarządzanie parametrami gry, rundami, graczami, pytaniami, kartami, wyglądem i integracjami. Zmiany są synchronizowane w czasie rzeczywistym za pomocą WebSocket, odzwierciedlając się w panelach hosta, graczy i overlayu. Rozdzielczość bazowa to 1920x1080px, z neonowym stylem UI.
+6.1. Stylistyka Ogólna Panelu Ustawień
+ * Tło: #0C0C13 z delikatnym gradientem.
+ * Neon Glow: #00FFA3 (mięta), #00E0FF (turkus), #8B5CF6 (fiolet), #FF3E9D (róż). Akcenty kolorystyczne będą używane do podświetlania aktywnych zakładek, przycisków akcji i obramowań inputów.
+ * Czcionka nagłówków: Montserrat ExtraBold, z efektem text-shadow lub text-glow.
+ * Czcionka treści: Inter/Montserrat Medium, biały (#F0F4FF), 14-16px.
+ * Animacje: Subtelne pulsowanie obwódek (1,5s, bez przesunięcia fazy) dla aktywnych elementów i pól.
+ * Ogólny układ: Lewy pasek nawigacyjny z ikonami i nazwami zakładek. Główny obszar po prawej, podzielony na sekcje z nagłówkami.
+6.2. Makieta UI Panelu Ustawień (Opis Ogólny)
+Panel Ustawień będzie posiadał stały lewy pasek nawigacyjny i główny obszar zawartości po prawej stronie.
+ * Lewy Pasek Nawigacyjny (Sidebar):
+   * Ikony i nazwy zakładek (np. Ogólne, Rundy, Pytania, Karty Specjalne, Wygląd, Integracje itp.).
+   * Aktywna zakładka będzie podświetlona efektem neon glow.
+   * Na dole paska może znajdować się link do Panelu Hosta lub Dashboardu.
+ * Główny Obszar Zawartości:
+   * Dynamicznie zmienia zawartość w zależności od wybranej zakładki w pasku nawigacyjnym.
+   * Każda zakładka będzie podzielona na logiczne sekcje z nagłówkami.
+   * Elementy formularzy: pola tekstowe (<input type="text">, <textarea>), pola numeryczne (<input type="number">), checkboxy (<input type="checkbox">), przełączniki (<toggle switch>), rozwijane listy (<select>), suwaki (<range slider>).
+   * Wszystkie pola i przyciski będą miały spójny styl, z efektem neon glow na hover/focus.
+   * Przyciski Zapisz Zmiany lub Anuluj na dole każdej zakładki lub sekcji (lub automatyczne zapisywanie).
+6.3. Zakładka: Ogólne Ustawienia Gry
+Ta zakładka zawiera podstawowe parametry globalne wpływające na całą rozgrywkę.
+6.3.1. Opis Funkcjonalności
+ * Nazwa Gry: Pole tekstowe do zdefiniowania nazwy aktualnie prowadzonej sesji gry. Ta nazwa będzie wyświetlana w Panelu Hosta i na Overlayu.
+ * Liczba Graczy: Suwak lub pole numeryczne do ustawienia maksymalnej liczby graczy w danej sesji. Wpływa na wyświetlanie UI i logikę gry.
+ * Wymagania Zwycięzcy:
+   * Tryb: Rozwijana lista (dropdown) z opcjami:
+     * Najwięcej punktów (domyślny)
+     * Ostatni na placu boju (np. w trybie Battle Royale, gdzie gracze są eliminowani po utracie życia)
+     * Pierwszy do X punktów (pole numeryczne do wpisania progu punktowego)
+   * Jeśli wybrany jest Pierwszy do X punktów, pojawi się dodatkowe pole numeryczne do określenia wartości X.
+ * Domyślny Czas na Pytanie: Pole numeryczne lub suwak do ustawienia globalnego domyślnego limitu czasu na odpowiedź na pytanie (w sekundach). To ustawienie może być nadpisane przez indywidualne pytania.
+ * Redukcja Życia za Błędną Odpowiedź:
+   * Pole numeryczne (procent) lub rozwijana lista z predefiniowanymi wartościami (np. -10%, -25%, -1 życie).
+   * Określa, ile życia straci gracz po błędnej odpowiedzi w rundach, gdzie życie jest aktywne.
+ * Tryb Testowy: Przełącznik (toggle switch).
+   * Włączony: Umożliwia testowanie gry bez konieczności uruchamiania pełnej sesji. Może dezaktywować niektóre integracje, generować logi testowe, pomijać walidacje.
+   * Wyłączony: Normalny tryb działania produkcyjnego.
+ * Przycisk "Zapisz Zmiany": Po kliknięciu, wszystkie zmienione ustawienia są zapisywane w bazie danych i synchronizowane z aktywnymi panelami (Hosta, Graczy, Overlay).
+ * Przycisk "Anuluj": Przywraca ustawienia do ostatnio zapisanych wartości.
+6.3.2. Makieta UI Zakładki "Ogólne Ustawienia Gry" (Opis Tekstowy)
++-------------------------------------------------------------+
+| NAWIGACJA         |  OGÓLNE USTAWIENIA GRY                   |
+|                   |------------------------------------------|
+| [OGÓLNE]          |  [Nagłówek: Informacje o Sesji]         |
+| [RUNDY]           |  Nazwa Gry:        [Pole tekstowe]        |
+| [PYTANIA]         |                                          |
+| [KARTY SPEC.]     |  [Nagłówek: Konfiguracja Graczy]        |
+| [WYGLĄD]          |  Maks. Liczba Graczy: [Suwak/Input num.] |
+| [INTEGRACJE]      |                                          |
+| [RANKING]         |  [Nagłówek: Warunki Zwycięstwa]         |
+| [ZAAWANSOWANE]    |  Zwycięzca:        [Dropdown: ...      ] |
+|                   |  [Jeśli "Pierwszy do X punktów"]         |
+|                   |  Próg punktowy:   [Pole numeryczne]     |
+|                   |                                          |
+|                   |  [Nagłówek: Ustawienia Timera i Punktacji]|
+|                   |  Domyślny Czas na Pytanie (sek.): [Input num./Suwak]|
+|                   |  Redukcja Życia za Błędną Odp.:   [Dropdown/Input num.] |
+|                   |                                          |
+|                   |  [Nagłówek: Tryb Gry]                   |
+|                   |  Tryb Testowy: [Przełącznik ON/OFF]      |
+|                   |                                          |
+|                   |------------------------------------------|
+|                   |  [Przycisk: Zapisz Zmiany] [Przycisk: Anuluj] |
++-------------------------------------------------------------+
+
+6.3.3. Checklista Implementacji Zakładki "Ogólne Ustawienia Gry"
+ * [ ] Sekcja "Ogólne Ustawienia Gry" dostępna z nawigacji bocznej.
+ * [ ] Pole tekstowe "Nazwa Gry" z domyślną wartością (np. "Nowa Sesja Gry").
+ * [ ] Pole numeryczne/suwak "Maks. Liczba Graczy" (zakres np. 2-100).
+ * [ ] Dropdown "Wymagania Zwycięzcy" z opcjami: "Najwięcej punktów", "Ostatni na placu boju", "Pierwszy do X punktów".
+ * [ ] Warunkowe wyświetlanie pola "Próg punktowy" gdy wybrane "Pierwszy do X punktów".
+ * [ ] Pole numeryczne/suwak "Domyślny Czas na Pytanie (sek.)".
+ * [ ] Dropdown/pole numeryczne "Redukcja Życia za Błędną Odpowiedź" (np. 10%, 25%, 1 życie).
+ * [ ] Przełącznik "Tryb Testowy".
+ * [ ] Przycisk "Zapisz Zmiany" (aktywny tylko po zmianach, zapis do bazy, synchronizacja przez WebSocket).
+ * [ ] Przycisk "Anuluj" (reset do ostatnio zapisanych, powrót do pierwotnego stanu).
+ * [ ] Walidacja pól (np. limit graczy > 0, próg punktowy > 0).
+ * [ ] Obsługa komunikatów o sukcesie/błędzie po próbie zapisu.
+ * [ ] Wszystkie elementy UI zgodne ze stylistyką neon glow.
+
+
+
+6. Panel Ustawień (/settings)
+6.4. Zakładka: Rundy
+Ta zakładka umożliwia hostowi szczegółową konfigurację każdej z trzech rund gry (Eliminacje, Szybka Odpowiedź, Koło Fortuny), definiując ich unikalne zasady i parametry.
+6.4.1. Opis Funkcjonalności
+Zakładka "Rundy" będzie podzielona na trzy główne sekcje, po jednej dla każdej rundy. Użytkownik będzie mógł przełączać się między widokami rund za pomocą kart (tabs) lub przewijania.
+6.4.1.1. Runda 1: Eliminacje
+ * Cel: Konfiguracja rundy eliminacyjnej, gdzie gracze odpowiadają na pytania i tracą życie za błędne odpowiedzi.
+ * Elementy Konfiguracji:
+   * Aktywna Runda: Przełącznik (toggle switch) do aktywacji/deaktywacji tej rundy w bieżącej grze. Jeśli nieaktywna, gra przejdzie bezpośrednio do kolejnej aktywnej rundy.
+   * Czas na Pytanie (sekundy): Pole numeryczne lub suwak. Nadpisuje domyślny czas z "Ogólnych Ustawień Gry" tylko dla tej rundy.
+   * Liczba Pytań w Rundzie: Pole numeryczne. Określa, ile pytań zostanie zadanych w tej rundzie.
+   * Ilość Życia na Start: Pole numeryczne. Liczba "żyć", z którymi gracz rozpoczyna grę w tej rundzie. Jeśli 0, to ta runda działa jak "bez życia", ale nadal punkty za prawidłowe odpowiedzi.
+   * Losowanie Pytania:
+     * Aktywne losowanie kategorii: Przełącznik. Jeśli włączone, pytania będą losowane nie tylko z puli pytań dla Rundy 1, ale także z losowo wybranych kategorii. Host może podać listę kategorii, z których będą losowane pytania dla tej rundy.
+     * Kategorie do Losowania: Pole tekstowe (multi-select / tag input) do wyboru/dodawania kategorii z puli pytań (np. "Historia", "Geografia", "Film"). Jeśli aktywne losowanie kategorii jest wyłączone, pytania będą losowane ze wszystkich dostępnych kategorii dla Rundy 1.
+   * Próg Punktowy do Przejścia (opcjonalnie): Pole numeryczne. Jeśli ustawione, gracz musi osiągnąć X punktów, aby przejść do następnej rundy, niezależnie od życia (dodatkowa opcja zakończenia rundy).
+   * Karty Specjalne (przyznawanie):
+     * Przyznaj kartę co X pytań: Pole numeryczne. Określa, po ilu poprawnych odpowiedziach gracz otrzyma kartę.
+     * Lista Kart do Losowania: Multi-select / tag input. Wybór kart, które mogą być wylosowane i przyznane graczom w tej rundzie (z globalnej biblioteki kart).
+     * Talia Kart do Losowania: Dropdown z listą zdefiniowanych talii kart (z zakładki "Karty Specjalne"). Jeśli wybrana, nadpisuje "Listę Kart do Losowania".
+   * Pasek Postępu Rundy: Wizualizacja liczby pytań w rundzie i ile zostało zadanych.
+6.4.1.2. Runda 2: Szybka Odpowiedź
+ * Cel: Konfiguracja rundy, gdzie liczy się szybkość odpowiedzi.
+ * Elementy Konfiguracji:
+   * Aktywna Runda: Przełącznik (toggle switch).
+   * Czas na Pytanie (sekundy): Pole numeryczne lub suwak. Krótszy niż w Rundzie 1, np. 5-10 sekund.
+   * Typ Punktacji: Rozwijana lista (dropdown) z opcjami:
+     * Pierwszy poprawna odpowiedź: Tylko pierwszy gracz, który odpowie poprawnie, dostaje punkty.
+     * Wszyscy poprawni: Wszyscy gracze, którzy odpowiedzą poprawnie w limicie czasu, dostają punkty.
+   * Punkty za Poprawną Odpowiedź: Pole numeryczne. Ile punktów przyznawanych jest za poprawną odpowiedź.
+   * Penalizacja za Błędną Odpowiedź: Pole numeryczne (punkty do odjęcia) lub checkbox (brak).
+   * Brak Życia w tej rundzie: Checkbox (domyślnie zaznaczone). W tej rundzie gracze nie tracą życia za błędne odpowiedzi.
+   * Losowanie Pytania: Podobnie jak w Rundzie 1, z opcją wyboru kategorii dla szybkiej odpowiedzi.
+   * Karty Specjalne (przyznawanie): Tak samo jak w Rundzie 1, ale z dostosowaniem do charakteru rundy (np. za serie poprawnych odpowiedzi).
+6.4.1.3. Runda 3: Koło Fortuny
+ * Cel: Konfiguracja rundy z elementem losowości i potencjalnie wyższą punktacją.
+ * Elementy Konfiguracji:
+   * Aktywna Runda: Przełącznik (toggle switch).
+   * Czas na Pytanie (sekundy): Pole numeryczne lub suwak.
+   * Lista Kategorii na Kole: Lista konfigurowalnych segmentów koła. Dla każdego segmentu:
+     * Nazwa Kategorii: Pole tekstowe (np. "Historia", "Film", " "Szansa", "Bankrut").
+     * Punkty (za prawidłową odpowiedź): Pole numeryczne dla tej kategorii.
+     * Typ Segmentu: Rozwijana lista (dropdown) z opcjami: Kategoria, Szansa, Bankrut.
+       * Szansa: Dostępne pole numeryczne (np. +X punktów).
+       * Bankrut: Brak pola punktowego.
+   * Liczba Obrotów Koła: Pole numeryczne. Ile razy koło zostanie obrócone w rundzie.
+   * Gracz Kręcący Kołem:
+     * Losowy Gracz: Automatycznie wybiera losowego gracza.
+     * Gracz z najmniejszą liczbą punktów: Wybiera gracza z najniższym wynikiem (opcja "catch-up").
+     * Gracz z największą liczbą punktów: Wybiera gracza z najwyższym wynikiem (opcja "ryzykant").
+   * Karty Specjalne (przyznawanie): Tak samo jak w innych rundach, z dostosowaniem do charakteru rundy.
+   * Pytania: Pytania dla tej rundy są pobierane z globalnej puli pytań dla Rundy 3, przypisane do odpowiednich kategorii koła.
+6.4.2. Makieta UI Zakładki "Rundy" (Opis Tekstowy)
+Zakładka będzie miała trzy karty/przełączniki na górze, po jednej dla każdej rundy.
++-------------------------------------------------------------+
+| NAWIGACJA         |  RUNDY                                 |
+|                   |------------------------------------------|
+|                   |  [Karta: Runda 1: Eliminacje] [Karta: Runda 2: Szybka Odpowiedź] [Karta: Runda 3: Koło Fortuny]
+|                   |------------------------------------------|
+|                   |  (Wyświetla zawartość aktywnej karty)   |
+|                   |                                          |
+| [OGÓLNE]          |  --- ZAWARTOŚĆ DLA AKTYWNEJ KARTY (np. Runda 1) ---
+| [RUNDY]           |  [Nagłówek: Runda 1: Eliminacje]         |
+| [PYTANIA]         |  Aktywna Runda:       [Przełącznik ON/OFF]|
+| [KARTY SPEC.]     |  Czas na Pytanie (sek.): [Input num./Suwak]|
+| [WYGLĄD]          |  Liczba Pytań w Rundzie:  [Input num.]    |
+| [INTEGRACJE]      |  Ilość Życia na Start:   [Input num.]    |
+| [RANKING]         |                                          |
+| [ZAAWANSOWANE]    |  [Nagłówek: Losowanie Pytania]           |
+|                   |  Aktywne losowanie kategorii: [Przełącznik ON/OFF]|
+|                   |  Kategorie do Losowania: [Tag Input/Multi-select] |
+|                   |                                          |
+|                   |  [Nagłówek: Warunki Przejścia]           |
+|                   |  Próg Punktowy do Przejścia (opcjonalnie): [Input num.]|
+|                   |                                          |
+|                   |  [Nagłówek: Karty Specjalne]             |
+|                   |  Przyznaj kartę co X pytań: [Input num.]  |
+|                   |  Lista Kart do Losowania: [Tag Input/Multi-select] |
+|                   |  Lub Talia Kart do Losowania: [Dropdown]  |
+|                   |                                          |
+|                   |------------------------------------------|
+|                   |  [Przycisk: Zapisz Zmiany] [Przycisk: Anuluj] |
++-------------------------------------------------------------+
+
+6.4.3. Checklista Implementacji Zakładki "Rundy"
+ * [ ] Sekcja "Rundy" dostępna z nawigacji bocznej.
+ * [ ] Trzy przełączane karty/widoki dla Rundy 1, Rundy 2, Rundy 3.
+ * Dla każdej rundy:
+   * [ ] Przełącznik "Aktywna Runda".
+   * [ ] Pole numeryczne/suwak "Czas na Pytanie (sekundy)".
+   * [ ] Sekcja "Karty Specjalne" z opcją "Przyznaj kartę co X pytań" i "Listą/Talią Kart do Losowania".
+ * Dla Rundy 1 (Eliminacje):
+   * [ ] Pole numeryczne "Liczba Pytań w Rundzie".
+   * [ ] Pole numeryczne "Ilość Życia na Start".
+   * [ ] Przełącznik "Aktywne losowanie kategorii".
+   * [ ] Tag Input/Multi-select "Kategorie do Losowania" (warunkowo widoczne).
+   * [ ] Pole numeryczne "Próg Punktowy do Przejścia (opcjonalnie)".
+ * Dla Rundy 2 (Szybka Odpowiedź):
+   * [ ] Dropdown "Typ Punktacji" ("Pierwszy poprawna odpowiedź", "Wszyscy poprawni").
+   * [ ] Pole numeryczne "Punkty za Poprawną Odpowiedź".
+   * [ ] Pole numeryczne/checkbox "Penalizacja za Błędną Odpowiedź".
+   * [ ] Checkbox "Brak Życia w tej rundzie".
+ * Dla Rundy 3 (Koło Fortuny):
+   * [ ] Lista segmentów koła z możliwością dodawania/usuwania.
+   * [ ] Dla każdego segmentu: pola "Nazwa Kategorii", "Punkty", "Typ Segmentu" (Kategoria, Szansa, Bankrut).
+   * [ ] Warunkowe wyświetlanie pola punktów w zależności od typu segmentu.
+   * [ ] Pole numeryczne "Liczba Obrotów Koła".
+   * [ ] Dropdown "Gracz Kręcący Kołem" ("Losowy Gracz", "Gracz z najmniejszą liczbą punktów", "Gracz z największą liczbą punktów").
+ * [ ] Przycisk "Zapisz Zmiany" (zapis do bazy, synchronizacja przez WebSocket).
+ * [ ] Przycisk "Anuluj" (reset do ostatnio zapisanych).
+ * [ ] Walidacja pól (np. punkty > 0, liczba pytań > 0, poprawność kategorii).
+ * [ ] Wszystkie elementy UI zgodne ze stylistyką neon glow.
+
+
+
+
+6. Panel Ustawień (/settings)
+6.5. Zakładka: Gracze
+Ta zakładka umożliwia hostowi zarządzanie listą uczestników danej sesji gry. Pozwala na dodawanie nowych graczy, generowanie dla nich unikalnych linków do Paneli Gracza, oraz monitorowanie ich podstawowych danych.
+6.5.1. Opis Funkcjonalności
+ * Sekcja "Dodaj Nowego Gracza":
+   * Nazwa Gracza: Pole tekstowe, w którym host wpisuje nick gracza.
+   * Avatar URL (opcjonalnie): Pole tekstowe na URL do awatara gracza. Jeśli puste, używany będzie domyślny avatar.
+   * Kolor Gracza: Selektor kolorów (np. paleta predefiniowanych kolorów neonowych lub hex-picker). Ten kolor będzie używany jako akcent dla danego gracza na Overlayu i w Panelu Hosta.
+   * Stream URL (opcjonalnie): Pole tekstowe na link do streamu gracza (np. z VOD.ninja), używane do osadzania kamery gracza na Overlayu.
+   * Przycisk "Dodaj Gracza": Dodaje gracza do aktualnej sesji gry. Po dodaniu, gracz pojawia się na liście "Aktywni Gracze" i generowany jest dla niego unikalny link.
+ * Sekcja "Aktywni Gracze":
+   * Tabela lub lista wszystkich graczy dodanych do bieżącej sesji gry.
+   * Dla każdego gracza w liście:
+     * L.p.: Numer porządkowy.
+     * Avatar: Miniatura awatara gracza.
+     * Nick: Nazwa gracza (pole edytowalne po kliknięciu).
+     * Status: Ikona wskazująca, czy gracz jest online/offline (zielona/czerwona kropka) i czy jest wyeliminowany.
+     * Punkty: Aktualna liczba punktów gracza (pole edytowalne).
+     * Życie: Aktualna liczba żyć gracza (pole edytowalne).
+     * Link do Panelu Gracza: Przycisk "Kopiuj Link" (kopiuje unikalny URL Panelu Gracza do schowka).
+     * Karty Specjalne (lista): Lista posiadanych przez gracza kart z możliwością szybkiego dodawania/usuwania (np. małe ikony z krzyżykiem do usunięcia, + do dodania z rozwijanej listy).
+     * Akcje:
+       * Przycisk "Edytuj": (lub bezpośrednia edycja in-line) Umożliwia edycję podstawowych danych gracza.
+       * Przycisk "Resetuj Wyniki": Resetuje punkty i życie gracza do wartości początkowych dla tej sesji.
+       * Przycisk "Usuń Gracza": Usuwa gracza z sesji gry (wymaga potwierdzenia).
+ * Automatyczne usuwanie nieaktywnych graczy (opcjonalnie): Checkbox lub ustawienie globalne w sekcji "Zaawansowane", aby automatycznie usuwać graczy, którzy są offline przez określony czas.
+6.5.2. Makieta UI Zakładki "Gracze" (Opis Tekstowy)
++-------------------------------------------------------------+
+| NAWIGACJA         |  GRACZE                                |
+|                   |------------------------------------------|
+| [OGÓLNE]          |  [Nagłówek: Dodaj Nowego Gracza]         |
+| [RUNDY]           |  Nazwa Gracza:  [Pole tekstowe]           |
+| [PYTANIA]         |  Avatar URL:   [Pole tekstowe] (opcjonalnie) |
+| [KARTY SPEC.]     |  Kolor Gracza:  [Selektor Kolorów]        |
+| [WYGLĄD]          |  Stream URL:   [Pole tekstowe] (opcjonalnie) |
+| [INTEGRACJE]      |  [Przycisk: Dodaj Gracza]                |
+| [RANKING]         |                                          |
+| [ZAAWANSOWANE]    |  [Nagłówek: Aktywni Gracze]             |
+|                   |  --------------------------------------- |
+|                   |  | L.p. | Avatar | Nick    | Status | Punkty | Życie | Link | Karty | Akcje |
+|                   |  --------------------------------------- |
+|                   |  | 1    | [img]  | Anna    | [◉]    | 150    | 3     | [Copy] | [Ikonki+] | [Edytuj][Usuń] |
+|                   |  | 2    | [img]  | Tomek   | [◉]    | 120    | 2     | [Copy] | [Ikonki+] | [Edytuj][Usuń] |
+|                   |  | 3    | [img]  | ...     |        |        |       |        |           |         |
+|                   |  --------------------------------------- |
+|                   |                                          |
+|                   |  [Przycisk: Zapisz Zmiany] [Przycisk: Anuluj] |
++-------------------------------------------------------------+
+
+6.5.3. Checklista Implementacji Zakładki "Gracze"
+ * [ ] Sekcja "Gracze" dostępna z nawigacji bocznej.
+ * [ ] Sekcja "Dodaj Nowego Gracza" z polami: "Nazwa Gracza", "Avatar URL", "Kolor Gracza", "Stream URL".
+ * [ ] Przycisk "Dodaj Gracza", który dodaje nowego gracza i generuje unikalny link.
+ * [ ] Sekcja "Aktywni Gracze" jako lista/tabela.
+ * [ ] Dla każdego gracza na liście: wyświetlanie L.p., Avatara, Nicku, Statusu (online/offline), Punktów, Życia.
+ * [ ] Przycisk "Kopiuj Link" do Panelu Gracza dla każdego gracza.
+ * [ ] Wyświetlanie posiadanych kart specjalnych dla każdego gracza z możliwością dodawania/usuwania (przez hosta).
+ * [ ] Funkcjonalność edycji Nicku, Punktów, Życia gracza (in-line lub modal).
+ * [ ] Przycisk "Resetuj Wyniki" dla pojedynczego gracza.
+ * [ ] Przycisk "Usuń Gracza" z potwierdzeniem.
+ * [ ] Synchronizacja zmian statusu graczy (online/offline) w czasie rzeczywistym.
+ * [ ] Walidacja unikalności nicków graczy w jednej sesji.
+ * [ ] Obsługa pustych wartości dla opcjonalnych pól.
+ * [ ] Przycisk "Zapisz Zmiany" (zapis do bazy, synchronizacja przez WebSocket).
+ * [ ] Przycisk "Anuluj" (reset do ostatnio zapisanych).
+ * [ ] Wszystkie elementy UI zgodne ze stylistyką neon glow.
+
+
+
+
+6. Panel Ustawień (/settings)
+6.6. Zakładka: Pytania i Kategorie
+Ta zakładka jest sercem treści każdego teleturnieju. Umożliwia hostowi kompleksowe zarządzanie bazą pytań, ich kategoriami, poziomami trudności oraz import/eksport danych.
+6.6.1. Opis Funkcjonalności - Ogólne Zarządzanie Pytaniami
+Zakładka "Pytania i Kategorie" będzie domyślnie wyświetlać listę pytań z możliwością filtrowania i wyszukiwania. Będzie również zawierać opcje dodawania, edycji i usuwania pytań, a także zarządzania kategoriami.
+ * Pasek Filtrowania i Wyszukiwania:
+   * Wyszukiwarka: Pole tekstowe do wyszukiwania pytań po słowach kluczowych w treści pytania, opcjach lub odpowiedziach.
+   * Filtr po Rundzie: Rozwijana lista (dropdown) z opcjami "Wszystkie", "Runda 1: Eliminacje", "Runda 2: Szybka Odpowiedź", "Runda 3: Koło Fortuny". Umożliwia wyświetlanie pytań przypisanych do konkretnej rundy.
+   * Filtr po Kategorii: Rozwijana lista (dropdown) z listą wszystkich zdefiniowanych kategorii. Umożliwia wyświetlanie pytań z wybranej kategorii.
+   * Filtr po Trudności: Rozwijana lista (dropdown) z opcjami "Wszystkie", "Łatwe", "Średnie", "Trudne" (lub zakresy punktowe/trudności).
+   * Filtr po Statusie (Użyte/Nie użyte): Checkbox/przełącznik do filtrowania pytań, które zostały już użyte w bieżącej sesji gry, lub tych, które są jeszcze dostępne.
+   * Przycisk "Reset Filtrów": Czyści wszystkie aktywne filtry.
+ * Lista Pytań:
+   * Tabela lub lista pytań, wyświetlająca kluczowe informacje:
+     * ID: Unikalny identyfikator pytania.
+     * Treść Pytania: Krótki fragment treści.
+     * Runda: Runda, do której przypisane jest pytanie (np. "R1", "R2", "R3").
+     * Kategoria: Nazwa kategorii (np. "Historia", "Film").
+     * Trudność/Punkty: Poziom trudności lub domyślna liczba punktów.
+     * Status (Użyte): Ikona (np. zielony haczyk/czerwony krzyżyk) wskazująca, czy pytanie zostało użyte w bieżącej sesji.
+     * Akcje:
+       * Przycisk "Edytuj": Otwiera modal lub przenosi do widoku edycji pytania (szczegóły poniżej).
+       * Przycisk "Usuń": Usuwa pytanie z bazy (wymaga potwierdzenia).
+ * Paginacja i Liczba Pytań:
+   * Informacja o łącznej liczbie pytań i liczbie pytań spełniających kryteria filtrowania.
+   * Standardowa paginacja dla nawigacji po długiej liście pytań.
+ * Przycisk "Dodaj Nowe Pytanie": Otwiera modal lub widok do tworzenia nowego pytania (szczegóły poniżej).
+ * Import/Eksport Pytań:
+   * Przycisk "Importuj Pytania": Otwiera modal z opcjami importu:
+     * Wybór Pliku: Przycisk Przeglądaj... dla pliku CSV lub JSON.
+     * Format Danych: Dropdown "CSV", "JSON".
+     * Tryb Importu: Checkbox/radio button:
+       * Dodaj nowe pytania: Nowe pytania zostaną dodane do bazy.
+       * Nadpisz istniejące (po ID): Pytania o istniejących ID zostaną zaktualizowane.
+     * Przycisk "Rozpocznij Import":
+     * Wizualny Feedback: Pasek postępu, komunikat o sukcesie/błędzie importu, liczba zaimportowanych/pominiętych pytań.
+   * Przycisk "Eksportuj Pytania": Otwiera modal z opcjami eksportu:
+     * Format Eksportu: Dropdown "CSV", "JSON".
+     * Filtr Rundy: Opcjonalny dropdown do eksportu pytań tylko z konkretnej rundy.
+     * Filtr Kategorii: Opcjonalny dropdown do eksportu pytań tylko z konkretnej kategorii.
+     * Przycisk "Generuj i Pobierz": Rozpoczyna pobieranie pliku.
+ * Przycisk "Resetuj Statusy Pytań": Resetuje flagę "Użyte" dla wszystkich pytań w bazie, oznaczając je jako ponownie dostępne. (Wymaga potwierdzenia).
+6.6.2. Makieta UI Zakładki "Pytania i Kategorie" (Opis Tekstowy)
++-------------------------------------------------------------+
+| NAWIGACJA         |  PYTANIA I KATEGORIE                    |
+|                   |------------------------------------------|
+| [OGÓLNE]          |  [Nagłówek: Filtrowanie i Wyszukiwanie] |
+| [RUNDY]           |  Wyszukaj:    [Pole tekstowe]            |
+| [PYTANIA]         |  Runda:       [Dropdown]  Kategoria: [Dropdown] |
+| [KARTY SPEC.]     |  Trudność:    [Dropdown]  Użyte:     [Checkbox]  [Przycisk: Reset Filtrów]|
+| [WYGLĄD]          |                                          |
+| [INTEGRACJE]      |  [Nagłówek: Lista Pytań]                 |
+| [RANKING]         |  (X pytań / Y pasujących)                |
+| [ZAAWANSOWANE]    |  --------------------------------------- |
+|                   |  | ID    | Treść Pytania | Runda | Kategoria | Trudność | Użyte | Akcje   |
+|                   |  --------------------------------------- |
+|                   |  | Q001  | Jaki jest ... | R1    | Historia  | 10       | [✓]   | [Edit][Del] |
+|                   |  | Q002  | Która rzeka...| R2    | Geografia | 5        | [ ]   | [Edit][Del] |
+|                   |  | ...   |               |       |           |          |       |         |
+|                   |  --------------------------------------- |
+|                   |  [Paginacja: << 1 2 3 >>]                |
+|                   |                                          |
+|                   |  [Przycisk: Dodaj Nowe Pytanie]          |
+|                   |  [Przycisk: Importuj Pytania]           |
+|                   |  [Przycisk: Eksportuj Pytania]          |
+|                   |  [Przycisk: Resetuj Statusy Pytań]      |
+|                   |------------------------------------------|
+|                   |  [Przycisk: Zapisz Zmiany] [Przycisk: Anuluj] |
++-------------------------------------------------------------+
+
+6.6.3. Checklista Implementacji Zakładki "Pytania i Kategorie" - Ogólne
+ * [ ] Sekcja "Pytania i Kategorie" dostępna z nawigacji bocznej.
+ * [ ] Pasek filtrowania z polem wyszukiwania, filtrami po rundzie, kategorii, trudności i statusie "Użyte".
+ * [ ] Przycisk "Reset Filtrów".
+ * [ ] Wyświetlanie listy pytań w tabeli/liście z kolumnami: ID, Treść, Runda, Kategoria, Trudność, Status.
+ * [ ] Przycisk "Edytuj" dla każdego pytania.
+ * [ ] Przycisk "Usuń" dla każdego pytania z potwierdzeniem.
+ * [ ] Paginacja dla listy pytań.
+ * [ ] Wyświetlanie liczby pytań ogólnej i po filtrowaniu.
+ * [ ] Przycisk "Dodaj Nowe Pytanie".
+ * [ ] Przycisk "Importuj Pytania" z modalem wyboru pliku, formatu i trybu importu (dodaj/nadpisz).
+ * [ ] Przycisk "Eksportuj Pytania" z modalem wyboru formatu i filtrów eksportu.
+ * [ ] Przycisk "Resetuj Statusy Pytań" z potwierdzeniem.
+ * [ ] Przycisk "Zapisz Zmiany" (zapis do bazy, synchronizacja przez WebSocket).
+ * [ ] Przycisk "Anuluj" (reset do ostatnio zapisanych).
+ * [ ] Wszystkie elementy UI zgodne ze stylistyką neon glow.
+6.6.4. Opis Funkcjonalności - Dodawanie/Edycja Pytania (Modal lub Widok)
+Po kliknięciu "Dodaj Nowe Pytanie" lub "Edytuj" otworzy się modal lub zostanie wyświetlony dedykowany widok z formularzem.
+ * Pola formularza:
+   * Typ Pytania: Rozwijana lista (dropdown) z opcjami:
+     * Wielokrotnego Wyboru: Domyślny. Wymaga podania opcji i poprawnej odpowiedzi.
+     * Otwarta: Wymaga podania poprawnej odpowiedzi jako tekstu.
+     * Prawda/Fałsz: Dwa przyciski radiowe dla True/False i wskazanie poprawnej.
+   * Treść Pytania: Duże pole tekstowe (<textarea>) dla pełnej treści pytania.
+   * Opcje Odpowiedzi (dla Wielokrotnego Wyboru):
+     * Lista pól tekstowych (np. 2-6 pól).
+     * Przycisk Dodaj Opcję, Usuń Opcję.
+     * Radio button obok każdego pola, aby zaznaczyć poprawną odpowiedź.
+   * Poprawna Odpowiedź (dla Otwartej / Prawda/Fałsz):
+     * Dla otwartej: Pole tekstowe.
+     * Dla Prawda/Fałsz: Radio buttony Prawda / Fałsz.
+   * Runda: Rozwijana lista (dropdown) do przypisania pytania do konkretnej rundy (R1, R2, R3). Pytanie może być przypisane tylko do jednej rundy.
+   * Kategoria: Pole tekstowe z autosugestią lub rozwijana lista z możliwością dodania nowej kategorii na miejscu.
+   * Trudność / Punkty: Pole numeryczne lub suwak. Może być interpretowane jako punkty, które można zdobyć za to pytanie.
+   * Limit Czasu (sekundy, opcjonalnie): Pole numeryczne. Domyślny czas na odpowiedź dla tego pytania, nadpisujący ustawienie rundy.
+   * Podpowiedzi (opcjonalnie):
+     * Lista pól tekstowych.
+     * Przycisk Dodaj Podpowiedź, Usuń Podpowiedź.
+     * Host może dodawać wiele podpowiedzi, które będą ujawniane stopniowo.
+   * Tagi (opcjonalnie): Pole tekstowe (tag input) do dodawania słów kluczowych do pytania.
+   * Status (Użyte/Nie użyte): Checkbox do ręcznej zmiany statusu pytania.
+   * ID Pytania: (Tylko do wyświetlenia w trybie edycji, nieedytowalne) Unikalne ID pytania.
+ * Przyciski Akcji (na dole modala/widoku):
+   * Zapisz Pytanie: Zapisuje nowe lub zaktualizowane pytanie do bazy danych.
+   * Anuluj: Zamyka modal/widok bez zapisywania zmian.
+6.6.5. Makieta UI Dodawania/Edycji Pytania (Opis Tekstowy - Modal)
++-------------------------------------------------------------+
+| DODAJ / EDYTUJ PYTANIE                                     |
+|-------------------------------------------------------------|
+| Typ Pytania:   [Dropdown: Wielokrotnego Wyboru / Otwarta / Prawda/Fałsz] |
+|                                                             |
+| Treść Pytania:                                              |
+| [Duże pole tekstowe (textarea)]                             |
+|                                                             |
+| [Nagłówek: Opcje Odpowiedzi (dla Wielokrotnego Wyboru)]     |
+| [Radio] [Pole tekstowe: Opcja A] [Przycisk: Usuń]           |
+| [Radio] [Pole tekstowe: Opcja B] [Przycisk: Usuń]           |
+| [Przycisk: Dodaj Opcję]                                     |
+|                                                             |
+| [Nagłówek: Poprawna Odpowiedź (dla Otwartej / Prawda/Fałsz)]|
+| [Pole tekstowe dla Otwartej lub Radio buttony dla P/F]      |
+|                                                             |
+| Runda:         [Dropdown: R1 / R2 / R3]                     |
+| Kategoria:     [Dropdown/Input tekstowy z autosugestią]    |
+| Trudność/Punkty: [Input numeryczny/Suwak]                   |
+| Limit Czasu (sek.): [Input numeryczny] (opcjonalnie)        |
+|                                                             |
+| [Nagłówek: Podpowiedzi]                                     |
+| [Pole tekstowe: Podpowiedź 1] [Przycisk: Usuń]              |
+| [Przycisk: Dodaj Podpowiedź]                                |
+|                                                             |
+| Tagi:          [Tag Input] (opcjonalnie)                    |
+| Status Użycia: [Checkbox: Użyte]                            |
+|                                                             |
+|-------------------------------------------------------------|
+| [Przycisk: Zapisz Pytanie] [Przycisk: Anuluj]              |
++-------------------------------------------------------------+
+
+6.6.6. Checklista Implementacji Dodawania/Edycji Pytania
+ * [ ] Modal/widok dodawania/edycji pytania uruchamiany z listy pytań.
+ * [ ] Dropdown "Typ Pytania" z opcjami "Wielokrotnego Wyboru", "Otwarta", "Prawda/Fałsz".
+ * [ ] Dynamiczne dostosowywanie formularza w zależności od wybranego typu pytania (pola opcji vs. pole poprawnej odpowiedzi).
+ * [ ] Pole tekstowe Treść Pytania.
+ * [ ] Sekcja "Opcje Odpowiedzi" z możliwością dodawania/usuwania pól i zaznaczania poprawnej odpowiedzi dla typu "Wielokrotnego Wyboru".
+ * [ ] Pole Poprawna Odpowiedź (tekstowe lub radio buttony) dla typów "Otwarta" i "Prawda/Fałsz".
+ * [ ] Dropdown "Runda" do przypisania pytania.
+ * [ ] Pole Kategoria (dropdown z istniejącymi + możliwość dodania nowej).
+ * [ ] Pole numeryczne/suwak "Trudność/Punkty".
+ * [ ] Pole numeryczne "Limit Czasu" (opcjonalne, nadpisujące).
+ * [ ] Sekcja "Podpowiedzi" z możliwością dodawania wielu podpowiedzi.
+ * [ ] Pole Tagów (tag input).
+ * [ ] Checkbox "Status Użycia".
+ * [ ] Przycisk "Zapisz Pytanie" (walidacja danych, zapis do bazy, obsługa API POST /api/questions lub PATCH /api/questions/:id).
+ * [ ] Przycisk "Anuluj".
+ * [ ] Walidacja wszystkich pól formularza (np. niepuste pola, poprawne formaty URL).
+ * [ ] Obsługa komunikatów o sukcesie/błędzie po zapisie.
+ * [ ] Wszystkie elementy UI zgodne ze stylistyką neon glow.
+
+
+
+6. Panel Ustawień (/settings)
+6.7. Zakładka: Karty Specjalne
+Ta zakładka umożliwia hostowi definiowanie i zarządzanie wszystkimi dostępnymi w grze kartami specjalnymi oraz tworzenie z nich talii. Karty te dodają element strategii i interakcji, wpływając na przebieg rozgrywki.
+6.7.1. Opis Funkcjonalności - Biblioteka Kart
+Ta sekcja służy do definiowania unikalnych kart, ich efektów i wizualizacji.
+ * Pasek Filtrowania i Wyszukiwania:
+   * Wyszukiwarka: Pole tekstowe do wyszukiwania kart po nazwie lub opisie.
+   * Filtr po Typie Efektu: Rozwijana lista (dropdown) z predefiniowanymi typami efektów (np. "Punkty", "Życie", "Timer", "Pytanie", "Gracz").
+   * Przycisk "Reset Filtrów": Czyści filtry.
+ * Lista Zdefiniowanych Kart:
+   * Tabela lub lista kart, wyświetlająca kluczowe informacje:
+     * Ikona Karty: Mała ikona reprezentująca kartę.
+     * Nazwa Karty: Nazwa karty.
+     * Opis: Krótki opis działania karty.
+     * Typ Efektu: Główna kategoria działania karty.
+     * Akcje:
+       * Przycisk "Edytuj": Otwiera modal lub widok edycji karty (szczegóły poniżej).
+       * Przycisk "Usuń": Usuwa kartę z biblioteki (wymaga potwierdzenia, sprawdzając, czy karta nie jest używana w żadnej aktywnej talii).
+ * Paginacja: Standardowa paginacja dla nawigacji po długiej liście kart.
+ * Przycisk "Dodaj Nową Kartę": Otwiera modal lub widok do tworzenia nowej definicji karty (szczegóły poniżej).
+6.7.2. Makieta UI Zakładki "Karty Specjalne" - Biblioteka Kart (Opis Tekstowy)
++-------------------------------------------------------------+
+| NAWIGACJA         |  KARTY SPECJALNE                        |
+|                   |------------------------------------------|
+| [OGÓLNE]          |  [Karta: Biblioteka Kart] [Karta: Talie Kart]
+| [RUNDY]           |------------------------------------------|
+| [PYTANIA]         |  [Nagłówek: Biblioteka Kart]             |
+| [KARTY SPEC.] <---|  Wyszukaj:    [Pole tekstowe]           |
+| [WYGLĄD]          |  Typ Efektu: [Dropdown]  [Przycisk: Reset Filtrów]|
+| [INTEGRACJE]      |                                          |
+| [RANKING]         |  [Nagłówek: Lista Kart]                  |
+| [ZAAWANSOWANE]    |  --------------------------------------- |
+|                   |  | Ikona | Nazwa Karty | Opis        | Typ Efektu | Akcje   |
+|                   |  --------------------------------------- |
+|                   |  | [img] | Turbo       | Podwaja punkty | Punkty     | [Edit][Del] |
+|                   |  | [img] | Dejavu      | Powtarza pytanie | Pytanie   | [Edit][Del] |
+|                   |  | ...   |             |             |            |         |
+|                   |  --------------------------------------- |
+|                   |  [Paginacja: << 1 2 3 >>]                |
+|                   |                                          |
+|                   |  [Przycisk: Dodaj Nową Kartę]            |
+|                   |------------------------------------------|
+|                   |  [Przycisk: Zapisz Zmiany] [Przycisk: Anuluj] |
++-------------------------------------------------------------+
+
+6.7.3. Checklista Implementacji Zakładki "Karty Specjalne" - Biblioteka Kart
+ * [ ] Sekcja "Karty Specjalne" dostępna z nawigacji bocznej.
+ * [ ] Dwie przełączane karty/widoki: "Biblioteka Kart" i "Talie Kart".
+ * [ ] Pasek filtrowania z polem wyszukiwania i filtrem po typie efektu.
+ * [ ] Wyświetlanie listy zdefiniowanych kart w tabeli/liście z ikoną, nazwą, opisem i typem efektu.
+ * [ ] Przycisk "Edytuj" dla każdej karty.
+ * [ ] Przycisk "Usuń" dla każdej karty z potwierdzeniem i walidacją użycia w taliach.
+ * [ ] Paginacja dla listy kart.
+ * [ ] Przycisk "Dodaj Nową Kartę".
+ * [ ] Przycisk "Zapisz Zmiany" (zapis do bazy, synchronizacja przez WebSocket).
+ * [ ] Przycisk "Anuluj" (reset do ostatnio zapisanych).
+ * [ ] Wszystkie elementy UI zgodne ze stylistyką neon glow.
+6.7.4. Opis Funkcjonalności - Dodawanie/Edycja Karty (Modal lub Widok)
+Po kliknięciu "Dodaj Nową Kartę" lub "Edytuj" otworzy się modal lub zostanie wyświetlony dedykowany widok z formularzem.
+ * Pola formularza:
+   * Nazwa Karty: Pole tekstowe (np. "Turbo", "Dejavu", "Skip").
+   * Opis Karty: Duże pole tekstowe (<textarea>) z dokładnym opisem działania karty dla hosta i gracza.
+   * Ikona Karty (URL): Pole tekstowe na URL do ikony karty, która będzie wyświetlana na panelach.
+   * Typ Efektu: Rozwijana lista (dropdown) z predefiniowanymi typami:
+     * Punkty: (np. dodaje/odejmuje punkty)
+     * Życie: (np. dodaje/odejmuje życie)
+     * Timer: (np. dodaje/odejmuje czas)
+     * Pytanie: (np. zmienia pytanie, powtarza pytanie)
+     * Gracz: (np. eliminuje gracza, przenosi efekty)
+     * Inne: Dla niestandardowych, złożonych efektów.
+   * JavaScript Hook (Kod Efektu): Duże pole tekstowe (<textarea>) z edytorem kodu (np. Monaco Editor, z podświetlaniem składni JS). To jest najważniejsze pole, definiujące logikę działania karty. Backend wykona ten kod w bezpiecznym środowisku.
+     * Dostępne predefiniowane globalne API (np. api.addPoints(playerId, amount), api.removeLife(playerId, percentage), api.changeTimer(newTime), api.getQuestion(), api.eliminatePlayer(playerId)).
+     * Przykładowy kod dla "Turbo":
+       // Karta Turbo: podwaja punkty za następną poprawną odpowiedź gracza
+// Wykonuje się na graczu, który użył karty
+api.setPlayerEffect(player.id, "doubleNextPoints", { duration: 1 });
+api.sendNotification("Gracz " + player.name + " użył karty TURBO!");
+api.playOverlayAnimation("turbo_effect");
+api.playOverlaySound("turbo_sound");
+
+   * Dźwięk Aktywacji (ID/URL): Pole tekstowe na ID/URL pliku dźwiękowego, który zostanie odtworzony na Overlayu po aktywacji karty.
+   * Animacja Aktywacji (ID/URL): Pole tekstowe na ID/URL pliku animacji (np. GIF, WebM) lub predefiniowany ID animacji z biblioteki Overlayu, która zostanie odtworzona na Overlayu po aktywacji karty.
+   * Domyślna Ilość w Talii: Pole numeryczne. Sugerowana domyślna liczba kopii tej karty przy tworzeniu nowej talii.
+   * Przycisk "Testuj Efekt": Opcjonalnie. Po kliknięciu uruchamia symulację efektu karty w środowisku testowym lub wyświetla podgląd animacji/dźwięku.
+ * Przyciski Akcji (na dole modala/widoku):
+   * Zapisz Kartę: Zapisuje nową lub zaktualizowaną definicję karty do bazy danych.
+   * Anuluj: Zamyka modal/widok bez zapisywania zmian.
+6.7.5. Makieta UI Dodawania/Edycji Karty (Opis Tekstowy - Modal)
++-------------------------------------------------------------+
+| DODAJ / EDYTUJ KARTĘ SPECJALNĄ                            |
+|-------------------------------------------------------------|
+| Nazwa Karty:    [Pole tekstowe]                             |
+| Opis Karty:     [Duże pole tekstowe (textarea)]             |
+| Ikona Karty (URL): [Pole tekstowe]                          |
+| Typ Efektu:     [Dropdown: Punkty / Życie / Timer / Pytanie / Gracz / Inne] |
+|                                                             |
+| [Nagłówek: Kod Efektu (JavaScript Hook)]                    |
+| [Duże pole tekstowe (textarea) z edytorem kodu]             |
+|                                                             |
+| Dźwięk Aktywacji (ID/URL): [Pole tekstowe]                  |
+| Animacja Aktywacji (ID/URL): [Pole tekstowe]                |
+| Domyślna Ilość w Talii: [Pole numeryczne]                   |
+|                                                             |
+| [Przycisk: Testuj Efekt (opcjonalnie)]                      |
+|                                                             |
+|-------------------------------------------------------------|
+| [Przycisk: Zapisz Kartę] [Przycisk: Anuluj]                |
++-------------------------------------------------------------+
+
+6.7.6. Checklista Implementacji Dodawania/Edycji Karty
+ * [ ] Modal/widok dodawania/edycji karty uruchamiany z "Biblioteki Kart".
+ * [ ] Pola: "Nazwa Karty", "Opis Karty", "Ikona Karty (URL)".
+ * [ ] Dropdown "Typ Efektu".
+ * [ ] Edytor kodu dla "JavaScript Hook" z podświetlaniem składni.
+ * [ ] Pola "Dźwięk Aktywacji (ID/URL)" i "Animacja Aktywacji (ID/URL)".
+ * [ ] Pole numeryczne "Domyślna Ilość w Talii".
+ * [ ] Przycisk "Testuj Efekt" (opcjonalnie, do MVP niekoniecznie).
+ * [ ] Przycisk "Zapisz Kartę" (walidacja, zapis do bazy, obsługa API POST /api/cards lub PATCH /api/cards/:id).
+ * [ ] Przycisk "Anuluj".
+ * [ ] Walidacja pól (np. niepuste pola, poprawne formaty URL).
+ * [ ] Obsługa komunikatów o sukcesie/błędzie po zapisie.
+ * [ ] Wszystkie elementy UI zgodne ze stylistyką neon glow.
+6.7.7. Opis Funkcjonalności - Talie Kart
+Ta sekcja służy do grupowania zdefiniowanych kart w talie, które mogą być używane w różnych rundach gry.
+ * Pasek Filtrowania i Wyszukiwania:
+   * Wyszukiwarka: Pole tekstowe do wyszukiwania talii po nazwie.
+   * Przycisk "Reset Filtrów": Czyści filtry.
+ * Lista Zdefiniowanych Talii:
+   * Tabela lub lista talii, wyświetlająca kluczowe informacje:
+     * Nazwa Talii: Nazwa talii.
+     * Opis: Krótki opis (opcjonalnie).
+     * Liczba Unikalnych Kart: Ile różnych typów kart jest w talii.
+     * Łączna Liczba Kart: Całkowita liczba kart w talii (uwzględniając duplikaty).
+     * Akcje:
+       * Przycisk "Edytuj": Otwiera modal lub widok edycji talii (szczegóły poniżej).
+       * Przycisk "Usuń": Usuwa talię z biblioteki (wymaga potwierdzenia).
+ * Paginacja: Standardowa paginacja.
+ * Przycisk "Dodaj Nową Talię": Otwiera modal lub widok do tworzenia nowej talii.
+6.7.8. Makieta UI Zakładki "Karty Specjalne" - Talie Kart (Opis Tekstowy)
++-------------------------------------------------------------+
+| NAWIGACJA         |  KARTY SPECJALNE                        |
+|                   |------------------------------------------|
+| [OGÓLNE]          |  [Karta: Biblioteka Kart] [Karta: Talie Kart]
+| [RUNDY]           |------------------------------------------|
+| [PYTANIA]         |  [Nagłówek: Talie Kart]                  |
+| [KARTY SPEC.] <---|  Wyszukaj:    [Pole tekstowe]           |
+| [WYGLĄD]          |  [Przycisk: Reset Filtrów]               |
+| [INTEGRACJE]      |                                          |
+| [RANKING]         |  [Nagłówek: Lista Talii]                 |
+| [ZAAWANSOWANE]    |  --------------------------------------- |
+|                   |  | Nazwa Talii | Opis       | Unikalne Karty | Łączna Liczba | Akcje   |
+|                   |  --------------------------------------- |
+|                   |  | Talia Startowa | Podstawowe | 5             | 10           | [Edit][Del] |
+|                   |  | Talia Bonusowa | Za serie   | 3             | 6            | [Edit][Del] |
+|                   |  | ...            |            |               |              |         |
+|                   |  --------------------------------------- |
+|                   |  [Paginacja: << 1 2 3 >>]                |
+|                   |                                          |
+|                   |  [Przycisk: Dodaj Nową Talię]            |
+|                   |------------------------------------------|
+|                   |  [Przycisk: Zapisz Zmiany] [Przycisk: Anuluj] |
++-------------------------------------------------------------+
+
+6.7.9. Checklista Implementacji Zakładki "Karty Specjalne" - Talie Kart
+ * [ ] Sekcja "Talie Kart" dostępna jako karta w zakładce "Karty Specjalne".
+ * [ ] Pasek filtrowania z polem wyszukiwania.
+ * [ ] Wyświetlanie listy zdefiniowanych talii w tabeli/liście z nazwą, opisem, liczbą unikalnych kart i łączną liczbą kart.
+ * [ ] Przycisk "Edytuj" dla każdej talii.
+ * [ ] Przycisk "Usuń" dla każdej talii z potwierdzeniem.
+ * [ ] Paginacja dla listy talii.
+ * [ ] Przycisk "Dodaj Nową Talię".
+ * [ ] Przycisk "Zapisz Zmiany" (zapis do bazy, synchronizacja przez WebSocket).
+ * [ ] Przycisk "Anuluj" (reset do ostatnio zapisanych).
+ * [ ] Wszystkie elementy UI zgodne ze stylistyką neon glow.
+6.7.10. Opis Funkcjonalności - Dodawanie/Edycja Talii Kart (Modal lub Widok)
+Po kliknięciu "Dodaj Nową Talię" lub "Edytuj" otworzy się modal lub zostanie wyświetlony dedykowany widok z formularzem.
+ * Pola formularza:
+   * Nazwa Talii: Pole tekstowe.
+   * Opis Talii (opcjonalnie): Pole tekstowe.
+   * Karty w Talii:
+     * Sekcja z listą kart wchodzących w skład talii.
+     * Dla każdej karty:
+       * Nazwa Karty (link do edycji definicji karty lub tooltip z opisem).
+       * Ilość: Pole numeryczne do określenia liczby egzemplarzy tej karty w talii.
+       * Przycisk Usuń (usuwa kartę z tej talii).
+     * Przycisk "Dodaj Kartę do Talii": Otwiera modal/dropdown z listą wszystkich dostępnych kart z "Biblioteki Kart". Po wybraniu, karta dodawana jest do listy z domyślną ilością.
+ * Przyciski Akcji (na dole modala/widoku):
+   * Zapisz Talię: Zapisuje nową lub zaktualizowaną talię do bazy danych.
+   * Anuluj: Zamyka modal/widok bez zapisywania zmian.
+6.7.11. Makieta UI Dodawania/Edycji Talii Kart (Opis Tekstowy - Modal)
++-------------------------------------------------------------+
+| DODAJ / EDYTUJ TALIĘ KART                                 |
+|-------------------------------------------------------------|
+| Nazwa Talii:    [Pole tekstowe]                             |
+| Opis Talii:     [Pole tekstowe] (opcjonalnie)               |
+|                                                             |
+| [Nagłówek: Karty w Talii]                                   |
+| -----------------------------------------                   |
+| | Nazwa Karty    | Ilość | Akcje    |                      |
+| -----------------------------------------                   |
+| | Turbo          | [ 3 ] | [Usuń]   |                      |
+| | Dejavu         | [ 2 ] | [Usuń]   |                      |
+| | ...            |       |          |                      |
+| -----------------------------------------                   |
+| [Przycisk: Dodaj Kartę do Talii]                           |
+|                                                             |
+|-------------------------------------------------------------|
+| [Przycisk: Zapisz Talię] [Przycisk: Anuluj]                |
++-------------------------------------------------------------+
+
+6.7.12. Checklista Implementacji Dodawania/Edycji Talii Kart
+ * [ ] Modal/widok dodawania/edycji talii uruchamiany z listy talii.
+ * [ ] Pola: "Nazwa Talii", "Opis Talii".
+ * [ ] Sekcja "Karty w Talii" z listą dodanych kart.
+ * [ ] Dla każdej karty w talii: wyświetlanie nazwy i pola numerycznego "Ilość".
+ * [ ] Przycisk "Usuń" dla każdej karty w talii.
+ * [ ] Przycisk "Dodaj Kartę do Talii", który otwiera selektor kart z "Biblioteki Kart".
+ * [ ] Przycisk "Zapisz Talię" (walidacja, zapis do bazy, obsługa API POST /api/card-decks lub PATCH /api/card-decks/:id).
+ * [ ] Przycisk "Anuluj".
+ * [ ] Walidacja pól (np. niepuste pola, ilość > 0).
+ * [ ] Obsługa komunikatów o sukcesie/błędzie po zapisie.
+ * [ ] Wszystkie elementy UI zgodne ze stylistyką neon glow.
+
+
+
+
+
+6. Panel Ustawień (/settings)
+6.8. Zakładka: Wygląd
+Ta zakładka umożliwia hostowi personalizację wizualnych aspektów gry, wpływając na wygląd OBS Overlay oraz paneli graczy. Pozwala na zmianę kolorów, czcionek, tła i innych elementów graficznych, a także zarządzanie zasobami multimedialnymi.
+6.8.1. Opis Funkcjonalności
+Zakładka "Wygląd" będzie podzielona na kilka sekcji, każda dedykowana innym aspektom wizualnym.
+ * Sekcja: Kolory Dominujące
+   * Kolory Neonowe: Paleta 3-5 predefiniowanych kolorów neonowych (np. turkus, róż, fiolet, zieleń), z możliwością edycji wartości HEX dla każdego z nich. Kolory te będą używane do dynamicznego podświetlania elementów UI, obramowań, tekstu glow itp.
+     * Dla każdego koloru: Pole wejściowe HEX (#RRGGBB) i wizualny selektor kolorów.
+   * Kolor Akcentu: Pojedynczy selektor kolorów, który będzie używany jako główny kolor akcentu dla niektórych elementów (np. paski postępu, wyróżnienia).
+   * Kolor Tła: Selektor kolorów dla ogólnego tła paneli i overlayu.
+ * Sekcja: Czcionki
+   * Czcionka Nagłówków: Rozwijana lista (dropdown) z predefiniowanymi czcionkami Google Fonts (np. Montserrat, Orbitron, Rajdhani) lub możliwość wklejenia URL do niestandardowej czcionki. Podgląd czcionki obok wyboru.
+   * Czcionka Treści: Rozwijana lista (dropdown) z predefiniowanymi czcionkami (np. Inter, Open Sans). Podgląd czcionki.
+ * Sekcja: Tła i Grafiki
+   * Główne Tło Overlayu (URL): Pole tekstowe na URL do obrazu lub wideo, które będzie używane jako tło Overlayu. Podgląd obrazu/wideo.
+   * Tło Lobby (URL): Pole tekstowe na URL do obrazu lub wideo, które będzie używane jako tło podczas fazy Lobby. Podgląd.
+   * Logo Gry (URL): Pole tekstowe na URL do pliku graficznego (PNG/SVG) z logo gry. Podgląd logo.
+   * Domyślny Avatar Gracza (URL): Pole tekstowe na URL do domyślnego awatara dla graczy bez własnego. Podgląd.
+   * Domyślna Ikona Karty (URL): Pole tekstowe na URL do domyślnej ikony dla kart bez własnej. Podgląd.
+ * Sekcja: Multimedia (Dźwięki i Animacje)
+   * Dźwięki Systemowe:
+     * Lista predefiniowanych dźwięków (np. start_round.mp3, correct_answer.wav, wrong_answer.wav, timer_warning.mp3).
+     * Dla każdego dźwięku: Pole tekstowe na URL do pliku audio i przycisk Odtwórz (do podglądu).
+     * Możliwość dodania niestandardowego dźwięku (pole na nazwę i URL).
+   * Animacje Systemowe:
+     * Lista predefiniowanych animacji (np. correct_animation.gif, wrong_animation.webm, card_glow.gif).
+     * Dla każdej animacji: Pole tekstowe na URL do pliku animacji i przycisk Podgląd.
+     * Możliwość dodania niestandardowej animacji (pole na nazwę i URL).
+ * Podgląd na Żywo / Zastosuj:
+   * Miniatura Overlayu/Paneli: Mały, interaktywny podgląd (lub renderowanie) tego, jak wprowadzone zmiany wpłyną na wygląd Overlayu lub Paneli.
+   * Przycisk "Zastosuj Zmiany": Natychmiast aplikuje wszystkie zmiany wizualne do wszystkich aktywnych paneli i overlayu (synchronizacja poprzez WebSocket). W tym przypadku, nie ma przycisku "Anuluj" dla tej zakładki, ponieważ zmiany są wizualne i mogą być od razu podglądane.
+6.8.2. Makieta UI Zakładki "Wygląd" (Opis Tekstowy)
++-------------------------------------------------------------+
+| NAWIGACJA         |  WYGLĄD                                |
+|                   |------------------------------------------|
+| [OGÓLNE]          |  [Nagłówek: Kolory Dominujące]           |
+| [RUNDY]           |  Kolory Neonowe:                         |
+| [PYTANIA]         |    Kolor 1: [HEX Input] [Kolor Picker]   |
+| [KARTY SPEC.]     |    Kolor 2: [HEX Input] [Kolor Picker]   |
+| [WYGLĄD] <--------|    ...                                   |
+| [INTEGRACJE]      |  Kolor Akcentu: [HEX Input] [Kolor Picker]|
+| [RANKING]         |  Kolor Tła:     [HEX Input] [Kolor Picker]|
+| [ZAAWANSOWANE]    |                                          |
+|                   |  [Nagłówek: Czcionki]                    |
+|                   |  Czcionka Nagłówków: [Dropdown/URL Input] [Podgląd: Abc] |
+|                   |  Czcionka Treści:    [Dropdown] [Podgląd: Abc] |
+|                   |                                          |
+|                   |  [Nagłówek: Tła i Grafiki]               |
+|                   |  Główne Tło Overlayu (URL): [Pole tekstowe] [Podgląd] |
+|                   |  Tło Lobby (URL):       [Pole tekstowe] [Podgląd] |
+|                   |  Logo Gry (URL):        [Pole tekstowe] [Podgląd] |
+|                   |  Domyślny Avatar Gracza (URL): [Pole tekstowe] [Podgląd] |
+|                   |  Domyślna Ikona Karty (URL):   [Pole tekstowe] [Podgląd] |
+|                   |                                          |
+|                   |  [Nagłówek: Multimedia (Dźwięki i Animacje)] |
+|                   |  Dźwięki Systemowe:                      |
+|                   |    Dźwięk Startu Rundu: https://www.merriam-webster.com/dictionary/input [Odtwórz] |
+|                   |    Dźwięk Poprawnej Odp.: https://www.merriam-webster.com/dictionary/input [Odtwórz] |
+|                   |    [Przycisk: Dodaj Dźwięk Niestandardowy] |
+|                   |  Animacje Systemowe:                     |
+|                   |    Animacja Poprawnej Odp.: https://www.merriam-webster.com/dictionary/input [Podgląd] |
+|                   |    Animacja Karty (Ogólna): https://www.merriam-webster.com/dictionary/input [Podgląd] |
+|                   |    [Przycisk: Dodaj Animację Niestandardową] |
+|                   |                                          |
+|                   |  [Miniatura/Podgląd Overlayu/Paneli]     |
+|                   |                                          |
+|                   |------------------------------------------|
+|                   |  [Przycisk: Zastosuj Zmiany]              |
++-------------------------------------------------------------+
+
+6.8.3. Checklista Implementacji Zakładki "Wygląd"
+ * [ ] Sekcja "Wygląd" dostępna z nawigacji bocznej.
+ * [ ] Sekcja "Kolory Dominujące" z selektorami kolorów HEX i wizualnymi podglądami dla:
+   * [ ] 3-5 Kolorów Neonowych (z możliwością edycji).
+   * [ ] Koloru Akcentu.
+   * [ ] Koloru Tła.
+ * [ ] Sekcja "Czcionki" z dropdownami i podglądami dla:
+   * [ ] Czcionki Nagłówków (z opcją URL dla niestandardowej).
+   * [ ] Czcionki Treści.
+ * [ ] Sekcja "Tła i Grafiki" z polami URL i podglądami dla:
+   * [ ] Głównego Tła Overlayu.
+   * [ ] Tła Lobby.
+   * [ ] Logo Gry.
+   * [ ] Domyślnego Avatara Gracza.
+   * [ ] Domyślnej Ikony Karty.
+ * [ ] Sekcja "Multimedia" z polami URL i przyciskami podglądu/odtwarzania dla:
+   * [ ] Predefiniowanych Dźwięków Systemowych (Start Rundu, Poprawna Odp., Błędna Odp., Ostrzeżenie Timera).
+   * [ ] Możliwością dodawania niestandardowych Dźwięków Systemowych.
+   * [ ] Predefiniowanych Animacji Systemowych (Poprawna Odp., Ogólna Karta).
+   * [ ] Możliwością dodawania niestandardowych Animacji Systemowych.
+ * [ ] Miniatura/Podgląd na żywo pokazujący wpływ zmian.
+ * [ ] Przycisk "Zastosuj Zmiany" (aplikuje zmiany wizualne w czasie rzeczywistym poprzez WebSocket).
+ * [ ] Walidacja URL dla plików graficznych i audio/wideo.
+ * [ ] Obsługa błędów ładowania zasobów (np. wyświetlanie komunikatu o nieprawidłowym URL).
+ * [ ] Wszystkie elementy UI zgodne ze stylistyką neon glow.
+
+
+
+
+
+6. Panel Ustawień (/settings)
+6.9. Zakładka: Integracje
+Ta zakładka pozwala hostowi na konfigurację zewnętrznych integracji, które rozszerzają funkcjonalność Discord Game Show, umożliwiając interakcję z innymi platformami i usługami.
+6.9.1. Opis Funkcjonalności
+Zakładka "Integracje" będzie zawierała sekcje dla każdej wspieranej integracji, z dedykowanymi polami konfiguracyjnymi.
+ * Sekcja: Discord Bot
+   * Cel: Połączenie z botem Discorda, aby umożliwić graczom dołączanie do gry za pomocą komend Discorda, wyświetlanie statusu gry na serwerze Discord, oraz powiadomienia.
+   * Pola Konfiguracyjne:
+     * Aktywuj Integrację Discord: Przełącznik (toggle switch).
+     * Token Bota Discord: Pole tekstowe (ukryte jako hasło/token) do wprowadzenia tokena bota Discorda.
+     * ID Kanału Tekstowego: Pole tekstowe do wprowadzenia ID kanału, na którym bot ma ogłaszać start gry, status pytań itp.
+     * ID Roli Gracza (opcjonalnie): Pole tekstowe do wprowadzenia ID roli, która będzie nadawana graczom po dołączeniu do gry (np. "Aktywny Gracz").
+     * Dostępne Komendy: Lista (nieedytowalna) obsługiwanych komend (np. /join, /status, /help).
+     * Przycisk "Test Połączenia": Sprawdza, czy bot może połączyć się z Discordem i wysłać testową wiadomość na wybrany kanał.
+ * Sekcja: VOD.ninja (Kamery Graczy)
+   * Cel: Integracja z VOD.ninja do wyświetlania kamer graczy na OBS Overlay.
+   * Pola Konfiguracyjne:
+     * Aktywuj Integrację VOD.ninja: Przełącznik (toggle switch).
+     * Główny URL Sesji VOD.ninja: Pole tekstowe na główny URL sesji VOD.ninja, z której mają być pobierane strumienie graczy.
+     * Mapowanie Graczy (lista):
+       * Tabela/lista, gdzie host może przypisać każdego aktywnego gracza (z listy graczy w grze) do konkretnego "slotu" VOD.ninja lub ID strumienia.
+       * Dla każdego gracza: [Dropdown: Nick Gracza] -> [Pole tekstowe: ID Streamu VOD.ninja / Nazwa Slotu].
+       * Przycisk Dodaj Mapowanie, Usuń Mapowanie.
+     * Podgląd Kamer: Opcjonalnie: Małe podglądy kamer graczy, którzy są aktualnie połączeni przez VOD.ninja, aby host mógł zweryfikować poprawność konfiguracji.
+ * Sekcja: Streamer.bot / LioranBoard / Twitch Integration (Opcjonalnie dla MVP)
+   * Cel: Połączenie z narzędziami automatyzacji streamu w celu wyzwalania akcji (np. alertów, zmian scen) na podstawie zdarzeń w grze.
+   * Pola Konfiguracyjne:
+     * Aktywuj Integrację Streamer.bot/LioranBoard/Twitch: Przełącznik (toggle switch).
+     * Adres WebSocket Streamer.bot/LioranBoard: Pole tekstowe na adres WebSocket do lokalnego serwera narzędzia.
+     * Klucz API Twitch (opcjonalnie): Pole tekstowe na klucz API Twitch do interakcji z czatem, punktami kanału itp.
+     * Mapowanie Zdarzeń: Lista zdarzeń w grze (np. correct_answer, wrong_answer, card_used) do niestandardowych akcji w narzędziu automatyzacji.
+       * Dla każdego zdarzenia gry: [Dropdown: Nazwa Zdarzenia Gry] -> [Pole tekstowe: Nazwa Akcji/Komendy w Streamer.bot/LioranBoard]
+       * Przycisk Dodaj Mapowanie, Usuń Mapowanie.
+     * Przycisk "Test Zdarzenia": Wysyła testowe zdarzenie do skonfigurowanej integracji.
+ * Sekcja: Inne API / Webhooki (Opcjonalnie dla MVP)
+   * Cel: Wysyłanie powiadomień o zdarzeniach w grze do niestandardowych webhooków.
+   * Pola Konfiguracyjne:
+     * Aktywuj Webhooki: Przełącznik (toggle switch).
+     * Lista Webhooków: Tabela/lista:
+       * [Pole tekstowe: Nazwa Webhooka] -> [Pole tekstowe: URL Webhooka] -> [Dropdown: Typ Zdarzenia (np. "Koniec Gry", "Nowe Pytanie")]
+       * Przycisk Dodaj Webhook, Usuń Webhook.
+       * Przycisk Testuj Webhook.
+ * Przyciski Akcji:
+   * Przycisk "Zapisz Zmiany": Po kliknięciu, wszystkie zmienione ustawienia są zapisywane w bazie danych i backend ponownie próbuje nawiązać połączenia z aktywowanymi integracjami.
+   * Przycisk "Anuluj": Przywraca ustawienia do ostatnio zapisanych wartości.
+6.9.2. Makieta UI Zakładki "Integracje" (Opis Tekstowy)
++-------------------------------------------------------------+
+| NAWIGACJA         |  INTEGRACJE                             |
+|                   |------------------------------------------|
+| [OGÓLNE]          |  [Nagłówek: Discord Bot]                 |
+| [RUNDY]           |  Aktywuj Integrację Discord: [Przełącznik ON/OFF]|
+| [PYTANIA]         |  Token Bota Discord: [Pole tekstowe (ukryte)]|
+| [KARTY SPEC.]     |  ID Kanału Tekstowego: [Pole tekstowe]    |
+| [WYGLĄD]          |  ID Roli Gracza (opcjonalnie): [Pole tekstowe]|
+| [INTEGRACJE] <----|  Dostępne Komendy: /join, /status, /help |
+| [RANKING]         |  [Przycisk: Test Połączenia]             |
+| [ZAAWANSOWANE]    |                                          |
+|                   |  [Nagłówek: VOD.ninja (Kamery Graczy)]   |
+|                   |  Aktywuj Integrację VOD.ninja: [Przełącznik ON/OFF]|
+|                   |  Główny URL Sesji VOD.ninja: [Pole tekstowe]|
+|                   |  [Nagłówek: Mapowanie Graczy]             |
+|                   |  --------------------------------------- |
+|                   |  | Nick Gracza | ID Streamu/Slotu    | Akcje   |
+|                   |  --------------------------------------- |
+|                   |  | [Dropdown]  | [Pole tekstowe]     | [Dodaj][Usuń]|
+|                   |  | ...         |                     |         |
+|                   |  --------------------------------------- |
+|                   |  [Przycisk: Dodaj Mapowanie]             |
+|                   |  [Opcjonalnie: Podgląd Kamer]            |
+|                   |                                          |
+|                   |  [Nagłówek: Streamer.bot / LioranBoard / Twitch (Opcjonalnie)]|
+|                   |  Aktywuj Integrację: [Przełącznik ON/OFF]|
+|                   |  Adres WebSocket: [Pole tekstowe]        |
+|                   |  Klucz API Twitch: [Pole tekstowe]       |
+|                   |  [Nagłówek: Mapowanie Zdarzeń]            |
+|                   |  --------------------------------------- |
+|                   |  | Zdarzenie Gry | Nazwa Akcji/Komendy | Akcje   |
+|                   |  --------------------------------------- |
+|                   |  | [Dropdown]    | [Pole tekstowe]     | [Dodaj][Usuń]|
+|                   |  | ...           |                     |         |
+|                   |  --------------------------------------- |
+|                   |  [Przycisk: Dodaj Mapowanie]             |
+|                   |  [Przycisk: Test Zdarzenia]              |
+|                   |                                          |
+|                   |  [Nagłówek: Inne API / Webhooki (Opcjonalnie)] |
+|                   |  Aktywuj Webhooki: [Przełącznik ON/OFF]  |
+|                   |  [Nagłówek: Lista Webhooków]              |
+|                   |  --------------------------------------- |
+|                   |  | Nazwa Webhooka | URL Webhooka | Typ Zdarzenia | Akcje   |
+|                   |  --------------------------------------- |
+|                   |  | [Pole tekstowe]| [Pole tekstowe]| [Dropdown]      | [Dodaj][Usuń]|
+|                   |  | ...            |              |                 |         |
+|                   |  --------------------------------------- |
+|                   |  [Przycisk: Dodaj Webhook]               |
+|                   |  [Przycisk: Testuj Webhook]              |
+|                   |------------------------------------------|
+|                   |  [Przycisk: Zapisz Zmiany] [Przycisk: Anuluj] |
++-------------------------------------------------------------+
+
+6.9.3. Checklista Implementacji Zakładki "Integracje"
+ * [ ] Sekcja "Integracje" dostępna z nawigacji bocznej.
+ * Dla Sekcji "Discord Bot":
+   * [ ] Przełącznik "Aktywuj Integrację Discord".
+   * [ ] Pole tekstowe "Token Bota Discord" (typu password lub ukryte).
+   * [ ] Pola tekstowe "ID Kanału Tekstowego" i "ID Roli Gracza".
+   * [ ] Wyświetlanie listy dostępnych komend.
+   * [ ] Przycisk "Test Połączenia" (wywołujący API testowe na backendzie).
+ * Dla Sekcji "VOD.ninja":
+   * [ ] Przełącznik "Aktywuj Integrację VOD.ninja".
+   * [ ] Pole tekstowe "Główny URL Sesji VOD.ninja".
+   * [ ] Tabela/lista "Mapowanie Graczy" z dropdownem graczy i polem tekstowym na ID streamu/slotu.
+   * [ ] Przyciski "Dodaj Mapowanie" i "Usuń Mapowanie".
+   * [ ] Opcjonalny podgląd kamer.
+ * Dla Sekcji "Streamer.bot / LioranBoard / Twitch" (Opcjonalnie dla MVP):
+   * [ ] Przełącznik aktywacji.
+   * [ ] Pola tekstowe "Adres WebSocket" i "Klucz API Twitch".
+   * [ ] Tabela/lista "Mapowanie Zdarzeń" z dropdownem zdarzeń gry i polem tekstowym na nazwę akcji/komendy.
+   * [ ] Przyciski "Dodaj Mapowanie" i "Usuń Mapowanie".
+   * [ ] Przycisk "Test Zdarzenia".
+ * Dla Sekcji "Inne API / Webhooki" (Opcjonalnie dla MVP):
+   * [ ] Przełącznik aktywacji.
+   * [ ] Tabela/lista "Lista Webhooków" z polami na nazwę, URL i typ zdarzenia.
+   * [ ] Przyciski "Dodaj Webhook" i "Usuń Webhook".
+   * [ ] Przycisk "Testuj Webhook".
+ * [ ] Przycisk "Zapisz Zmiany" (zapis do bazy, wywołanie ponownej inicjalizacji integracji na backendzie).
+ * [ ] Przycisk "Anuluj" (reset do ostatnio zapisanych).
+ * [ ] Walidacja pól (np. poprawność URL, format ID).
+ * [ ] Obsługa komunikatów o sukcesie/błędzie po zapisie/testach.
+ * [ ] Wszystkie elementy UI zgodne ze stylistyką neon glow.
+Kontynuujemy dokumentację projektu "Discord Game Show". Przechodzimy do kolejnej zakładki w Panelu Ustawień: Ranking.
+Dokumentacja Projektu: Discord Game Show
+6. Panel Ustawień (/settings)
+6.10. Zakładka: Ranking
+Zakładka "Ranking" pozwala hostowi na podgląd i zarządzanie historycznymi wynikami gier oraz konfigurowanie globalnego rankingu najlepszych graczy. Jest to miejsce, gdzie można podsumować i archiwizować osiągnięcia z wielu sesji.
+6.10.1. Opis Funkcjonalności
+Zakładka "Ranking" będzie podzielona na dwie główne sekcje: "Historia Gier" i "Globalny Ranking".
+ * Sekcja: Historia Gier
+   * Cel: Archiwum zakończonych sesji gry wraz z ich wynikami.
+   * Pasek Filtrowania i Wyszukiwania:
+     * Wyszukiwarka: Pole tekstowe do wyszukiwania po nazwie sesji.
+     * Filtr po Dacie: Selektor zakresu dat (od - do).
+     * Filtr po Zwycięzcy: Rozwijana lista (dropdown) z nickami graczy, którzy wygrali historyczne sesje.
+     * Przycisk "Reset Filtrów".
+   * Lista Zakończonych Sesji (Tabela):
+     * ID Sesji: Unikalny identyfikator zakończonej sesji.
+     * Nazwa Sesji: Nazwa gry nadana przez hosta.
+     * Data Zakończenia: Data i godzina zakończenia sesji.
+     * Zwycięzca: Nick gracza, który wygrał sesję.
+     * Liczba Graczy: Ilu graczy uczestniczyło.
+     * Łączny Czas Gry: Czas trwania sesji.
+     * Akcje:
+       * Przycisk "Szczegóły": Otwiera modal/nowy widok ze szczegółowymi wynikami tej konkretnej sesji (lista graczy z punktami, kolejnością rund, użytych kart itp.). Możliwość pobrania szczegółowych logów z tej sesji.
+       * Przycisk "Usuń Historię": Usuwa zapisanej historii sesji (wymaga potwierdzenia).
+ * Sekcja: Globalny Ranking
+   * Cel: Podgląd najlepszych wyników graczy z wszystkich sesji.
+   * Tryb Rankingu: Rozwijana lista (dropdown) z opcjami:
+     * Najwięcej punktów (suma): Suma punktów ze wszystkich sesji.
+     * Najwięcej zwycięstw: Liczba wygranych sesji.
+     * Najlepszy wynik w pojedynczej sesji: Najwyższy wynik punktowy osiągnięty w jednej sesji.
+     * Najwięcej rozegranych gier.
+   * Filtr po Czasie (opcjonalnie): Rozwijana lista (dropdown) do filtrowania rankingu z ostatnich 7 dni, 30 dni, Roku, Wszystkich.
+   * Tabela Globalnego Rankingu:
+     * Pozycja: Numer w rankingu.
+     * Avatar Gracza: Miniatura awatara.
+     * Nick Gracza: Nazwa gracza.
+     * Wartość: Wynik zgodnie z wybranym "Trybem Rankingu".
+     * Szczegóły: Przycisk "Profil Gracza" (otwiera modal z historią wyników danego gracza, jego statystykami itp.).
+   * Przycisk "Resetuj Globalny Ranking": Czyści wszystkie dane rankingowe (wymaga potwierdzenia).
+ * Przyciski Akcji:
+   * Przycisk "Eksportuj Dane Rankingowe": Generuje plik CSV/JSON z aktualnie wyświetlanymi danymi rankingowymi.
+   * Przycisk "Zapisz Zmiany": (Dla ustawień trybu rankingu) Zapisuje preferencje dotyczące wyświetlania rankingu.
+   * Przycisk "Anuluj": (Dla ustawień trybu rankingu) Przywraca domyślne preferencje.
+6.10.2. Makieta UI Zakładki "Ranking" (Opis Tekstowy)
++-------------------------------------------------------------+
+| NAWIGACJA         |  RANKING                                |
+|                   |------------------------------------------|
+| [OGÓLNE]          |  [Nagłówek: Historia Gier]               |
+| [RUNDY]           |  Wyszukaj:    [Pole tekstowe]           |
+| [PYTANIA]         |  Data:        [Selektor zakresu dat]     |
+| [KARTY SPEC.]     |  Zwycięzca:   [Dropdown]                 |
+| [WYGLĄD]          |  [Przycisk: Reset Filtrów]               |
+| [INTEGRACJE]      |                                          |
+| [RANKING] <-------|  [Nagłówek: Zakończone Sesje]            |
+| [ZAAWANSOWANE]    |  --------------------------------------- |
+|                   |  | ID   | Nazwa Sesji  | Data Zakoń. | Zwycięzca | Graczy | Czas | Akcje   |
+|                   |  --------------------------------------- |
+|                   |  | S001 | Moja gra 1   | 2024-05-20  | Jan       | 4      | 1h30 | [Szczegóły][Usuń]|
+|                   |  | S002 | Wiosenny Quiz| 2024-05-18  | Anna      | 6      | 2h10 | [Szczegóły][Usuń]|
+|                   |  | ...  |              |             |           |        |      |         |
+|                   |  --------------------------------------- |
+|                   |  [Paginacja: << 1 2 3 >>]                |
+|                   |                                          |
+|                   |  [Nagłówek: Globalny Ranking]            |
+|                   |  Tryb Rankingu: [Dropdown: Najwięcej punktów (suma)...]|
+|                   |  Filtr Czasu:  [Dropdown: Wszystkie / Ostatnie 7 dni...] |
+|                   |                                          |
+|                   |  --------------------------------------- |
+|                   |  | Poz. | Avatar | Nick    | Wartość | Akcje   |
+|                   |  --------------------------------------- |
+|                   |  | 1    | [img]  | Anna    | 1250    | [Profil] |
+|                   |  | 2    | [img]  | Jan     | 1100    | [Profil] |
+|                   |  | ...  |        |         |         |          |
+|                   |  --------------------------------------- |
+|                   |  [Przycisk: Resetuj Globalny Ranking]    |
+|                   |                                          |
+|                   |------------------------------------------|
+|                   |  [Przycisk: Eksportuj Dane Rankingowe]   |
+|                   |  [Przycisk: Zapisz Zmiany] [Przycisk: Anuluj] |
++-------------------------------------------------------------+
+
+6.10.3. Checklista Implementacji Zakładki "Ranking"
+ * [ ] Sekcja "Ranking" dostępna z nawigacji bocznej.
+ * Dla Sekcji "Historia Gier":
+   * [ ] Pasek filtrowania z polem wyszukiwania, selektorem dat i filtrem zwycięzców.
+   * [ ] Tabela "Lista Zakończonych Sesji" z kolumnami: ID Sesji, Nazwa Sesji, Data Zakończenia, Zwycięzca, Liczba Graczy, Czas Gry.
+   * [ ] Przycisk "Szczegóły" dla każdej sesji, otwierający modal/widok z wynikami.
+   * [ ] Przycisk "Usuń Historię" dla każdej sesji z potwierdzeniem.
+   * [ ] Paginacja dla listy sesji.
+ * Dla Sekcji "Globalny Ranking":
+   * [ ] Dropdown "Tryb Rankingu" z opcjami: Najwięcej punktów (suma), Najwięcej zwycięstw, Najlepszy wynik w pojedynczej sesji, Najwięcej rozegranych gier.
+   * [ ] Opcjonalny dropdown "Filtr po Czasie".
+   * [ ] Tabela "Globalny Ranking" z kolumnami: Pozycja, Avatar, Nick, Wartość.
+   * [ ] Przycisk "Profil Gracza" dla każdego gracza w rankingu (otwierający modal/widok z historią wyników danego gracza).
+   * [ ] Przycisk "Resetuj Globalny Ranking" z potwierdzeniem.
+ * [ ] Przycisk "Eksportuj Dane Rankingowe" (generujący plik CSV/JSON).
+ * [ ] Przycisk "Zapisz Zmiany" (zapis preferencji wyświetlania rankingu).
+ * [ ] Przycisk "Anuluj" (reset preferencji).
+ * [ ] Wszystkie elementy UI zgodne ze stylistyką neon glow.
+
+ 
+6. Panel Ustawień (/settings)
+6.11. Zakładka: Zaawansowane
+Zakładka "Zaawansowane" zawiera ustawienia dotyczące zarządzania sesjami, eksportu/importu pełnej konfiguracji gry, czyszczenia danych oraz dostępu do logów systemowych. Jest to sekcja dla doświadczonych użytkowników, umożliwiająca głębszą kontrolę nad aplikacją.
+6.11.1. Opis Funkcjonalności
+ * Sekcja: Zarządzanie Sesją Gry
+   * Cel: Kontrola nad bieżącą sesją gry i jej stanem.
+   * Przycisk "Zakończ Aktywną Sesję": Natychmiast kończy bieżącą aktywną sesję gry. Powoduje reset stanu gry dla wszystkich paneli i overlayu. Wymaga potwierdzenia.
+   * Przycisk "Resetuj Bieżącą Sesję": Resetuje wszystkie dane dotyczące bieżącej sesji gry do stanu początkowego (punkty graczy, życie, statusy pytań itp.), ale zachowuje konfigurację rund, pytań, kart, integracji itp. Wymaga potwierdzenia.
+   * Przycisk "Usuń Bieżącą Sesję": Usuwa bieżącą sesję gry z bazy danych, w tym jej konfigurację i wyniki. Nieodwracalne. Wymaga potwierdzenia.
+ * Sekcja: Konfiguracja Aplikacji
+   * Cel: Import/Eksport całej konfiguracji aplikacji.
+   * Przycisk "Eksportuj Pełną Konfigurację": Eksportuje wszystkie ustawienia, definicje pytań, kart, talii, historię gier (opcjonalnie) do pojedynczego pliku (np. JSON). Umożliwia backup i przenoszenie konfiguracji między instancjami. Opcje eksportu: z uwzględnieniem historii gier (checkbox).
+   * Przycisk "Importuj Pełną Konfigurację": Importuje konfigurację z wybranego pliku. Może zawierać opcje nadpisz istniejące lub scal dane. Ostrzeżenie o potencjalnym nadpisaniu danych.
+     * Wybór Pliku: Przycisk Przeglądaj... dla pliku JSON.
+     * Tryb Importu: Radio buttony: Nadpisz wszystko, Scal (dodaj nowe, zaktualizuj istniejące).
+     * Przycisk "Rozpocznij Import".
+ * Sekcja: Zarządzanie Danymi
+   * Cel: Czyszczenie danych aplikacji.
+   * Przycisk "Wyczyść Wszystkie Pytania": Usuwa wszystkie zdefiniowane pytania z bazy danych. Wymaga potwierdzenia.
+   * Przycisk "Wyczyść Wszystkie Karty Specjalne": Usuwa wszystkie zdefiniowane karty i talie kart z bazy danych. Wymaga potwierdzenia.
+   * Przycisk "Wyczyść Całą Historię Gier": Usuwa wszystkie zapisane dane historycznych sesji gry (bez wpływu na konfigurację pytań/kart). Wymaga potwierdzenia.
+   * Przycisk "Wyczyść Cały Globalny Ranking": Usuwa wszystkie dane z globalnego rankingu. Wymaga potwierdzenia.
+   * Przycisk "Wyczyść Wszystkie Dane Aplikacji (Factory Reset)": Usuwa WSZYSTKIE dane z bazy danych (pytania, karty, graczy, sesje, ustawienia). Nieodwracalne. Wymaga wielokrotnego potwierdzenia.
+ * Sekcja: Logi Systemowe
+   * Cel: Dostęp do logów serwera w celu diagnozowania problemów.
+   * Rozwijana Lista Poziomu Logowania: (Dropdown) do wyboru poziomu szczegółowości logów (DEBUG, INFO, WARN, ERROR). Zmiana wpływa na to, jakie komunikaty są zapisywane w logach.
+   * Pole Tekstowe/Obszar z Logami: Przewijany obszar wyświetlający najnowsze logi serwera w czasie rzeczywistym (lub z opcją odświeżania).
+   * Przycisk "Pobierz Pełne Logi": Pobiera pełny plik logów serwera.
+   * Przycisk "Wyczyść Logi": Usuwa wszystkie zapisane logi. Wymaga potwierdzenia.
+ * Przycisk "Zapisz Zmiany": (Dla ustawień poziomu logowania) Zapisuje zmiany.
+ * Przycisk "Anuluj": (Dla ustawień poziomu logowania) Przywraca poprzedni poziom logowania.
+6.11.2. Makieta UI Zakładki "Zaawansowane" (Opis Tekstowy)
++-------------------------------------------------------------+
+| NAWIGACJA         |  ZAAWANSOWANE                           |
+|                   |------------------------------------------|
+| [OGÓLNE]          |  [Nagłówek: Zarządzanie Sesją Gry]       |
+| [RUNDY]           |  [Przycisk: Zakończ Aktywną Sesję] (Potwierdzenie) |
+| [PYTANIA]         |  [Przycisk: Resetuj Bieżącą Sesję] (Potwierdzenie) |
+| [KARTY SPEC.]     |  [Przycisk: Usuń Bieżącą Sesję] (Wielokrotne Potwierdzenie)|
+| [WYGLĄD]          |                                          |
+| [INTEGRACJE]      |  [Nagłówek: Konfiguracja Aplikacji]     |
+| [RANKING]         |  [Przycisk: Eksportuj Pełną Konfigurację] |
+| [ZAAWANSOWANE] <---|  [Przycisk: Importuj Pełną Konfigurację] |
+|                   |    Wybierz plik: [Przeglądaj...]        |
+|                   |    Tryb importu: [Radio: Nadpisz wszystko] [Radio: Scal]|
+|                   |    [Przycisk: Rozpocznij Import]         |
+|                   |                                          |
+|                   |  [Nagłówek: Zarządzanie Danymi]          |
+|                   |  [Przycisk: Wyczyść Wszystkie Pytania] (Potwierdzenie) |
+|                   |  [Przycisk: Wyczyść Wszystkie Karty Specjalne] (Potwierdzenie)|
+|                   |  [Przycisk: Wyczyść Całą Historię Gier] (Potwierdzenie) |
+|                   |  [Przycisk: Wyczyść Cały Globalny Ranking] (Potwierdzenie)|
+|                   |  [Przycisk: Wyczyść Wszystkie Dane Aplikacji (Factory Reset)] (Wielokrotne Potwierdzenie) |
+|                   |                                          |
+|                   |  [Nagłówek: Logi Systemowe]              |
+|                   |  Poziom Logowania: [Dropdown: DEBUG / INFO / WARN / ERROR]|
+|                   |  [Pole tekstowe/obszar z logami] (Przewijany) |
+|                   |  [Przycisk: Pobierz Pełne Logi]          |
+|                   |  [Przycisk: Wyczyść Logi] (Potwierdzenie)|
+|                   |------------------------------------------|
+|                   |  [Przycisk: Zapisz Zmiany] [Przycisk: Anuluj] |
++-------------------------------------------------------------+
+
+6.11.3. Checklista Implementacji Zakładki "Zaawansowane"
+ * [ ] Sekcja "Zaawansowane" dostępna z nawigacji bocznej.
+ * Dla Sekcji "Zarządzanie Sesją Gry":
+   * [ ] Przycisk "Zakończ Aktywną Sesję" z potwierdzeniem.
+   * [ ] Przycisk "Resetuj Bieżącą Sesję" z potwierdzeniem.
+   * [ ] Przycisk "Usuń Bieżącą Sesję" z wielokrotnym, wyraźnym potwierdzeniem.
+ * Dla Sekcji "Konfiguracja Aplikacji":
+   * [ ] Przycisk "Eksportuj Pełną Konfigurację" z opcją eksportu historii gier.
+   * [ ] Przycisk "Importuj Pełną Konfigurację" z wyborem pliku i opcjami trybu importu (nadpisz/scal).
+   * [ ] Komunikaty ostrzegawcze przed importem.
+ * Dla Sekcji "Zarządzanie Danymi":
+   * [ ] Przyciski "Wyczyść Wszystkie Pytania", "Wyczyść Wszystkie Karty Specjalne", "Wyczyść Całą Historię Gier", "Wyczyść Cały Globalny Ranking" – wszystkie z potwierdzeniem.
+   * [ ] Przycisk "Wyczyść Wszystkie Dane Aplikacji (Factory Reset)" z wyraźnym, wielokrotnym ostrzeżeniem i potwierdzeniem.
+ * Dla Sekcji "Logi Systemowe":
+   * [ ] Dropdown "Poziom Logowania".
+   * [ ] Przewijany obszar wyświetlający logi w czasie rzeczywistym lub z opcją odświeżania.
+   * [ ] Przycisk "Pobierz Pełne Logi".
+   * [ ] Przycisk "Wyczyść Logi" z potwierdzeniem.
+ * [ ] Przycisk "Zapisz Zmiany" (dla ustawień logów).
+ * [ ] Przycisk "Anuluj" (dla ustawień logów).
+ * [ ] Wszystkie przyciski do usuwania/resetowania danych powinny mieć wyraźne komunikaty ostrzegawcze i potwierdzenia.
+ * [ ] Wszystkie elementy UI zgodne ze stylistyką neon glow.
+.
+
+
+
+Dokumentacja Projektu: Discord Game Show
+8. Testowanie
+Testowanie jest kluczowym elementem zapewnienia jakości i stabilności aplikacji Discord Game Show. Planujemy wdrożyć kompleksową strategię testowania, obejmującą różne poziomy i rodzaje testów, aby zminimalizować błędy i zapewnić płynne działanie systemu.
+8.1. Strategia Testowania
+Nasza strategia testowania będzie opierać się na piramidzie testów, gdzie większy nacisk kładziemy na szybkie i tanie testy jednostkowe, a mniejszy na wolniejsze i droższe testy end-to-end.
+ * Testy Jednostkowe (Unit Tests): Najniższy poziom, testujący pojedyncze, izolowane komponenty kodu (funkcje, klasy, moduły).
+ * Testy Integracyjne (Integration Tests): Testowanie interakcji między różnymi komponentami lub modułami, np. backendu z bazą danych, integracji API.
+ * Testy Funkcjonalne/Systemowe (Functional/System Tests): Testowanie kompletnych przepływów biznesowych z perspektywy użytkownika, weryfikujące, czy system spełnia wymagania funkcjonalne.
+ * Testy End-to-End (E2E Tests): Testowanie całego systemu od początku do końca, symulujące rzeczywiste scenariusze użytkownika, włączając w to interakcje z frontendem i backendem.
+ * Testy Wydajnościowe (Performance Tests): Ocena zachowania systemu pod obciążeniem, sprawdzanie czasu odpowiedzi i przepustowości.
+ * Testy Bezpieczeństwa (Security Tests): Weryfikacja odporności systemu na ataki i luki bezpieczeństwa.
+ * Testy Użyteczności (Usability Tests): Ocena łatwości obsługi i intuicyjności interfejsu użytkownika.
+8.2. Narzędzia Testowe
+ * Python:
+   * pytest: Główny framework do testów jednostkowych i integracyjnych.
+   * pytest-asyncio: Do testowania asynchronicznego kodu (FastAPI, WebSockets).
+   * pytest-cov: Do generowania raportów pokrycia kodu testami.
+   * httpx: Do testowania API REST (zamiennik requests dla asynchronicznego kodu).
+   * SQLAlchemy Test Runner: Do testowania interakcji z bazą danych.
+   * redis-py (mocking): Do testowania komponentów korzystających z Redis.
+ * JavaScript/TypeScript (Frontend):
+   * Jest: Framework do testów jednostkowych komponentów React/Vue.js.
+   * React Testing Library / @testing-library/vue: Do testowania komponentów w sposób skoncentrowany na użytkowniku.
+   * Cypress lub Playwright: Do testów End-to-End (E2E), symulujących interakcje użytkownika z przeglądarką.
+ * Automatyzacja CI/CD:
+   * GitHub Actions / GitLab CI / Jenkins: Do automatycznego uruchamiania testów po każdej zmianie kodu.
+8.3. Rodzaje Testów i Zakres
+8.3.1. Testy Jednostkowe (Backend)
+ * Zakres: Pojedyncze funkcje, metody klas, moduły API (bez prawdziwej bazy danych czy zewnętrznych zależności).
+ * Przykłady:
+   * Testowanie funkcji obliczającej punkty za odpowiedź.
+   * Testowanie walidacji danych wejściowych dla endpointów API.
+   * Testowanie logiki generowania tokenów JWT.
+   * Testowanie metod GameStateManager odpowiedzialnych za przejścia między fazami gry.
+   * Testowanie kodu JS dla efektów kart specjalnych w izolowanym środowisku.
+8.3.2. Testy Integracyjne (Backend)
+ * Zakres: Interakcja między komponentami backendu (np. API z bazą danych, moduł WebSockets z GameStateManager, Celery z Redis).
+ * Przykłady:
+   * Testowanie endpointów API, które odczytują i zapisują dane do PostgreSQL.
+   * Testowanie, czy wiadomości WebSocket są poprawnie wysyłane do podłączonych klientów po zmianie stanu gry.
+   * Testowanie, czy zadania Celery są poprawnie enqueued i przetwarzane.
+   * Testowanie, czy dane sesji są prawidłowo przechowywane i odzyskiwane z Redis.
+8.3.3. Testy Funkcjonalne (Backend i Frontend)
+ * Zakres: Pełne scenariusze użytkownika, weryfikujące, czy wymagania funkcjonalne są spełnione. Mogą obejmować zarówno backend, jak i podstawowe interakcje z frontendem.
+ * Przykłady:
+   * Scenariusz Hosta: Host loguje się, tworzy nową sesję, dodaje graczy, uruchamia rundę, zadaje pytanie, ujawnia odpowiedź, sprawdza punkty.
+   * Scenariusz Gracza: Gracz dołącza do sesji przez link, odpowiada na pytanie, używa karty specjalnej.
+   * Scenariusz Rundy Eliminacyjnej: Weryfikacja, czy gracze z 0 życiami są eliminowani.
+   * Scenariusz Koła Fortuny: Sprawdzenie, czy punkty są prawidłowo naliczane po zakręceniu kołem.
+   * Scenariusz Integracji Discord: Host aktywuje bota, gracz używa komendy /join, bot odpowiada i gracz pojawia się w Panelu Hosta.
+8.3.4. Testy End-to-End (E2E)
+ * Zakres: Cała aplikacja, od interfejsu użytkownika w przeglądarce, przez backend, aż po bazę danych. Symulują rzeczywiste scenariusze użytkowników.
+ * Przykłady:
+   * Otworzenie Panelu Hosta w przeglądarce, zalogowanie się.
+   * Otworzenie Panelu Gracza w innej zakładce, dołączenie do gry.
+   * Host rozpoczyna rundę, pytanie pojawia się na Overlayu i w Panelu Gracza.
+   * Gracz odpowiada, Host ujawnia odpowiedź, punkty są aktualizowane na Overlayu i w Panelu Hosta.
+   * Weryfikacja animacji i dźwięków na Overlayu po użyciu karty.
+   * Testowanie płynności przejść między rundami.
+8.3.5. Testy Wydajnościowe (Performance Tests)
+ * Zakres: Obciążenie serwera API i WebSockets.
+ * Przykłady:
+   * Symulowanie dużej liczby jednocześnie połączonych graczy (np. 50-100), odpowiadających na pytania.
+   * Pomiar czasu odpowiedzi API dla kluczowych endpointów (np. dodawanie gracza, pobieranie stanu gry).
+   * Testowanie stabilności serwera WebSockets pod dużym obciążeniem.
+8.3.6. Testy Bezpieczeństwa (Security Tests)
+ * Zakres: Podatności na typowe ataki webowe (OWASP Top 10).
+ * Przykłady:
+   * Testowanie podatności na SQL Injection (mimo użycia ORM).
+   * Testowanie na XSS (Cross-Site Scripting) w polach wejściowych.
+   * Weryfikacja poprawności autoryzacji (czy gracz nie może wykonywać akcji Hosta, czy nie może dołączyć do nieswojej sesji).
+   * Testowanie na CSRF (Cross-Site Request Forgery) dla wrażliwych operacji.
+   * Sprawdzenie siły haszowania haseł i zarządzania tokenami JWT.
+   * Testowanie wykonania kodu JS (efekty kart) w bezpiecznym środowisku (sandboxingu).
+8.3.7. Testy Użyteczności (Usability Tests)
+ * Zakres: Interfejs użytkownika.
+ * Przykłady:
+   * Przeprowadzenie sesji gry z osobami niebiorącymi udziału w developmentcie, aby ocenić intuicyjność Panelu Hosta i Panelu Gracza.
+   * Zbieranie feedbacku na temat klarowności instrukcji i wizualizacji.
+8.4. Środowiska Testowe
+ * Lokalne Środowisko Deweloperskie: Deweloperzy uruchamiają testy jednostkowe i integracyjne lokalnie.
+ * Środowisko CI/CD: Automatyczne uruchamianie wszystkich testów (jednostkowych, integracyjnych, E2E) na dedykowanym serwerze po każdym pushu do repozytorium.
+ * Środowisko Stagingowe: Bliskie produkcji środowisko do testów funkcjonalnych, E2E i manualnych, dostępne dla testerów i do demo.
+8.5. Raportowanie i Monitorowanie Testów
+ * Pokrycie Kodu (Code Coverage): Użycie pytest-cov do generowania raportów pokrycia kodu testami, aby identyfikować obszary niewystarczająco przetestowane.
+ * Wyniki Testów CI/CD: Wyniki wszystkich testów będą widoczne w logach CI/CD, z informacjami o testach, które zakończyły się sukcesem, niepowodzeniem lub zostały pominięte.
+ * Logowanie: Szczegółowe logowanie błędów i nietypowych zdarzeń w środowiskach testowych, ułatwiające debugowanie.
+
+
+
+
+9. Deployment i Utrzymanie
+Ta sekcja opisuje procesy związane z wdrożeniem aplikacji Discord Game Show na środowisku produkcyjnym, a także z jej bieżącym utrzymaniem, monitorowaniem i aktualizacjami.
+9.1. Środowiska Deploymentowe
+Planujemy wykorzystać co najmniej trzy środowiska deploymentowe:
+ * Środowisko Deweloperskie (Development):
+   * Lokalne maszyny deweloperów.
+   * Służy do szybkiego prototypowania, implementacji nowych funkcji i debugowania.
+   * Baza danych i inne usługi działają lokalnie (np. Docker Compose).
+ * Środowisko Testowe / Stagingowe (Staging/QA):
+   * Środowisko zbliżone do produkcyjnego (jednak na mniejszą skalę).
+   * Używane do testów integracyjnych, funkcjonalnych, E2E oraz do manualnych testów akceptacyjnych (QA).
+   * Może być dostępne publicznie dla wybranych testerów lub do demonstracji.
+   * Częste deploymenty z gałęzi develop lub feature po zakończeniu testów jednostkowych.
+ * Środowisko Produkcyjne (Production):
+   * Główne środowisko, dostępne dla końcowych użytkowników/hostów.
+   * Zoptymalizowane pod kątem wydajności, bezpieczeństwa i niezawodności.
+   * Deploymenty są rzadsze i podlegają rygorystycznym procedurom (np. po pomyślnych testach na stagingu).
+9.2. Strategia Deploymentu
+Przyjmiemy strategię deploymentu opartą na kontenerach Docker i orkiestracji, aby zapewnić powtarzalność, skalowalność i łatwość zarządzania.
+ * Konteneryzacja (Docker):
+   * Każdy komponent aplikacji (backend FastAPI, frontend React/Vue.js, Redis, PostgreSQL, Celery) zostanie skonteneryzowany.
+   * Obrazy Docker będą budowane na podstawie Dockerfile w repozytorium kodu.
+   * Zalety: Izolacja zależności, spójne środowisko między dewelopmentem a produkcją.
+ * Orkiestracja (Docker Compose / Kubernetes):
+   * Lokalnie/Staging: Docker Compose do łatwego uruchamiania wszystkich usług w jednym pliku konfiguracyjnym. Idealne do szybkiego setupu i lokalnych testów.
+   * Produkcja: Rozważymy Kubernetes dla większej skalowalności, automatycznego zarządzania zasobami, self-healing i łatwego zarządzania deploymentami. Alternatywnie, dla mniejszych projektów, można użyć prostszych rozwiązań PaaS (Platform as a Service) oferujących wsparcie dla Docker (np. Heroku, Google Cloud Run, AWS ECS).
+ * Repozytorium Obrazów (Container Registry):
+   * Obrazy Docker będą przechowywane w prywatnym repozytorium (np. Docker Hub, Google Container Registry, AWS ECR).
+   * Automatyczne budowanie i pushowanie obrazów po zatwierdzeniu zmian w odpowiedniej gałęzi.
+ * Strategia Deploymentu Blue/Green lub Rolling Updates:
+   * Aby minimalizować downtime podczas aktualizacji, zastosujemy strategie takie jak Blue/Green Deployment (utrzymanie dwóch identycznych środowisk i przełączanie ruchu) lub Rolling Updates (stopniowa wymiana instancji).
+9.3. Proces CI/CD (Continuous Integration / Continuous Deployment)
+Automatyzacja procesów budowania, testowania i deploymentu jest kluczowa.
+ * Continuous Integration (CI):
+   * Po każdym push do gałęzi develop lub main/master:
+     * Automatyczne uruchamianie testów jednostkowych.
+     * Automatyczne uruchamianie testów integracyjnych.
+     * Analiza statyczna kodu (linters, formatters).
+     * Budowanie obrazów Docker dla wszystkich komponentów.
+     * Pushowanie obrazów do repozytorium kontenerów.
+   * W przypadku niepowodzenia któregokolwiek kroku, pipeline zostaje zatrzymany, a deweloperzy są powiadamiani.
+ * Continuous Deployment (CD):
+   * Po pomyślnym przejściu CI na gałęzi develop (lub po manualnym zatwierdzeniu):
+     * Automatyczny deployment na środowisko stagingowe.
+   * Po pomyślnym teście akceptacyjnym na stagingu i manualnym zatwierdzeniu (lub po merge do main/master):
+     * Automatyczny deployment na środowisko produkcyjne.
+9.4. Monitorowanie i Logowanie
+Efektywne monitorowanie i logowanie są niezbędne do wczesnego wykrywania problemów i szybkiego reagowania.
+ * Logowanie Aplikacji:
+   * Backend: Użycie biblioteki logging w Pythonie, konfiguracja do zapisywania logów do plików lub przekazywania do scentralizowanego systemu logowania.
+   * Frontend: Logowanie błędów JavaScript do konsoli przeglądarki i przekazywanie ich do scentralizowanego systemu (np. Sentry, Datadog).
+   * Poziomy logowania (DEBUG, INFO, WARN, ERROR, CRITICAL).
+ * Scentralizowane Logowanie:
+   * Wykorzystanie narzędzi takich jak ELK Stack (Elasticsearch, Logstash, Kibana) lub Grafana Loki do zbierania, indeksowania i wizualizacji logów z wszystkich komponentów systemu.
+ * Monitorowanie Wydajności (APM - Application Performance Monitoring):
+   * Integracja z narzędziami APM (np. Prometheus + Grafana, Datadog, New Relic) do zbierania metryk dotyczących:
+     * Użycia CPU, pamięci, sieci.
+     * Czasu odpowiedzi API.
+     * Liczby połączeń WebSocket.
+     * Błędów HTTP.
+     * Wykorzystania bazy danych (zapytania, czasy odpowiedzi).
+ * Alerty:
+   * Konfiguracja alertów w systemie monitorującym, które powiadamiają zespół o krytycznych zdarzeniach (np. wysoki poziom błędów, niski poziom zasobów, niedostępność usługi).
+   * Powiadomienia poprzez Slack, e-mail lub PagerDuty.
+9.5. Zarządzanie Bazą Danych
+ * Migracje Bazy Danych:
+   * Użycie narzędzi do migracji schematu bazy danych (np. Alembic dla SQLAlchemy w Pythonie).
+   * Migracje będą zarządzane w kodzie i automatycznie stosowane podczas deploymentu.
+ * Backup i Odtwarzanie:
+   * Regularne tworzenie kopii zapasowych bazy danych (np. codzienne, godzinowe) na bezpiecznym, zewnętrznym magazynie.
+   * Testowanie procedur odtwarzania danych z backupu, aby zapewnić ich integralność i dostępność w przypadku awarii.
+ * Replikacja / Wysoka Dostępność (High Availability):
+   * Dla środowiska produkcyjnego, rozważenie konfiguracji bazy danych w trybie replikacji (master-replica) dla zwiększenia niezawodności i dostępności.
+9.6. Skalowalność
+ * Skalowanie Poziome (Horizontal Scaling):
+   * Backend FastAPI: Możliwość uruchomienia wielu instancji (kontenerów) za load balancerem.
+   * Frontend: Statyczne pliki serwowane przez CDN, skalowalne automatycznie.
+   * Redis: Skalowanie horyzontalne poprzez klastry Redis (Redis Cluster).
+   * PostgreSQL: Możliwe skalowanie odczytów poprzez repliki.
+ * Skalowanie Pionowe (Vertical Scaling):
+   * Zwiększenie zasobów (CPU, RAM) dla pojedynczych instancji, jeśli wymagana jest większa moc obliczeniowa.
+ * Queue-based Processing (Celery):
+   * Użycie Celery do asynchronicznego przetwarzania zadań odciąża główny wątek aplikacji i pozwala na skalowanie workerów niezależnie.
+9.7. Utrzymanie i Aktualizacje
+ * Regularne Aktualizacje Zależności: Monitorowanie i aktualizowanie bibliotek oraz frameworków, aby korzystać z poprawek bezpieczeństwa i nowych funkcji.
+ * Patch Management: Regularne stosowanie patchy bezpieczeństwa dla systemów operacyjnych i oprogramowania serwerowego.
+ * Dokumentacja: Utrzymywanie aktualnej dokumentacji deploymentu i utrzymania, w tym procedur rozwiązywania problemów (troubleshooting).
+ * Zarządzanie Certyfikatami SSL/TLS: Zapewnienie ważności certyfikatów SSL dla bezpiecznej komunikacji (HTTPS, WSS).
+ * Plany Awarcyjne (Disaster Recovery Plan): Opracowanie planu działania w przypadku poważnych awarii, w tym procedur odtwarzania danych i przełączania na redundantne systemy.
