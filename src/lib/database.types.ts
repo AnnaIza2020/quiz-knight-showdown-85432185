@@ -95,7 +95,30 @@ export interface Database {
           }
         ]
       }
-      // Add other tables here as needed
+      used_questions: {
+        Row: {
+          id: string
+          question_id: string
+          used_at: string
+          session_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          question_id: string
+          used_at?: string
+          session_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          question_id?: string
+          used_at?: string
+          session_id?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -105,7 +128,19 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      // Add other functions here as needed
+      save_game_data: {
+        Args: {
+          key: string
+          value: Json
+        }
+        Returns: boolean
+      }
+      load_game_data: {
+        Args: {
+          key: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

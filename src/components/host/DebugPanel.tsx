@@ -22,18 +22,8 @@ const DebugPanel: React.FC = () => {
   const [expandedLogs, setExpandedLogs] = useState(false);
 
   const addTestLog = () => {
-    const testLog: Omit<LogEntry, 'id' | 'timestamp'> = {
-      message: 'Test log message',
-      type: 'test',
-      action: 'debug_test',
-      value: 'test_value'
-    };
-    
-    // Convert to the expected string format for now
-    const logString = `[TEST] ${testLog.message} - ${testLog.action}: ${testLog.value}`;
-    
-    // For now, use reportError which expects a string
-    reportError(logString);
+    const testLogMessage = `[TEST] Test log message - debug_test: test_value`;
+    reportError(testLogMessage);
     toast.info('Test log added');
   };
 

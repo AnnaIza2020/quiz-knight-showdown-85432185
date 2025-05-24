@@ -41,15 +41,13 @@ const SettingsWheelCategories: React.FC = () => {
       description: ''
     };
     
-    // Use functional update correctly
-    setCategories((prevCategories: Category[]) => [...prevCategories, newCategory]);
+    setCategories(prevCategories => [...prevCategories, newCategory]);
     setNewCategoryName('');
     toast.success(`Dodano kategorię "${newCategoryName}"`);
   };
 
   const handleRemoveCategory = (categoryId: string) => {
-    // Use functional update correctly
-    setCategories((prevCategories: Category[]) =>
+    setCategories(prevCategories =>
       prevCategories.filter(category => category.id !== categoryId)
     );
     toast.success('Kategoria została usunięta');

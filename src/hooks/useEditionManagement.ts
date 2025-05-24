@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useGameContext } from '@/context/GameContext';
 
 export const useEditionManagement = (addEvent: (event: string) => void) => {
@@ -21,8 +21,8 @@ export const useEditionManagement = (addEvent: (event: string) => void) => {
           
         if (error) throw error;
           
-        if (data) {
-          setAvailableEditions(data);
+        if (data && typeof data === 'object') {
+          setAvailableEditions(Array.isArray(data) ? data : []);
         }
       } catch (error) {
         console.error('Failed to load editions:', error);
@@ -64,12 +64,12 @@ export const useEditionManagement = (addEvent: (event: string) => void) => {
       // Update available editions
       const currentEditions = [...availableEditions];
       if (!currentEditions.find(e => e.name === editionName)) {
-        currentEditions.push({ name: editionName });
-        setAvailableEditions(currentEditions);
+        const newEditions = [...currentEditions, { name: editionName }];
+        setAvailableEditions(newEditions);
         
         // Save updated editions list
         await supabase
-          .rpc('save_game_data', { key: 'availableEditions', value: currentEditions });
+          .rpc('save_game_data', { key: 'availableEditions', value: newEditions });
       }
       
       toast.success(`Edycja "${editionName}" zapisana pomyślnie!`);
@@ -89,26 +89,28 @@ export const useEditionManagement = (addEvent: (event: string) => void) => {
         
       if (error) throw error;
       
-      if (data) {
+      if (data && typeof data === 'object') {
+        const gameData = data as any;
+        
         // Update local storage with loaded data
-        if (data.players) {
-          localStorage.setItem('gameShowPlayers', JSON.stringify(data.players));
+        if (gameData.players) {
+          localStorage.setItem('gameShowPlayers', JSON.stringify(gameData.players));
         }
         
-        if (data.categories) {
-          localStorage.setItem('gameShowCategories', JSON.stringify(data.categories));
+        if (gameData.categories) {
+          localStorage.setItem('gameShowCategories', JSON.stringify(gameData.categories));
         }
         
-        if (data.specialCards) {
-          localStorage.setItem('gameShowSpecialCards', JSON.stringify(data.specialCards));
+        if (gameData.specialCards) {
+          localStorage.setItem('gameShowSpecialCards', JSON.stringify(gameData.specialCards));
         }
         
-        if (data.specialCardRules) {
-          localStorage.setItem('gameShowSpecialCardRules', JSON.stringify(data.specialCardRules));
+        if (gameData.specialCardRules) {
+          localStorage.setItem('gameShowSpecialCardRules', JSON.stringify(gameData.specialCardRules));
         }
         
-        if (data.settings) {
-          localStorage.setItem('gameShowSettings', JSON.stringify(data.settings));
+        if (gameData.settings) {
+          localStorage.setItem('gameShowSettings', JSON.stringify(gameData.settings));
         }
         
         // Reload game data

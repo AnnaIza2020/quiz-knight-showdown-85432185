@@ -7,11 +7,7 @@ import { Category, GameRound } from '@/types/game-types';
 import { useGameContext } from '@/context/GameContext';
 import { Trash2 } from 'lucide-react';
 
-interface CategoryManagerProps {
-  // Remove the round prop since it's not being used correctly
-}
-
-const CategoryManager: React.FC<CategoryManagerProps> = () => {
+const CategoryManager: React.FC = () => {
   const { categories, setCategories } = useGameContext();
   const [newCategoryName, setNewCategoryName] = useState('');
   
@@ -26,13 +22,13 @@ const CategoryManager: React.FC<CategoryManagerProps> = () => {
       description: ''
     };
     
-    setCategories((prevCategories: Category[]) => [...prevCategories, newCategory]);
+    setCategories(prevCategories => [...prevCategories, newCategory]);
     setNewCategoryName('');
     toast.success(`Dodano kategorię "${newCategoryName}"`);
   };
 
   const handleRemoveCategory = (categoryId: string) => {
-    setCategories((prevCategories: Category[]) =>
+    setCategories(prevCategories =>
       prevCategories.filter(category => category.id !== categoryId)
     );
     toast.success('Kategoria została usunięta');
