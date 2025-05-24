@@ -34,12 +34,8 @@ const Overlay = () => {
   const [lastActivePlayer, setLastActivePlayer] = useState<string | null>(null);
   const [latestPoints, setLatestPoints] = useState<{playerId: string, points: number} | null>(null);
   
-  // Sound effects
-  const { playSound, stopAllSounds } = useSoundEffects({
-    enabled: true,
-    useLocalStorage: true,
-    defaultVolume: 0.7
-  });
+  // Sound effects - fix function signature
+  const { playSound, stopAllSounds } = useSoundEffects();
   
   // Subscribe to game events from the host panel
   useSubscription<any>(
@@ -75,8 +71,7 @@ const Overlay = () => {
       // Handle sound control
       if (payload.type === 'sound_control') {
         if (payload.action === 'play') {
-          const volumeLevel = payload.volume || 0.7;
-          playSound(payload.sound as SoundEffect, volumeLevel);
+          playSound(payload.sound as SoundEffect);
         } else if (payload.action === 'stop') {
           stopAllSounds();
         }
@@ -116,8 +111,8 @@ const Overlay = () => {
     const lastRoundStr = localStorage.getItem('lastGameRound');
     const lastRound = lastRoundStr ? parseInt(lastRoundStr, 10) : null;
     
-    // Only show transition if the round has actually changed
-    if (lastRound !== round) {
+    // Only show transition if the round has actually changed and is a valid GameRound
+    if (lastRound !== null && lastRound !== round) {
       if (round !== GameRound.SETUP) {
         setShowRoundTransition(true);
         
@@ -144,10 +139,10 @@ const Overlay = () => {
   useEffect(() => {
     if (timerRunning && timerSeconds <= 5 && timerSeconds > 0) {
       // Play tick sound for last 5 seconds
-      playSound('wheel-tick', 0.3);
+      playSound('wheel-tick');
     } else if (timerSeconds === 0) {
       // Play timeout sound when timer ends
-      playSound('timeout', 0.5);
+      playSound('timeout');
       
       addGameEvent("Czas minął!");
     }

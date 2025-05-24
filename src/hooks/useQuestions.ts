@@ -152,7 +152,7 @@ export const useQuestions = () => {
         categories: categories.map(cat => ({
           id: cat.id,
           name: cat.name,
-          round: cat.round as GameRound // Proper cast to GameRound enum
+          round: cat.round as GameRound // Ensure proper type conversion
         })),
         exportDate: new Date().toISOString(),
         version: '1.0.0'

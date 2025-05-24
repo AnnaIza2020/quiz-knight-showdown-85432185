@@ -76,6 +76,33 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     addLog(`Error: ${message}`);
   };
 
+  // Convert our RoundSettings to the format expected by useGameLogic
+  const convertRoundSettingsForGameLogic = (settings: RoundSettings) => {
+    return {
+      ...settings,
+      pointValues: {
+        round1: {
+          easy: settings.pointValues.round1,
+          medium: settings.pointValues.round1,
+          hard: settings.pointValues.round1,
+          expert: settings.pointValues.round1
+        },
+        round2: {
+          easy: settings.pointValues.round2,
+          medium: settings.pointValues.round2,
+          hard: settings.pointValues.round2,
+          expert: settings.pointValues.round2
+        },
+        round3: {
+          easy: settings.pointValues.round3,
+          medium: settings.pointValues.round3,
+          hard: settings.pointValues.round3,
+          expert: settings.pointValues.round3
+        }
+      }
+    };
+  };
+
   // Game logic from the game logic hook
   const gameLogic = useGameLogic(players, setPlayers, setRound, setWinnerIds);
   const {
@@ -213,9 +240,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     };
     setRoundSettings(updatedSettings);
     
-    // Convert to the format expected by useGameLogic if needed
-    // This is a simplified conversion - you may need to adjust based on useGameLogic expectations
-    updateGameRoundSettings(updatedSettings);
+    // Convert to the format expected by useGameLogic
+    const convertedSettings = convertRoundSettingsForGameLogic(updatedSettings);
+    updateGameRoundSettings(convertedSettings);
   };
   
   // Question management
