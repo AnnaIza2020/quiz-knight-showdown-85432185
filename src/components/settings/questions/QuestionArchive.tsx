@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Category, Question } from '@/types/game-types';
-import { getUsedQuestions, restoreQuestion } from '@/lib';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -20,19 +20,23 @@ const QuestionArchive: React.FC<QuestionArchiveProps> = ({ categories, onRestore
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Load used questions
+  // Load used questions from database
   const loadUsedQuestions = async () => {
     setIsLoading(true);
     try {
-      const result = await getUsedQuestions();
-      // Check if result has success property, otherwise assume it's direct data
-      if (result && typeof result === 'object' && 'success' in result) {
-        if (result.success) {
-          setUsedQuestionIds(result.data || []);
-        }
-      } else if (Array.isArray(result)) {
-        // If result is directly an array, use it
-        setUsedQuestionIds(result);
+      const { data, error } = await supabase
+        .from('used_questions')
+        .select('question_id');
+        
+      if (error) {
+        console.error("Error loading used questions:", error);
+        toast.error("Nie udało się załadować używanych pytań");
+        return;
+      }
+      
+      if (data) {
+        const questionIds = data.map((item: any) => item.question_id);
+        setUsedQuestionIds(questionIds);
       }
     } catch (error) {
       console.error("Error loading used questions:", error);
@@ -74,15 +78,20 @@ const QuestionArchive: React.FC<QuestionArchiveProps> = ({ categories, onRestore
   // Handle restoring a question
   const handleRestoreQuestion = async (questionId: string) => {
     try {
-      const result = await restoreQuestion(questionId);
-      if (result.success) {
-        // Remove from used questions list
-        setUsedQuestionIds(prev => prev.filter(id => id !== questionId));
-        onRestoreQuestion(questionId);
-        toast.success('Pytanie przywrócone do puli');
-      } else {
+      const { error } = await supabase
+        .from('used_questions')
+        .delete()
+        .eq('question_id', questionId);
+        
+      if (error) {
         toast.error('Nie udało się przywrócić pytania');
+        return;
       }
+      
+      // Remove from used questions list
+      setUsedQuestionIds(prev => prev.filter(id => id !== questionId));
+      onRestoreQuestion(questionId);
+      toast.success('Pytanie przywrócone do puli');
     } catch (error) {
       console.error("Error restoring question:", error);
       toast.error('Wystąpił błąd podczas przywracania pytania');

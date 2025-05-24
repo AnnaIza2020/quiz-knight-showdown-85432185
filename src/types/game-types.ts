@@ -1,3 +1,4 @@
+
 import { RoundSettings } from './round-settings';
 import { PlayerAvailabilitySlot } from './availability-types';
 import { CardSize as CardSizeType, SpecialCard as CardType } from './card-types';
@@ -26,6 +27,7 @@ export interface Player {
   uniqueLinkToken?: string;
   avatar?: string; // For backward compatibility
   cameraUrl?: string; // For backward compatibility
+  forcedEliminated?: boolean; // Added missing property
 }
 
 export interface Question {
@@ -74,7 +76,7 @@ export interface SpecialCardAwardRule {
   // Additional properties for card distribution
   isEnabled?: boolean;
   roundApplicable?: GameRound[];
-  condition?: 'points' | 'health' | 'elimination' | 'round_completion';
+  condition?: 'points' | 'health' | 'elimination' | 'round_completion' | 'points_milestone' | 'consecutive_correct' | 'survive_round' | 'lowest_score';
   threshold?: number;
   cardId?: string;
   probability?: number;
@@ -156,8 +158,8 @@ export interface GameContextType {
   
   // Methods
   setRound: (round: GameRound) => void;
-  setPlayers: (players: Player[]) => void;
-  setCategories: (categories: Category[]) => void;
+  setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
+  setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
   addPlayer: (player: Player) => void;
   updatePlayer: (player: Player) => void;
   removePlayer: (playerId: string) => void;

@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Category, GameRound } from '@/types/game-types';
 import { useGameContext } from '@/context/GameContext';
@@ -27,13 +26,13 @@ const CategoryManager: React.FC<CategoryManagerProps> = () => {
       description: ''
     };
     
-    setCategories(prevCategories => [...prevCategories, newCategory]);
+    setCategories((prevCategories: Category[]) => [...prevCategories, newCategory]);
     setNewCategoryName('');
     toast.success(`Dodano kategorię "${newCategoryName}"`);
   };
 
   const handleRemoveCategory = (categoryId: string) => {
-    setCategories(prevCategories =>
+    setCategories((prevCategories: Category[]) =>
       prevCategories.filter(category => category.id !== categoryId)
     );
     toast.success('Kategoria została usunięta');

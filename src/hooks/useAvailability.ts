@@ -21,9 +21,9 @@ export const useAvailability = () => {
         throw error;
       }
       
-      if (data) {
+      if (data && Array.isArray(data)) {
         // Transform data to match our type
-        const transformedData: PlayerAvailabilitySlot[] = data.map(item => ({
+        const transformedData: PlayerAvailabilitySlot[] = data.map((item: any) => ({
           id: item.id,
           playerId: item.player_id,
           date: item.date,

@@ -8,7 +8,16 @@ import { toast } from 'sonner';
 import { Category, GameRound } from '@/types/game-types';
 import { useGameContext } from '@/context/GameContext';
 import { Trash2 } from 'lucide-react';
-import SettingsLayout from '@/components/SettingsLayout';
+
+const SettingsLayout: React.FC<{title: string, description: string, children: React.ReactNode}> = ({ title, description, children }) => (
+  <div className="space-y-6">
+    <div>
+      <h1 className="text-3xl font-bold">{title}</h1>
+      <p className="text-muted-foreground">{description}</p>
+    </div>
+    {children}
+  </div>
+);
 
 const SettingsWheelCategories: React.FC = () => {
   const { categories, setCategories } = useGameContext();
@@ -33,14 +42,14 @@ const SettingsWheelCategories: React.FC = () => {
     };
     
     // Use functional update correctly
-    setCategories(prevCategories => [...prevCategories, newCategory]);
+    setCategories((prevCategories: Category[]) => [...prevCategories, newCategory]);
     setNewCategoryName('');
     toast.success(`Dodano kategorię "${newCategoryName}"`);
   };
 
   const handleRemoveCategory = (categoryId: string) => {
     // Use functional update correctly
-    setCategories(prevCategories =>
+    setCategories((prevCategories: Category[]) =>
       prevCategories.filter(category => category.id !== categoryId)
     );
     toast.success('Kategoria została usunięta');
