@@ -130,12 +130,20 @@ export function useCardDistribution({
       // Skip if player already has max cards
       if (player.specialCards && player.specialCards.length >= MAX_CARDS_PER_PLAYER) return;
       
-      // Find applicable rules
-      const surviveRules = specialCardRules.filter(rule => 
-        rule.condition === 'survive_round' && 
-        rule.isEnabled !== false &&
-        (!rule.roundApplicable || rule.roundApplicable.includes(newRound - 1))
-      );
+      // Find applicable rules - properly handle GameRound enum
+      const surviveRules = specialCardRules.filter(rule => {
+        if (rule.condition !== 'survive_round') return false;
+        if (rule.isEnabled === false) return false;
+        
+        // Check if rule applies to previous round
+        if (rule.roundApplicable && rule.roundApplicable.length > 0) {
+          // Get previous round value (newRound - 1 as GameRound)
+          const prevRoundValue = Object.values(GameRound)[Object.values(GameRound).indexOf(newRound) - 1];
+          return rule.roundApplicable.includes(prevRoundValue);
+        }
+        
+        return true;
+      });
       
       // Award card based on first matching rule
       if (surviveRules.length > 0) {

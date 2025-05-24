@@ -23,12 +23,12 @@ export const useAvailability = () => {
       }
       
       if (data && Array.isArray(data)) {
-        // Transform data to match our type
+        // Transform data to match our type with proper Json handling
         const transformedData: PlayerAvailabilitySlot[] = data.map((item: any) => ({
-          id: item.id,
-          playerId: item.player_id || item.playerId,
-          date: item.date,
-          timeSlots: item.time_slots || item.timeSlots || {}
+          id: String(item.id || item.id),
+          playerId: String(item.player_id || item.playerId),
+          date: String(item.date),
+          timeSlots: typeof item.time_slots === 'object' ? item.time_slots : (item.timeSlots || {})
         }));
         
         setAvailability(transformedData);
@@ -53,7 +53,7 @@ export const useAvailability = () => {
       let availabilityList = Array.isArray(currentData) ? currentData : [];
       
       // Update or add the availability record
-      const existingIndex = availabilityList.findIndex((item: any) => item.id === data.id);
+      const existingIndex = availabilityList.findIndex((item: any) => String(item.id) === data.id);
       if (existingIndex >= 0) {
         availabilityList[existingIndex] = {
           id: data.id,
@@ -108,7 +108,7 @@ export const useAvailability = () => {
       });
       
       let availabilityList = Array.isArray(currentData) ? currentData : [];
-      availabilityList = availabilityList.filter((item: any) => item.id !== id);
+      availabilityList = availabilityList.filter((item: any) => String(item.id) !== id);
       
       // Save updated data
       const { error } = await supabase.rpc('save_game_data', {

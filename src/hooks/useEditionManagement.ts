@@ -23,7 +23,11 @@ export const useEditionManagement = (addEvent: (event: string) => void) => {
         if (error) throw error;
           
         if (data && Array.isArray(data)) {
-          setAvailableEditions(data);
+          // Cast Json array to proper type
+          const editions = data.map(item => ({
+            name: typeof item === 'string' ? item : (item as any)?.name || 'Unknown'
+          }));
+          setAvailableEditions(editions);
         } else {
           setAvailableEditions([]);
         }
@@ -97,26 +101,29 @@ export const useEditionManagement = (addEvent: (event: string) => void) => {
         
       if (error) throw error;
       
-      if (data && typeof data === 'object') {
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        // Type assertion for proper object handling
+        const gameData = data as Record<string, any>;
+        
         // Update local storage with loaded data
-        if (data.players) {
-          localStorage.setItem('gameShowPlayers', JSON.stringify(data.players));
+        if (gameData.players) {
+          localStorage.setItem('gameShowPlayers', JSON.stringify(gameData.players));
         }
         
-        if (data.categories) {
-          localStorage.setItem('gameShowCategories', JSON.stringify(data.categories));
+        if (gameData.categories) {
+          localStorage.setItem('gameShowCategories', JSON.stringify(gameData.categories));
         }
         
-        if (data.specialCards) {
-          localStorage.setItem('gameShowSpecialCards', JSON.stringify(data.specialCards));
+        if (gameData.specialCards) {
+          localStorage.setItem('gameShowSpecialCards', JSON.stringify(gameData.specialCards));
         }
         
-        if (data.specialCardRules) {
-          localStorage.setItem('gameShowSpecialCardRules', JSON.stringify(data.specialCardRules));
+        if (gameData.specialCardRules) {
+          localStorage.setItem('gameShowSpecialCardRules', JSON.stringify(gameData.specialCardRules));
         }
         
-        if (data.settings) {
-          localStorage.setItem('gameShowSettings', JSON.stringify(data.settings));
+        if (gameData.settings) {
+          localStorage.setItem('gameShowSettings', JSON.stringify(gameData.settings));
         }
         
         // Reload game data

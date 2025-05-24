@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Category, Question } from '@/types/game-types';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,7 +23,6 @@ const QuestionArchive: React.FC<QuestionArchiveProps> = ({ categories, onRestore
   const loadUsedQuestions = async () => {
     setIsLoading(true);
     try {
-      // Use RPC call to get used questions since the table might not be in types yet
       const { data, error } = await supabase.rpc('load_game_data', { 
         key: 'used_questions' 
       });
@@ -36,7 +34,9 @@ const QuestionArchive: React.FC<QuestionArchiveProps> = ({ categories, onRestore
       }
       
       if (data && Array.isArray(data)) {
-        setUsedQuestionIds(data);
+        // Cast Json array to string array
+        const questionIds = data.map(item => String(item));
+        setUsedQuestionIds(questionIds);
       } else if (data && typeof data === 'object') {
         // Handle case where data is stored as object with question IDs
         const questionIds = Object.keys(data);
@@ -89,7 +89,9 @@ const QuestionArchive: React.FC<QuestionArchiveProps> = ({ categories, onRestore
       
       let updatedUsedQuestions: string[] = [];
       if (Array.isArray(currentData)) {
-        updatedUsedQuestions = currentData.filter((id: string) => id !== questionId);
+        updatedUsedQuestions = currentData
+          .map(item => String(item))
+          .filter((id: string) => id !== questionId);
       } else if (currentData && typeof currentData === 'object') {
         const questionIds = Object.keys(currentData);
         updatedUsedQuestions = questionIds.filter(id => id !== questionId);
