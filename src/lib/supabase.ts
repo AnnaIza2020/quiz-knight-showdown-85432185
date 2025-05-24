@@ -1,4 +1,5 @@
 
+
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
 
@@ -74,3 +75,41 @@ export const generatePlayerLink = async (playerId: string) => {
     return { success: false, error };
   }
 };
+
+// Helper function to load game setting
+export const loadGameSetting = async (key: string): Promise<string | null> => {
+  try {
+    const { data, error } = await supabase.rpc('load_game_data', { key });
+      
+    if (error) {
+      console.error(`Error loading game setting ${key}:`, error);
+      return null;
+    }
+    
+    return typeof data === 'string' ? data : null;
+  } catch (error) {
+    console.error(`Error loading game setting ${key}:`, error);
+    return null;
+  }
+};
+
+// Helper function to save game setting
+export const saveGameSetting = async (key: string, value: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase.rpc('save_game_data', {
+      key,
+      value
+    });
+      
+    if (error) {
+      console.error(`Error saving game setting ${key}:`, error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error(`Error saving game setting ${key}:`, error);
+    return false;
+  }
+};
+

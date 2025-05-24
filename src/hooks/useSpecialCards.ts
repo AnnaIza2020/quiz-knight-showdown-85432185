@@ -1,4 +1,5 @@
 
+
 import { toast } from 'sonner';
 import { Player, SpecialCard, SpecialCardAwardRule, SoundEffect } from '@/types/game-types';
 
@@ -75,7 +76,6 @@ export const useSpecialCards = (
       condition: rule.condition,
       probability: rule.probability || 100,
       roundApplicable: rule.roundApplicable || [],
-      roundType: rule.roundType,
       description: rule.description || '',
       isEnabled: rule.isEnabled !== undefined ? rule.isEnabled : true,
       ...rule
@@ -233,3 +233,4 @@ export const useSpecialCards = (
     getPlayerCards
   };
 };
+

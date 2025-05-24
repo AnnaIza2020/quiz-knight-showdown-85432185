@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect } from 'react';
 import { GameRound } from '@/types/game-types';
 import { toast } from 'sonner';
@@ -23,10 +24,8 @@ export const useHostActions = (addEvent: (event: string) => void) => {
   } = useGameContext();
   
   const { saveGame, loadGame, getSavedGames } = useGamePersistence();
-  const { broadcast } = useSubscription('game_events', 'new_event', () => {}, { immediate: false });
-  const { playSound, stopAllSounds, soundsEnabled, setSoundsEnabled } = useSoundEffects({
-    useLocalStorage: true
-  });
+  const { broadcast } = useSubscription('game_events', 'new_event', () => {});
+  const { playSound, stopAllSounds, soundsEnabled, setSoundsEnabled } = useSoundEffects();
   
   // Load game data on initial render
   useEffect(() => {
@@ -147,3 +146,4 @@ export const useHostActions = (addEvent: (event: string) => void) => {
     playSound
   };
 };
+
