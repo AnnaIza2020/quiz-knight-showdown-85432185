@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback, useMemo } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { GameRound, Player } from '@/types/game-types';
@@ -97,7 +98,7 @@ const Host = () => {
     // Different behavior based on round
     if (round === GameRound.ROUND_ONE) {
       // In Round 1, deduct health percentage
-      const penaltyAmount = roundSettings.lifePenalties.round1;
+      const penaltyAmount = roundSettings.round1.healthDeductionPercentage;
       deductHealth(activePlayerId, penaltyAmount);
       
       // Check if player reached 0 health

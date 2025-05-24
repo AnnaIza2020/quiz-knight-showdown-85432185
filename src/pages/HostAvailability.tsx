@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
-import { useAvailabilityContext } from '@/context/AvailabilityContext';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Download } from 'l
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { PlayerAvailabilitySlot } from '@/types/availability-types';
 
 // Stałe potrzebne do działania komponentu
 const TIME_SLOTS = [
@@ -16,11 +17,10 @@ const TIME_SLOTS = [
 ];
 
 const HostAvailability = () => {
-  const { players } = useGameContext();
-  const { fetchAvailability } = useAvailabilityContext();
+  const { players, fetchAvailability } = useGameContext();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [weekDays, setWeekDays] = useState<Date[]>([]);
-  const [playerAvailability, setPlayerAvailability] = useState<any[]>([]);
+  const [playerAvailability, setPlayerAvailability] = useState<PlayerAvailabilitySlot[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {

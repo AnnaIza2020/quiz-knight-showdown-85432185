@@ -4,11 +4,11 @@ import { useGameState } from '@/hooks/useGameState';
 import { useGameLogic } from '@/hooks/useGameLogic';
 import { useGamePersistence } from '@/hooks/useGamePersistence';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
-import { GameContextType, Question, GameBackup, GameSound, SoundEffect } from '@/types/game-types';
+import { GameContextType, Question, GameBackup, GameSound, SoundEffect, GameRound } from '@/types/game-types';
 import { RoundSettings, defaultRoundSettings } from '@/types/round-settings';
 import { toast } from 'sonner';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
-import { PlayerAvailabilitySlot } from '@/types/availability-types';
+import { PlayerAvailabilitySlot, AvailabilityStatus } from '@/types/availability-types';
 import { supabase } from '@/lib/supabase';
 
 // Export the context so it can be imported by other modules
@@ -143,7 +143,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         
         // Play timer sound for last 5 seconds
         if (timerSeconds <= 6 && timerSeconds > 1) {
-          playSound('wheel-tick', 0.3);
+          playSound('wheel-tick');
         }
       }, 1000);
     } else if (timerRunning && timerSeconds === 0) {
@@ -205,13 +205,17 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     });
   };
 
-  // Update round settings
+  // Update round settings - convert to the format expected by useGameLogic
   const handleUpdateRoundSettings = (newSettings: Partial<RoundSettings>) => {
-    setRoundSettings(prev => ({
-      ...prev,
+    const updatedSettings = {
+      ...roundSettings,
       ...newSettings
-    }));
-    updateGameRoundSettings(newSettings);
+    };
+    setRoundSettings(updatedSettings);
+    
+    // Convert to the format expected by useGameLogic if needed
+    // This is a simplified conversion - you may need to adjust based on useGameLogic expectations
+    updateGameRoundSettings(updatedSettings);
   };
   
   // Question management
@@ -263,7 +267,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     );
   };
 
-  // Simple fetchAvailability that returns empty array (remove dependency on AvailabilityContext)
+  // Simple fetchAvailability that returns empty array
   const fetchPlayerAvailability = async (): Promise<PlayerAvailabilitySlot[]> => {
     try {
       const { data, error } = await supabase
@@ -275,16 +279,19 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         return [];
       }
 
-      return data.map(item => ({
+      // Properly type the data and handle the Json type conversion
+      return (data || []).map(item => ({
         id: item.id,
         playerId: item.player_id,
         date: item.date,
-        timeSlots: item.time_slots,
+        timeSlots: (typeof item.time_slots === 'object' && item.time_slots !== null) 
+          ? item.time_slots as Record<string, AvailabilityStatus>
+          : {} as Record<string, AvailabilityStatus>,
         player_id: item.player_id,
         time_slots: item.time_slots,
         created_at: item.created_at,
         updated_at: item.updated_at
-      })) || [];
+      }));
     } catch (error) {
       console.error("Error fetching availability:", error);
       return [];

@@ -2,10 +2,9 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { useQuestionsContext } from '@/context/QuestionsContext';
-import { Question } from '@/types/game-types';
+import { Question, GameRound } from '@/types/game-types';
 import { QuestionFilterOptions, QuestionImportExport } from '@/types/questions-types';
 import { toast } from 'sonner';
-import { GameRound } from '@/types/game-types';
 
 /**
  * Custom hook for managing questions, including filtering, importing, and exporting
@@ -153,7 +152,7 @@ export const useQuestions = () => {
         categories: categories.map(cat => ({
           id: cat.id,
           name: cat.name,
-          round: cat.round
+          round: cat.round as GameRound // Proper cast to GameRound enum
         })),
         exportDate: new Date().toISOString(),
         version: '1.0.0'
