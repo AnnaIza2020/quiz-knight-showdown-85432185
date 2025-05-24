@@ -1,81 +1,94 @@
+
 import React, { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { useGameContext } from '@/context/GameContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Category, GameRound } from '@/types/game-types';
 import { toast } from 'sonner';
+import { Category, GameRound } from '@/types/game-types';
+import { useGameContext } from '@/context/GameContext';
+import { Trash2 } from 'lucide-react';
 
-const CategoryManager = () => {
-  const { categories, addCategory } = useGameContext();
+interface CategoryManagerProps {
+  // Remove the round prop since it's not being used correctly
+}
+
+const CategoryManager: React.FC<CategoryManagerProps> = () => {
+  const { categories, setCategories } = useGameContext();
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [selectedRound, setSelectedRound] = useState<GameRound>(GameRound.ROUND_ONE);
-  const [error, setError] = useState('');
   
-  const handleAddCategory = (name: string) => {
-    if (!name.trim()) return;
+  const handleAddCategory = (round: GameRound) => {
+    if (newCategoryName.trim() === '') return;
     
     const newCategory: Category = {
       id: crypto.randomUUID(),
-      name: name.trim(),
+      name: newCategoryName,
+      round: round,
       questions: [],
-      round: selectedRound || GameRound.ROUND_ONE,
-      description: '' // Add required description field
+      description: ''
     };
     
-    addCategory(newCategory);
+    setCategories(prevCategories => [...prevCategories, newCategory]);
     setNewCategoryName('');
-    setError('');
-    toast.success(`Kategoria "${name}" została dodana pomyślnie`);
+    toast.success(`Dodano kategorię "${newCategoryName}"`);
   };
-  
+
+  const handleRemoveCategory = (categoryId: string) => {
+    setCategories(prevCategories =>
+      prevCategories.filter(category => category.id !== categoryId)
+    );
+    toast.success('Kategoria została usunięta');
+  };
+
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-white">Zarządzanie Kategoriami</h3>
+      <h3 className="text-lg font-semibold text-white">Zarządzanie kategoriami</h3>
       
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="categoryName" className="text-sm text-white/70">Nazwa kategorii</Label>
+      <div className="flex gap-2">
         <Input
-          id="categoryName"
-          className="bg-black/50 border-white/20 text-white"
+          type="text"
+          placeholder="Nazwa nowej kategorii"
           value={newCategoryName}
           onChange={(e) => setNewCategoryName(e.target.value)}
-          placeholder="Wpisz nazwę kategorii"
+          className="bg-black/40 border-gray-700 text-white"
         />
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+        <Button onClick={() => handleAddCategory(GameRound.ROUND_ONE)}>
+          Dodaj do R1
+        </Button>
+        <Button onClick={() => handleAddCategory(GameRound.ROUND_TWO)}>
+          Dodaj do R2
+        </Button>
+        <Button onClick={() => handleAddCategory(GameRound.ROUND_THREE)}>
+          Dodaj do R3
+        </Button>
       </div>
       
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="roundSelect" className="text-sm text-white/70">Wybierz rundę</Label>
-        <Select onValueChange={(value) => setSelectedRound(value as GameRound)} defaultValue={GameRound.ROUND_ONE}>
-          <SelectTrigger className="bg-black/50 border-white/20 text-white">
-            <SelectValue placeholder="Wybierz rundę" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={GameRound.ROUND_ONE}>Runda 1</SelectItem>
-            <SelectItem value={GameRound.ROUND_TWO}>Runda 2</SelectItem>
-            <SelectItem value={GameRound.ROUND_THREE}>Runda 3</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <Button onClick={() => handleAddCategory(newCategoryName)} className="bg-neon-blue text-black hover:bg-neon-blue/80">
-        Dodaj kategorię
-      </Button>
-      
-      <div className="mt-6">
-        <h4 className="text-md font-semibold text-white">Lista Kategorii</h4>
-        {categories.length === 0 ? (
-          <p className="text-white/50">Brak kategorii. Dodaj kategorię powyżej.</p>
-        ) : (
-          <ul className="list-none space-y-2">
-            {categories.map((category) => (
-              <li key={category.id} className="text-white">{category.name} ({category.round})</li>
-            ))}
-          </ul>
-        )}
+      <div className="grid grid-cols-3 gap-4">
+        {[GameRound.ROUND_ONE, GameRound.ROUND_TWO, GameRound.ROUND_THREE].map(round => (
+          <div key={round} className="space-y-2">
+            <h4 className="font-medium text-white">
+              {round === GameRound.ROUND_ONE ? 'Runda 1' : 
+               round === GameRound.ROUND_TWO ? 'Runda 2' : 'Runda 3'}
+            </h4>
+            {categories
+              .filter(cat => cat.round === round)
+              .map(category => (
+                <div
+                  key={category.id}
+                  className="p-2 rounded bg-black/20 border border-gray-700 text-white flex justify-between items-center"
+                >
+                  <span className="text-sm">{category.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:bg-red-500/10"
+                    onClick={() => handleRemoveCategory(category.id)}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              ))}
+          </div>
+        ))}
       </div>
     </div>
   );

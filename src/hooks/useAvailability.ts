@@ -1,167 +1,110 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { PlayerAvailabilitySlot, AvailabilityStatus } from '@/types/availability-types';
-import { toast } from 'sonner';
 
-export function useAvailability() {
-  const [playerAvailability, setPlayerAvailability] = useState<PlayerAvailabilitySlot[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+export const useAvailability = () => {
+  const [availability, setAvailability] = useState<PlayerAvailabilitySlot[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchAvailability = async (): Promise<PlayerAvailabilitySlot[]> => {
-    setIsLoading(true);
+  const fetchAvailability = async () => {
+    setLoading(true);
     setError(null);
     
     try {
-      // First check if the table exists
-      const { exists, error: checkError } = await checkTableExists('player_availability');
+      const { data, error } = await supabase
+        .from('player_availability')
+        .select('*');
       
-      if (checkError) throw new Error(checkError);
-      
-      if (!exists) {
-        // Table doesn't exist yet, return empty data
-        console.log('player_availability table does not exist yet');
-        return [];
+      if (error) {
+        throw error;
       }
       
-      // Using any type temporarily to bypass type checking for dynamic table
-      // This is necessary until we update the Supabase generated types
-      const { data, error } = await (supabase
-        .from('player_availability' as any)
-        .select('*'));
-      
-      if (error) throw error;
-      
-      // Transform data to the expected format
-      const formattedData: PlayerAvailabilitySlot[] = (data || []).map(item => ({
-        id: item.id,
-        playerId: item.player_id,
-        date: item.date,
-        timeSlots: item.time_slots || {},
-        player_id: item.player_id,
-        time_slots: item.time_slots
-      }));
-      
-      setPlayerAvailability(formattedData);
-      return formattedData;
+      if (data) {
+        // Transform data to match our type
+        const transformedData: PlayerAvailabilitySlot[] = data.map(item => ({
+          id: item.id,
+          playerId: item.player_id,
+          date: item.date,
+          timeSlots: item.time_slots as Record<string, AvailabilityStatus>
+        }));
+        
+        setAvailability(transformedData);
+      }
     } catch (err) {
-      const error = err as Error;
-      setError(error);
-      toast.error('Błąd podczas pobierania dostępności graczy');
-      console.error('Error fetching availability:', error);
-      return [];
+      console.error('Error fetching availability:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const updateAvailability = async (playerId: string, slot: PlayerAvailabilitySlot): Promise<boolean> => {
-    setIsLoading(true);
-    setError(null);
-    
+  const updateAvailability = async (data: PlayerAvailabilitySlot) => {
     try {
-      // First check if the table exists, create if not
-      const { exists, error: checkError } = await checkTableExists('player_availability');
-      
-      if (checkError) throw new Error(checkError);
-      
-      if (!exists) {
-        // Table doesn't exist, we should create it first
-        console.log('player_availability table does not exist yet');
-        // Return false as we can't update a non-existent table
-        return false;
-      }
-      
-      // Using any type temporarily to bypass type checking for dynamic table
-      const { error } = await (supabase
-        .from('player_availability' as any)
+      const { error } = await supabase
+        .from('player_availability')
         .upsert({
-          player_id: playerId,
-          date: slot.date,
-          time_slots: slot.timeSlots
-        }));
+          id: data.id,
+          player_id: data.playerId,
+          date: data.date,
+          time_slots: data.timeSlots
+        });
       
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       
       // Update local state
-      setPlayerAvailability(prev => {
-        const playerIndex = prev.findIndex(p => p.playerId === playerId);
-        
-        if (playerIndex >= 0) {
-          const updatedSlots = [...prev[playerIndex].slots];
-          const slotIndex = updatedSlots.findIndex(s => s.date === slot.date);
-          
-          if (slotIndex >= 0) {
-            updatedSlots[slotIndex] = slot;
-          } else {
-            updatedSlots.push(slot);
-          }
-          
-          const updatedAvailability = [...prev];
-          updatedAvailability[playerIndex] = {
-            ...prev[playerIndex],
-            slots: updatedSlots
-          };
-          
-          return updatedAvailability;
+      setAvailability(prev => {
+        const existingIndex = prev.findIndex(item => item.id === data.id);
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = data;
+          return updated;
+        } else {
+          return [...prev, data];
         }
-        
-        // If player doesn't exist, add new entry
-        return [...prev, {
-          playerId,
-          slots: [slot]
-        }];
       });
       
-      toast.success('Dostępność zaktualizowana');
-      return true;
+      return { success: true };
     } catch (err) {
-      const error = err as Error;
-      setError(error);
-      toast.error('Błąd podczas aktualizacji dostępności');
-      console.error('Error updating availability:', error);
-      return false;
-    } finally {
-      setIsLoading(false);
+      console.error('Error updating availability:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      return { success: false };
     }
   };
 
-  // Helper to transform raw DB data to our format
-  const transformAvailabilityData = (data: any[]): PlayerAvailabilitySlot[] => {
-    return data.map(item => ({
-      id: item.id,
-      playerId: item.player_id,
-      date: item.date,
-      timeSlots: item.time_slots || {},
-      player_id: item.player_id,
-      time_slots: item.time_slots
-    }));
-  };
-
-  // Helper function to check if a table exists
-  const checkTableExists = async (tableName: string) => {
+  const deleteAvailability = async (id: string) => {
     try {
-      // Try to get a single row from the table
-      await supabase
-        .from(tableName as any)
-        .select('*', { count: 'exact', head: true });
-        
-      // If we get here without error, the table exists
-      return { exists: true, error: null };
-    } catch (err: any) {
-      // If the error is about the table not existing
-      if (err.message && err.message.includes('relation') && err.message.includes('does not exist')) {
-        return { exists: false, error: null };
+      const { error } = await supabase
+        .from('player_availability')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
       }
-      return { exists: false, error: 'Unknown error checking table' };
+      
+      setAvailability(prev => prev.filter(item => item.id !== id));
+      return { success: true };
+    } catch (err) {
+      console.error('Error deleting availability:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      return { success: false };
     }
   };
+
+  useEffect(() => {
+    fetchAvailability();
+  }, []);
 
   return {
-    playerAvailability,
-    isLoading,
+    availability,
+    loading,
     error,
     fetchAvailability,
-    updateAvailability
+    updateAvailability,
+    deleteAvailability
   };
-}
+};

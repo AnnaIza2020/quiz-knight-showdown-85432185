@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { useQuestionsContext } from '@/context/QuestionsContext';
 import { Question, Category, GameRound } from '@/types/game-types';
@@ -88,7 +87,7 @@ const Round3Questions: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Category Management */}
-      <CategoryManager round={GameRound.ROUND_THREE} />
+      <CategoryManager />
       
       {/* Category Selection */}
       <div>

@@ -83,7 +83,8 @@ export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({ children }
       question.id = crypto.randomUUID();
     }
 
-    setCategories((prevCategories: Category[]) => {
+    // Use functional update correctly
+    setCategories(prevCategories => {
       return prevCategories.map(category => {
         if (category.id === categoryId) {
           return {
@@ -99,7 +100,8 @@ export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({ children }
   }, [categories, setCategories]);
 
   const removeQuestion = useCallback((categoryId: string, questionId: string) => {
-    setCategories((prevCategories: Category[]) => {
+    // Use functional update correctly
+    setCategories(prevCategories => {
       return prevCategories.map(category => {
         if (category.id === categoryId) {
           return {
@@ -113,7 +115,8 @@ export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({ children }
   }, [setCategories]);
 
   const updateQuestion = useCallback((categoryId: string, updatedQuestion: Question) => {
-    setCategories((prevCategories: Category[]) => {
+    // Use functional update correctly
+    setCategories(prevCategories => {
       return prevCategories.map(category => {
         if (category.id === categoryId) {
           return {

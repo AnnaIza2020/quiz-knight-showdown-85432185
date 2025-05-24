@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -10,7 +11,7 @@ import { Download, Upload, Plus, Filter } from 'lucide-react';
 import { useQuestions } from '@/hooks/useQuestions';
 import QuestionFilters from './questions/QuestionFilters';
 import QuestionTable from './questions/QuestionTable';
-import QuestionForm from './questions/QuestionForm';
+import QuestionFormDialog from './questions/QuestionFormDialog';
 import ImportExportButtons from './questions/ImportExportButtons';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Question } from '@/types/game-types';
@@ -288,8 +289,8 @@ const SettingsQuestions = () => {
             />
           </div>
           
-          {/* Question form dialog */}
-          <QuestionForm 
+          {/* Question form dialog - updated to use new component */}
+          <QuestionFormDialog
             open={isQuestionFormOpen}
             onClose={() => {
               setIsQuestionFormOpen(false);

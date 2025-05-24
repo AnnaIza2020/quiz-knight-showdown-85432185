@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Category, Question } from '@/types/game-types';
 import { getUsedQuestions, restoreQuestion } from '@/lib';
@@ -24,8 +25,14 @@ const QuestionArchive: React.FC<QuestionArchiveProps> = ({ categories, onRestore
     setIsLoading(true);
     try {
       const result = await getUsedQuestions();
-      if (result.success) {
-        setUsedQuestionIds(result.data);
+      // Check if result has success property, otherwise assume it's direct data
+      if (result && typeof result === 'object' && 'success' in result) {
+        if (result.success) {
+          setUsedQuestionIds(result.data || []);
+        }
+      } else if (Array.isArray(result)) {
+        // If result is directly an array, use it
+        setUsedQuestionIds(result);
       }
     } catch (error) {
       console.error("Error loading used questions:", error);

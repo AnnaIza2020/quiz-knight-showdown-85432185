@@ -99,11 +99,12 @@ const DebugPanel = () => {
       const truncatedMessage = errorMessage.substring(0, 100) + 
         (errorMessage.length > 100 ? '...' : '');
       
-      // Add to system log
+      // Add to system log with proper message field
       addLog({
         type: 'system',
         action: 'Console Error',
-        value: truncatedMessage
+        value: truncatedMessage,
+        message: `Console Error: ${truncatedMessage}`
       });
       
       // Update errors with aggregation

@@ -29,16 +29,18 @@ const SettingsWheelCategories: React.FC = () => {
       name: newCategoryName,
       round: GameRound.ROUND_THREE,
       questions: [],
-      description: '' // Add this required field
+      description: ''
     };
     
-    setCategories((prevCategories: Category[]) => [...prevCategories, newCategory]);
+    // Use functional update correctly
+    setCategories(prevCategories => [...prevCategories, newCategory]);
     setNewCategoryName('');
     toast.success(`Dodano kategorię "${newCategoryName}"`);
   };
 
   const handleRemoveCategory = (categoryId: string) => {
-    setCategories((prevCategories: Category[]) =>
+    // Use functional update correctly
+    setCategories(prevCategories =>
       prevCategories.filter(category => category.id !== categoryId)
     );
     toast.success('Kategoria została usunięta');

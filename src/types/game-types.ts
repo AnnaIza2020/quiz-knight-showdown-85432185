@@ -70,6 +70,14 @@ export interface SpecialCardAwardRule {
   priority: number;
   active: boolean;
   effect: string;
+  
+  // Additional properties for card distribution
+  isEnabled?: boolean;
+  roundApplicable?: GameRound[];
+  condition?: 'points' | 'health' | 'elimination' | 'round_completion';
+  threshold?: number;
+  cardId?: string;
+  probability?: number;
 }
 
 export interface GameBackup {
