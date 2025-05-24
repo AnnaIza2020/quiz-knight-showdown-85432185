@@ -20,13 +20,14 @@ const QuestionArchive: React.FC<QuestionArchiveProps> = ({ categories, onRestore
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Load used questions from database
+  // Load used questions from database using RPC call
   const loadUsedQuestions = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('used_questions')
-        .select('question_id');
+      // Use RPC call to get used questions since the table might not be in types yet
+      const { data, error } = await supabase.rpc('load_game_data', { 
+        key: 'used_questions' 
+      });
         
       if (error) {
         console.error("Error loading used questions:", error);
@@ -34,8 +35,11 @@ const QuestionArchive: React.FC<QuestionArchiveProps> = ({ categories, onRestore
         return;
       }
       
-      if (data) {
-        const questionIds = data.map((item: any) => item.question_id);
+      if (data && Array.isArray(data)) {
+        setUsedQuestionIds(data);
+      } else if (data && typeof data === 'object') {
+        // Handle case where data is stored as object with question IDs
+        const questionIds = Object.keys(data);
         setUsedQuestionIds(questionIds);
       }
     } catch (error) {
@@ -78,10 +82,24 @@ const QuestionArchive: React.FC<QuestionArchiveProps> = ({ categories, onRestore
   // Handle restoring a question
   const handleRestoreQuestion = async (questionId: string) => {
     try {
-      const { error } = await supabase
-        .from('used_questions')
-        .delete()
-        .eq('question_id', questionId);
+      // Get current used questions
+      const { data: currentData } = await supabase.rpc('load_game_data', { 
+        key: 'used_questions' 
+      });
+      
+      let updatedUsedQuestions: string[] = [];
+      if (Array.isArray(currentData)) {
+        updatedUsedQuestions = currentData.filter((id: string) => id !== questionId);
+      } else if (currentData && typeof currentData === 'object') {
+        const questionIds = Object.keys(currentData);
+        updatedUsedQuestions = questionIds.filter(id => id !== questionId);
+      }
+      
+      // Save updated list
+      const { error } = await supabase.rpc('save_game_data', {
+        key: 'used_questions',
+        value: updatedUsedQuestions
+      });
         
       if (error) {
         toast.error('Nie udało się przywrócić pytania');

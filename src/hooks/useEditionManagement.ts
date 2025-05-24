@@ -16,13 +16,16 @@ export const useEditionManagement = (addEvent: (event: string) => void) => {
   useEffect(() => {
     const loadEditions = async () => {
       try {
-        const { data, error } = await supabase
-          .rpc('load_game_data', { key: 'availableEditions' });
+        const { data, error } = await supabase.rpc('load_game_data', { 
+          key: 'availableEditions' 
+        });
           
         if (error) throw error;
           
-        if (data && typeof data === 'object') {
-          setAvailableEditions(Array.isArray(data) ? data : []);
+        if (data && Array.isArray(data)) {
+          setAvailableEditions(data);
+        } else {
+          setAvailableEditions([]);
         }
       } catch (error) {
         console.error('Failed to load editions:', error);
@@ -56,8 +59,10 @@ export const useEditionManagement = (addEvent: (event: string) => void) => {
     
     // Save to Supabase
     try {
-      const { data, error } = await supabase
-        .rpc('save_game_data', { key: editionName, value: gameData });
+      const { error } = await supabase.rpc('save_game_data', { 
+        key: editionName, 
+        value: gameData 
+      });
         
       if (error) throw error;
       
@@ -68,8 +73,10 @@ export const useEditionManagement = (addEvent: (event: string) => void) => {
         setAvailableEditions(newEditions);
         
         // Save updated editions list
-        await supabase
-          .rpc('save_game_data', { key: 'availableEditions', value: newEditions });
+        await supabase.rpc('save_game_data', { 
+          key: 'availableEditions', 
+          value: newEditions 
+        });
       }
       
       toast.success(`Edycja "${editionName}" zapisana pomyślnie!`);
@@ -84,33 +91,32 @@ export const useEditionManagement = (addEvent: (event: string) => void) => {
   // Handle load edition
   const handleLoadEdition = async (name: string) => {
     try {
-      const { data, error } = await supabase
-        .rpc('load_game_data', { key: name });
+      const { data, error } = await supabase.rpc('load_game_data', { 
+        key: name 
+      });
         
       if (error) throw error;
       
       if (data && typeof data === 'object') {
-        const gameData = data as any;
-        
         // Update local storage with loaded data
-        if (gameData.players) {
-          localStorage.setItem('gameShowPlayers', JSON.stringify(gameData.players));
+        if (data.players) {
+          localStorage.setItem('gameShowPlayers', JSON.stringify(data.players));
         }
         
-        if (gameData.categories) {
-          localStorage.setItem('gameShowCategories', JSON.stringify(gameData.categories));
+        if (data.categories) {
+          localStorage.setItem('gameShowCategories', JSON.stringify(data.categories));
         }
         
-        if (gameData.specialCards) {
-          localStorage.setItem('gameShowSpecialCards', JSON.stringify(gameData.specialCards));
+        if (data.specialCards) {
+          localStorage.setItem('gameShowSpecialCards', JSON.stringify(data.specialCards));
         }
         
-        if (gameData.specialCardRules) {
-          localStorage.setItem('gameShowSpecialCardRules', JSON.stringify(gameData.specialCardRules));
+        if (data.specialCardRules) {
+          localStorage.setItem('gameShowSpecialCardRules', JSON.stringify(data.specialCardRules));
         }
         
-        if (gameData.settings) {
-          localStorage.setItem('gameShowSettings', JSON.stringify(gameData.settings));
+        if (data.settings) {
+          localStorage.setItem('gameShowSettings', JSON.stringify(data.settings));
         }
         
         // Reload game data

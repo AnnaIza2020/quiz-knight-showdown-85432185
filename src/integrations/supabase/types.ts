@@ -146,6 +146,41 @@ export type Database = {
           },
         ]
       }
+      player_availability: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          player_id: string | null
+          time_slots: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          player_id?: string | null
+          time_slots?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          player_id?: string | null
+          time_slots?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_availability_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           avatar_url: string | null
@@ -241,6 +276,30 @@ export type Database = {
           },
         ]
       }
+      used_questions: {
+        Row: {
+          created_at: string
+          id: string
+          question_id: string
+          session_id: string | null
+          used_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          question_id: string
+          session_id?: string | null
+          used_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          question_id?: string
+          session_id?: string | null
+          used_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -249,6 +308,14 @@ export type Database = {
       generate_unique_player_token: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      load_game_data: {
+        Args: { key: string }
+        Returns: Json
+      }
+      save_game_data: {
+        Args: { key: string; value: Json }
+        Returns: boolean
       }
     }
     Enums: {

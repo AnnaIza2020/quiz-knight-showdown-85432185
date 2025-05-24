@@ -13,9 +13,10 @@ export const useAvailability = () => {
     setError(null);
     
     try {
-      const { data, error } = await supabase
-        .from('player_availability')
-        .select('*');
+      // Use RPC call to get availability data
+      const { data, error } = await supabase.rpc('load_game_data', { 
+        key: 'player_availability_data' 
+      });
       
       if (error) {
         throw error;
@@ -25,12 +26,14 @@ export const useAvailability = () => {
         // Transform data to match our type
         const transformedData: PlayerAvailabilitySlot[] = data.map((item: any) => ({
           id: item.id,
-          playerId: item.player_id,
+          playerId: item.player_id || item.playerId,
           date: item.date,
-          timeSlots: item.time_slots as Record<string, AvailabilityStatus>
+          timeSlots: item.time_slots || item.timeSlots || {}
         }));
         
         setAvailability(transformedData);
+      } else {
+        setAvailability([]);
       }
     } catch (err) {
       console.error('Error fetching availability:', err);
@@ -42,14 +45,36 @@ export const useAvailability = () => {
 
   const updateAvailability = async (data: PlayerAvailabilitySlot) => {
     try {
-      const { error } = await supabase
-        .from('player_availability')
-        .upsert({
+      // Get current availability data
+      const { data: currentData } = await supabase.rpc('load_game_data', { 
+        key: 'player_availability_data' 
+      });
+      
+      let availabilityList = Array.isArray(currentData) ? currentData : [];
+      
+      // Update or add the availability record
+      const existingIndex = availabilityList.findIndex((item: any) => item.id === data.id);
+      if (existingIndex >= 0) {
+        availabilityList[existingIndex] = {
           id: data.id,
           player_id: data.playerId,
           date: data.date,
           time_slots: data.timeSlots
+        };
+      } else {
+        availabilityList.push({
+          id: data.id || crypto.randomUUID(),
+          player_id: data.playerId,
+          date: data.date,
+          time_slots: data.timeSlots
         });
+      }
+      
+      // Save updated data
+      const { error } = await supabase.rpc('save_game_data', {
+        key: 'player_availability_data',
+        value: availabilityList
+      });
       
       if (error) {
         throw error;
@@ -77,10 +102,19 @@ export const useAvailability = () => {
 
   const deleteAvailability = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('player_availability')
-        .delete()
-        .eq('id', id);
+      // Get current availability data
+      const { data: currentData } = await supabase.rpc('load_game_data', { 
+        key: 'player_availability_data' 
+      });
+      
+      let availabilityList = Array.isArray(currentData) ? currentData : [];
+      availabilityList = availabilityList.filter((item: any) => item.id !== id);
+      
+      // Save updated data
+      const { error } = await supabase.rpc('save_game_data', {
+        key: 'player_availability_data',
+        value: availabilityList
+      });
       
       if (error) {
         throw error;
