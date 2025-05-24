@@ -1,4 +1,3 @@
-
 import React, { useEffect, useCallback, useMemo } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { GameRound, Player } from '@/types/game-types';
@@ -238,6 +237,7 @@ const Host = () => {
     return round === GameRound.ROUND_THREE && activePlayers.length > 0;
   }, [round, activePlayers.length]);
   
+  
   return (
     <div className="min-h-screen bg-neon-background p-4">
       <GameHeader 
@@ -291,7 +291,7 @@ const Host = () => {
             currentQuestion={currentQuestion}
             round={round}
             roundSettings={roundSettings}
-            hasUndoHistory={hasUndoHistory}
+            hasUndoHistory={hasUndoHistory()}
             handleAwardPoints={handleAwardPoints}
             handleDeductHealth={handleDeductHealth}
             handleBonusPoints={handleBonusPoints}

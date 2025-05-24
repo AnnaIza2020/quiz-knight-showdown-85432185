@@ -7,7 +7,7 @@ export interface RoundOneSettings {
   eliminateCount: number;
   maxQuestions: number;
   timerDuration?: number;
-  luckyLoserEnabled: boolean; // Making this required, not optional
+  luckyLoserEnabled: boolean;
 }
 
 export interface RoundTwoSettings {
@@ -38,6 +38,17 @@ export interface RoundSettings {
     round2: number;
     round3: number;
   };
+  pointValues: {
+    round1: number;
+    round2: number;
+    round3: number;
+  };
+  lifePenalties: {
+    round1: number;
+    round2: number;
+    round3: number;
+  };
+  luckyLoserThreshold: number;
 }
 
 export const defaultRoundSettings: RoundSettings = {
@@ -72,5 +83,16 @@ export const defaultRoundSettings: RoundSettings = {
     round1: 30,
     round2: 20,
     round3: 15
-  }
+  },
+  pointValues: {
+    round1: 10,
+    round2: 15,
+    round3: 20
+  },
+  lifePenalties: {
+    round1: 25,
+    round2: 1,
+    round3: 1
+  },
+  luckyLoserThreshold: 5
 };

@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { toast } from 'sonner';
@@ -64,11 +62,11 @@ export const useSoundManagement = (options?: SoundManagementOptions) => {
     // Convert File to URL if needed
     if (fileOrUrl instanceof File) {
       const url = URL.createObjectURL(fileOrUrl);
-      addCustomSound(name, url);
+      addCustomSound({ name, file: url });
       return true;
     }
     
-    addCustomSound(name, fileOrUrl);
+    addCustomSound({ name, file: fileOrUrl });
     return true;
   };
   
@@ -83,4 +81,3 @@ export const useSoundManagement = (options?: SoundManagementOptions) => {
     playSound: (sound: SoundEffect) => playSound?.(sound)
   };
 };
-

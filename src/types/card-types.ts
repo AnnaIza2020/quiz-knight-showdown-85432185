@@ -17,6 +17,27 @@ export interface CardEffect {
   points?: number;
 }
 
+export interface SpecialCard {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  soundEffect?: string;
+  iconName?: string;
+  animationStyle?: string;
+  type: string;
+  effectType?: string;
+  effectHook?: string;
+  effectParams?: Record<string, any>;
+  // Legacy field mappings
+  image_url?: string;
+  sound_effect?: string;
+  icon_name?: string;
+  animation_style?: string;
+}
+
+export type CardSize = 'tiny' | 'sm' | 'small' | 'md' | 'medium' | 'large' | 'xl';
+
 export interface CardDeck {
   id: string;
   name: string;
