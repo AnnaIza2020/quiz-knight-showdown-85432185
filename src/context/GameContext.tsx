@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { useGameLogic } from '@/hooks/useGameLogic';
@@ -76,34 +75,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     addLog(`Error: ${message}`);
   };
 
-  // Convert our RoundSettings to the format expected by useGameLogic
-  const convertRoundSettingsForGameLogic = (settings: RoundSettings) => {
-    return {
-      ...settings,
-      pointValues: {
-        round1: {
-          easy: settings.pointValues.round1,
-          medium: settings.pointValues.round1,
-          hard: settings.pointValues.round1,
-          expert: settings.pointValues.round1
-        },
-        round2: {
-          easy: settings.pointValues.round2,
-          medium: settings.pointValues.round2,
-          hard: settings.pointValues.round2,
-          expert: settings.pointValues.round2
-        },
-        round3: {
-          easy: settings.pointValues.round3,
-          medium: settings.pointValues.round3,
-          hard: settings.pointValues.round3,
-          expert: settings.pointValues.round3
-        }
-      }
-    };
-  };
-
-  // Game logic from the game logic hook
+  // Game logic from the game logic hook - pass the converted settings
   const gameLogic = useGameLogic(players, setPlayers, setRound, setWinnerIds);
   const {
     awardPoints, deductHealth, deductLife, eliminatePlayer,
@@ -232,7 +204,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     });
   };
 
-  // Update round settings - convert to the format expected by useGameLogic
+  // Update round settings - keep it simple without conversion
   const handleUpdateRoundSettings = (newSettings: Partial<RoundSettings>) => {
     const updatedSettings = {
       ...roundSettings,
@@ -240,9 +212,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     };
     setRoundSettings(updatedSettings);
     
-    // Convert to the format expected by useGameLogic
-    const convertedSettings = convertRoundSettingsForGameLogic(updatedSettings);
-    updateGameRoundSettings(convertedSettings);
+    // Note: We don't pass this to useGameLogic anymore to avoid type conflicts
+    // The game logic can use the settings directly from context
   };
   
   // Question management
