@@ -1,73 +1,68 @@
 
 import React from 'react';
+import { ArrowLeft, Download, Upload, Save } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Settings, Upload, Download } from 'lucide-react';
+import NeonButton from '@/components/common/NeonButton';
 
 interface SettingsHeaderProps {
-  onExportSettings?: () => void;
-  onImportSettings?: (file: File) => void;
+  onExportSettings: () => void;
+  onImportSettings: (file: File) => void;
 }
 
-const SettingsHeader: React.FC<SettingsHeaderProps> = ({ 
-  onExportSettings, 
-  onImportSettings 
+const SettingsHeader: React.FC<SettingsHeaderProps> = ({
+  onExportSettings,
+  onImportSettings
 }) => {
+  const navigate = useNavigate();
+
   const handleImportClick = () => {
-    if (!onImportSettings) return;
-    
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file && onImportSettings) {
+      if (file) {
         onImportSettings(file);
       }
     };
     input.click();
   };
-  
+
   return (
-    <div className="flex justify-between items-center mb-8">
+    <div className="flex items-center justify-between mb-8">
       <div className="flex items-center">
-        <Link to="/">
-          <Button variant="outline" size="icon" className="mr-4">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Powrót</span>
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold flex items-center">
-            <Settings className="mr-2 h-6 w-6" /> Ustawienia Gry
-          </h1>
-          <p className="text-muted-foreground">
-            Dostosuj parametry gry, pytania, graczy i inne ustawienia
-          </p>
-        </div>
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center text-[#00FFA3] hover:text-[#00FFA3]/80 transition-colors mr-4"
+        >
+          <ArrowLeft className="w-6 h-6 mr-2" />
+          Powrót do menu
+        </button>
+        <h1 className="text-4xl font-bold text-[#00FFA3]">Ustawienia</h1>
       </div>
       
-      <div className="flex gap-2">
-        {onImportSettings && (
-          <Button 
-            variant="outline" 
-            onClick={handleImportClick}
-            className="flex items-center gap-2"
-          >
-            <Upload className="h-4 w-4" />
-            Importuj ustawienia
-          </Button>
-        )}
-        
-        {onExportSettings && (
-          <Button 
-            onClick={onExportSettings}
-            className="flex items-center gap-2" 
-          >
-            <Download className="h-4 w-4" />
-            Eksportuj ustawienia
-          </Button>
-        )}
+      <div className="flex gap-3">
+        <Button
+          variant="outline"
+          onClick={handleImportClick}
+          className="border-gray-500 text-gray-300 hover:bg-gray-700"
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          Importuj
+        </Button>
+        <Button
+          variant="outline"
+          onClick={onExportSettings}
+          className="border-gray-500 text-gray-300 hover:bg-gray-700"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Eksportuj
+        </Button>
+        <NeonButton>
+          <Save className="w-4 h-4 mr-2" />
+          Zapisz Wszystko
+        </NeonButton>
       </div>
     </div>
   );

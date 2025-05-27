@@ -1,260 +1,220 @@
 
 import React, { useState } from 'react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Shield, Plus, Trash, Edit } from 'lucide-react';
+import SettingsLayout from '@/components/SettingsLayout';
+import { toast } from 'sonner';
 
-interface UserRole {
+interface Role {
   id: string;
-  email: string;
-  role: 'Admin' | 'Moderator' | 'Prowadzący' | 'Obserwator';
+  name: string;
+  permissions: string[];
+  color: string;
+  description: string;
 }
 
-interface LogEntry {
-  id: string;
-  user: string;
-  role: string;
-  action: string;
-  timestamp: string;
-}
+const SettingsRoles: React.FC = () => {
+  const [roles, setRoles] = useState<Role[]>([
+    {
+      id: '1',
+      name: 'Host',
+      permissions: ['manage_game', 'manage_players', 'manage_questions', 'manage_cards'],
+      color: '#00FFA3',
+      description: 'Pełne uprawnienia do zarządzania grą'
+    },
+    {
+      id: '2',
+      name: 'Moderator',
+      permissions: ['manage_players', 'view_stats'],
+      color: '#00E0FF',
+      description: 'Zarządzanie graczami i podgląd statystyk'
+    },
+    {
+      id: '3',
+      name: 'Gracz',
+      permissions: ['participate'],
+      color: '#8B5CF6',
+      description: 'Uczestnictwo w grze'
+    }
+  ]);
 
-const SettingsRoles = () => {
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [selectedRole, setSelectedRole] = useState<'Prowadzący' | 'Moderator' | 'Admin'>('Prowadzący');
-  const [copyEmails, setCopyEmails] = useState(false);
-  const [allowObservers, setAllowObservers] = useState(true);
-  const [trackUserActions, setTrackUserActions] = useState(true);
-  
-  // Mock users
-  const users: UserRole[] = [
-    { id: '1', email: 'admin@example.com', role: 'Admin' },
-    { id: '2', email: 'mod@example.com', role: 'Moderator' },
-    { id: '3', email: 'host@example.com', role: 'Prowadzący' },
+  const [newRole, setNewRole] = useState<Partial<Role>>({
+    name: '',
+    permissions: [],
+    color: '#FF3E9D',
+    description: ''
+  });
+
+  const [isEditing, setIsEditing] = useState<string | null>(null);
+
+  const availablePermissions = [
+    { key: 'manage_game', label: 'Zarządzanie Grą' },
+    { key: 'manage_players', label: 'Zarządzanie Graczami' },
+    { key: 'manage_questions', label: 'Zarządzanie Pytaniami' },
+    { key: 'manage_cards', label: 'Zarządzanie Kartami' },
+    { key: 'view_stats', label: 'Podgląd Statystyk' },
+    { key: 'participate', label: 'Uczestnictwo' },
+    { key: 'moderate_chat', label: 'Moderacja Czatu' }
   ];
-  
-  // Mock logs
-  const logs: LogEntry[] = [
-    { 
-      id: '1', 
-      user: 'Admin', 
-      role: 'Admin', 
-      action: 'Dodano nową rundę: Koło Chaosu',
-      timestamp: '2023-10-15 14:32' 
-    },
-    { 
-      id: '2', 
-      user: 'Moderator', 
-      role: 'Moderator', 
-      action: 'Dodano 5 nowych pytań',
-      timestamp: '2023-10-15 14:45' 
-    },
-    { 
-      id: '3', 
-      user: 'Admin', 
-      role: 'Admin', 
-      action: 'Zmieniono ustawienia kart',
-      timestamp: '2023-10-15 15:10' 
-    },
-    { 
-      id: '4', 
-      user: 'Prowadzący', 
-      role: 'Prowadzący', 
-      action: 'Rozpoczęto rundę: Standardowa',
-      timestamp: '2023-10-15 16:00' 
-    },
-    { 
-      id: '5', 
-      user: 'System', 
-      role: 'System', 
-      action: 'Automatyczne zapisanie stanu gry',
-      timestamp: '2023-10-15 16:30' 
-    },
-  ];
-  
+
+  const addRole = () => {
+    if (!newRole.name || !newRole.description) {
+      toast.error('Wypełnij wszystkie wymagane pola');
+      return;
+    }
+
+    const role: Role = {
+      id: Date.now().toString(),
+      name: newRole.name,
+      permissions: newRole.permissions || [],
+      color: newRole.color || '#FF3E9D',
+      description: newRole.description
+    };
+
+    setRoles(prev => [...prev, role]);
+    setNewRole({ name: '', permissions: [], color: '#FF3E9D', description: '' });
+    toast.success('Rola została dodana');
+  };
+
+  const removeRole = (roleId: string) => {
+    setRoles(prev => prev.filter(role => role.id !== roleId));
+    toast.success('Rola została usunięta');
+  };
+
+  const togglePermission = (permission: string) => {
+    setNewRole(prev => ({
+      ...prev,
+      permissions: prev.permissions?.includes(permission)
+        ? prev.permissions.filter(p => p !== permission)
+        : [...(prev.permissions || []), permission]
+    }));
+  };
+
   return (
-    <div className="bg-[#0c0e1a] rounded-lg p-6 shadow-lg border border-gray-800">
-      <h2 className="text-xl font-bold mb-2 text-white">Role i dostępy</h2>
-      <p className="text-white/60 text-sm mb-6">
-        Zarządzanie uprawnieniami i dostępem do systemu.
-      </p>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Left column - Invite & role descriptions */}
-        <div>
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-4">Zaproś użytkownika</h3>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="email">E-mail</Label>
-                <Input 
-                  id="email"
-                  type="email"
-                  placeholder="np. user@example.com"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  className="bg-black/50 border border-gray-700 text-white"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="role">Rola</Label>
-                <select 
-                  id="role"
-                  className="w-full px-3 py-2 bg-black/50 border border-gray-700 rounded text-white"
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value as any)}
-                >
-                  <option value="Prowadzący">Prowadzący</option>
-                  <option value="Moderator">Moderator</option>
-                  <option value="Admin">Admin</option>
-                </select>
-              </div>
-              
-              <Button className="w-full bg-neon-blue hover:bg-neon-blue/80">
-                Wyślij zaproszenie
-              </Button>
-            </div>
-          </div>
-          
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-3">Link dla obserwatora</h3>
-            <p className="text-sm text-white/70 mb-3">
-              Wygeneruj link tylko do podglądu (bez możliwości ingerencji).
-            </p>
-            
-            <Button className="w-full border-gray-700 text-white" variant="outline">
-              Wygeneruj link obserwatora
-            </Button>
-          </div>
-          
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Opisy ról</h3>
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium">Admin</h4>
-                <p className="text-sm text-white/70">
-                  Pełna kontrola nad systemem, ustawieniami i użytkownikami.
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-medium">Moderator</h4>
-                <p className="text-sm text-white/70">
-                  Zarządzanie pytaniami, kategoriami i ustawieniami gry.
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-medium">Prowadzący</h4>
-                <p className="text-sm text-white/70">
-                  Prowadzenie rozgrywki, wybór pytań i zarządzanie rundami.
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-medium">Obserwator</h4>
-                <p className="text-sm text-white/70">
-                  Tylko podgląd rozgrywki bez możliwości interakcji.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Right column - User management & logs */}
-        <div>
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-3">Użytkownicy</h3>
-            <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-              {users.map(user => (
-                <div 
-                  key={user.id}
-                  className="flex items-center justify-between p-3 bg-black/30 border border-gray-800 rounded"
-                >
-                  <div>
-                    <p className="font-medium text-white">{user.role}</p>
-                    <p className="text-sm text-white/60">{user.email}</p>
+    <div className="space-y-6">
+      <SettingsLayout 
+        title="Zarządzanie Rolami" 
+        description="Definiuj role użytkowników i ich uprawnienia w systemie"
+      >
+        <div className="space-y-6">
+          <div className="grid gap-4">
+            {roles.map((role) => (
+              <div key={role.id} className="bg-white/5 border border-white/10 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <Shield className="w-5 h-5" style={{ color: role.color }} />
+                    <div>
+                      <h3 className="font-semibold text-lg" style={{ color: role.color }}>
+                        {role.name}
+                      </h3>
+                      <p className="text-sm text-gray-400">{role.description}</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <select 
-                      className="bg-black/50 border border-gray-700 text-white px-2 py-1 rounded text-sm"
-                      value={user.role}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsEditing(role.id)}
                     >
-                      <option value="Admin">Admin</option>
-                      <option value="Moderator">Moderator</option>
-                      <option value="Prowadzący">Prowadzący</option>
-                    </select>
-                    <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 h-8">
-                      Usuń
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => removeRole(role.id)}
+                      disabled={role.name === 'Host'} // Nie można usunąć roli Host
+                    >
+                      <Trash className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
-              ))}
-            </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  {role.permissions.map((permission) => {
+                    const permLabel = availablePermissions.find(p => p.key === permission)?.label || permission;
+                    return (
+                      <Badge key={permission} variant="secondary" className="text-xs">
+                        {permLabel}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </SettingsLayout>
+
+      <SettingsLayout 
+        title="Dodaj Nową Rolę" 
+        description="Stwórz nową rolę z określonymi uprawnieniami"
+      >
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="roleName">Nazwa Roli</Label>
+            <Input
+              id="roleName"
+              value={newRole.name || ''}
+              onChange={(e) => setNewRole(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="np. Asystent, Operator"
+              className="mt-1"
+            />
           </div>
           
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-3">Logi zmian</h3>
-            <div className="space-y-2 max-h-72 overflow-y-auto pr-2">
-              {logs.map(log => (
-                <div 
-                  key={log.id}
-                  className="p-2 border-b border-gray-800 last:border-b-0"
-                >
-                  <div className="flex justify-between">
-                    <span className="font-medium">{log.user}</span>
-                    <span className="text-xs text-white/60">{log.timestamp}</span>
-                  </div>
-                  <p className="text-sm">{log.action}</p>
-                </div>
-              ))}
+          <div>
+            <Label htmlFor="roleDescription">Opis Roli</Label>
+            <Input
+              id="roleDescription"
+              value={newRole.description || ''}
+              onChange={(e) => setNewRole(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Krótki opis uprawnień i obowiązków"
+              className="mt-1"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="roleColor">Kolor Roli</Label>
+            <div className="flex items-center gap-3 mt-1">
+              <Input
+                type="color"
+                value={newRole.color}
+                onChange={(e) => setNewRole(prev => ({ ...prev, color: e.target.value }))}
+                className="w-16 h-10"
+              />
+              <Input
+                value={newRole.color}
+                onChange={(e) => setNewRole(prev => ({ ...prev, color: e.target.value }))}
+                className="flex-1"
+              />
             </div>
           </div>
           
           <div>
-            <h3 className="text-lg font-semibold mb-3">Ustawienia prywatności</h3>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="track-actions" 
-                  checked={trackUserActions} 
-                  onCheckedChange={(checked) => setTrackUserActions(!!checked)} 
-                />
-                <Label htmlFor="track-actions" className="text-white cursor-pointer">
-                  Rejestruj wszystkie działania użytkowników
-                </Label>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="show-emails" 
-                  checked={copyEmails} 
-                  onCheckedChange={(checked) => setCopyEmails(!!checked)} 
-                />
-                <Label htmlFor="show-emails" className="text-white cursor-pointer">
-                  Pokaż adresy e-mail graczy innym prowadzącym
-                </Label>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="allow-observers" 
-                  checked={allowObservers} 
-                  onCheckedChange={(checked) => setAllowObservers(!!checked)} 
-                />
-                <Label htmlFor="allow-observers" className="text-white cursor-pointer">
-                  Zezwalaj na dołączanie obserwatorów
-                </Label>
-              </div>
-              
-              <Button className="w-full mt-2 bg-neon-blue hover:bg-neon-blue/80">
-                Zapisz ustawienia
-              </Button>
+            <Label>Uprawnienia</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+              {availablePermissions.map((permission) => (
+                <label key={permission.key} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={newRole.permissions?.includes(permission.key) || false}
+                    onChange={() => togglePermission(permission.key)}
+                    className="rounded"
+                  />
+                  <span className="text-sm">{permission.label}</span>
+                </label>
+              ))}
             </div>
           </div>
+          
+          <Button onClick={addRole} className="w-full">
+            <Plus className="w-4 h-4 mr-2" />
+            Dodaj Rolę
+          </Button>
         </div>
-      </div>
+      </SettingsLayout>
     </div>
   );
 };

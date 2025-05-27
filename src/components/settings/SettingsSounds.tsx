@@ -1,348 +1,210 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Play, RefreshCcw, Download, Upload, X, Plus, AlertTriangle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Play, Upload, Volume2 } from 'lucide-react';
+import SettingsLayout from '@/components/SettingsLayout';
 import { toast } from 'sonner';
-import { useSoundManagement } from '@/hooks/useSoundManagement';
-import SettingsLayout from './SettingsLayout';
-import { Skeleton } from '@/components/ui/skeleton';
 
-const SettingsSounds = () => {
-  const { 
-    soundsEnabled, 
-    setSoundsEnabled, 
-    volumeLevel, 
-    setVolumeLevel, 
-    availableSounds, 
-    testSound, 
-    addSound, 
-    playSound
-  } = useSoundManagement({ initialEnabled: true });
-  
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [customSoundName, setCustomSoundName] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [soundLoadStatus, setSoundLoadStatus] = useState<{[key: string]: 'loading' | 'loaded' | 'error'}>({});
-  
-  // Sound type definitions - matching the ones provided in useSoundEffects
-  const gameSounds = [
-    { id: 'success', name: 'Poprawna odpowiedź', description: 'Dźwięk dla poprawnej odpowiedzi' },
-    { id: 'fail', name: 'Błędna odpowiedź', description: 'Dźwięk dla błędnej odpowiedzi' },
-    { id: 'round-start', name: 'Początek rundy', description: 'Dźwięk rozpoczęcia rundy' },
-    { id: 'timeout', name: 'Koniec czasu', description: 'Dźwięk zakończenia odliczania' },
-    { id: 'card-reveal', name: 'Użycie karty', description: 'Dźwięk użycia karty specjalnej' },
-    { id: 'wheel-tick', name: 'Koło fortuny', description: 'Dźwięk obracającego się koła fortuny' },
-    { id: 'wheel-spin', name: 'Obrót koła', description: 'Dźwięk pełnego obrotu koła' },
-    { id: 'victory', name: 'Zwycięzca', description: 'Dźwięk ogłoszenia zwycięzcy' },
-    { id: 'eliminate', name: 'Eliminacja', description: 'Dźwięk eliminacji gracza' },
-    { id: 'damage', name: 'Obrażenia', description: 'Dźwięk otrzymania obrażeń' },
-    { id: 'powerup', name: 'Power-up', description: 'Dźwięk zdobycia wzmocnienia' },
-    { id: 'bonus', name: 'Bonus', description: 'Dźwięk zdobycia bonusu' },
-  ];
-  
-  // Sprawdź dostępność plików dźwiękowych
-  useEffect(() => {
-    const checkSoundAvailability = async (soundId: string) => {
-      setSoundLoadStatus(prev => ({ ...prev, [soundId]: 'loading' }));
-      
-      try {
-        const soundUrl = availableSounds[soundId];
-        if (!soundUrl) {
-          setSoundLoadStatus(prev => ({ ...prev, [soundId]: 'error' }));
-          return;
-        }
-        
-        // Sprawdź, czy plik istnieje
-        const response = await fetch(soundUrl, { method: 'HEAD' });
-        if (response.ok) {
-          setSoundLoadStatus(prev => ({ ...prev, [soundId]: 'loaded' }));
-        } else {
-          setSoundLoadStatus(prev => ({ ...prev, [soundId]: 'error' }));
-        }
-      } catch (error) {
-        setSoundLoadStatus(prev => ({ ...prev, [soundId]: 'error' }));
-      }
+interface SoundSettings {
+  enabled: boolean;
+  masterVolume: number;
+  sounds: {
+    [key: string]: {
+      url: string;
+      volume: number;
+      enabled: boolean;
     };
+  };
+}
+
+const SettingsSounds: React.FC = () => {
+  const [soundSettings, setSoundSettings] = useState<SoundSettings>({
+    enabled: true,
+    masterVolume: 70,
+    sounds: {
+      intro: { url: '/sounds/intro-music.mp3', volume: 80, enabled: true },
+      success: { url: '/sounds/success.mp3', volume: 60, enabled: true },
+      fail: { url: '/sounds/fail.mp3', volume: 60, enabled: true },
+      timeout: { url: '/sounds/timeout.mp3', volume: 70, enabled: true },
+      roundStart: { url: '/sounds/round-start.mp3', volume: 75, enabled: true },
+      victory: { url: '/sounds/victory.mp3', volume: 85, enabled: true },
+      eliminate: { url: '/sounds/eliminate.mp3', volume: 65, enabled: true },
+      wheelTick: { url: '/sounds/wheel-tick.mp3', volume: 40, enabled: true },
+      cardReveal: { url: '/sounds/card-reveal.mp3', volume: 55, enabled: true },
+      bonus: { url: '/sounds/bonus.mp3', volume: 60, enabled: true }
+    }
+  });
+
+  const soundLabels = {
+    intro: 'Muzyka Intro',
+    success: 'Poprawna Odpowiedź',
+    fail: 'Błędna Odpowiedź',
+    timeout: 'Koniec Czasu',
+    roundStart: 'Start Rundy',
+    victory: 'Zwycięstwo',
+    eliminate: 'Eliminacja',
+    wheelTick: 'Kręcenie Koła',
+    cardReveal: 'Odkrycie Karty',
+    bonus: 'Bonus/Efekt'
+  };
+
+  const playSound = (soundKey: string) => {
+    if (!soundSettings.enabled || !soundSettings.sounds[soundKey]?.enabled) return;
     
-    // Sprawdź wszystkie dźwięki
-    gameSounds.forEach(sound => {
-      checkSoundAvailability(sound.id);
+    const audio = new Audio(soundSettings.sounds[soundKey].url);
+    audio.volume = (soundSettings.masterVolume / 100) * (soundSettings.sounds[soundKey].volume / 100);
+    audio.play().catch(() => {
+      toast.error(`Nie można odtworzyć dźwięku: ${soundLabels[soundKey]}`);
     });
-  }, [availableSounds]);
-  
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      
-      // Validate file type
-      if (!file.type.startsWith('audio/')) {
-        toast.error('Nieprawidłowy format pliku', {
-          description: 'Proszę wybrać plik dźwiękowy (mp3, wav, ogg)'
-        });
-        return;
-      }
-      
-      // Validate file size (max 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error('Plik jest za duży', {
-          description: 'Maksymalny rozmiar pliku to 2MB'
-        });
-        return;
-      }
-      
-      setSelectedFile(file);
-      
-      // Extract filename without extension as suggested name
-      const fileName = file.name.replace(/\.[^/.]+$/, '');
-      setCustomSoundName(fileName);
-    }
   };
-  
-  const handleAddCustomSound = () => {
-    if (!selectedFile || !customSoundName.trim()) {
-      toast.error('Brakujące dane', {
-        description: 'Wybierz plik dźwiękowy i podaj nazwę'
-      });
-      return;
-    }
-    
-    // Add custom sound
-    const success = addSound(customSoundName, selectedFile);
-    
-    if (success) {
-      toast.success('Dodano nowy dźwięk', {
-        description: `Dźwięk "${customSoundName}" został dodany`
-      });
-      
-      // Reset form
-      setSelectedFile(null);
-      setCustomSoundName('');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+
+  const updateSoundUrl = (soundKey: string, url: string) => {
+    setSoundSettings(prev => ({
+      ...prev,
+      sounds: {
+        ...prev.sounds,
+        [soundKey]: {
+          ...prev.sounds[soundKey],
+          url
+        }
       }
-    } else {
-      toast.error('Nie udało się dodać dźwięku', {
-        description: 'Spróbuj ponownie z innym plikiem'
-      });
-    }
+    }));
   };
-  
-  const clearFileSelection = () => {
-    setSelectedFile(null);
-    setCustomSoundName('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-  
-  const handleTestSound = (soundId: string) => {
-    // Sprawdź, czy dźwięk jest dostępny
-    const status = soundLoadStatus[soundId];
-    
-    if (status === 'error') {
-      // Użyj dźwięku zastępczego
-      toast.warning('Używam dźwięku zastępczego', { 
-        description: 'Oryginalny plik dźwiękowy jest niedostępny'
-      });
-      
-      // Znajdź pierwszy dostępny dźwięk jako fallback
-      const fallbackSoundId = Object.keys(soundLoadStatus).find(id => soundLoadStatus[id] === 'loaded');
-      if (fallbackSoundId) {
-        testSound(fallbackSoundId);
-      } else {
-        // Jeśli nie ma żadnego dostępnego dźwięku, pokaż błąd
-        toast.error('Brak dostępnych dźwięków');
+
+  const updateSoundVolume = (soundKey: string, volume: number) => {
+    setSoundSettings(prev => ({
+      ...prev,
+      sounds: {
+        ...prev.sounds,
+        [soundKey]: {
+          ...prev.sounds[soundKey],
+          volume
+        }
       }
-    } else {
-      testSound(soundId);
-    }
+    }));
   };
-  
+
+  const toggleSound = (soundKey: string) => {
+    setSoundSettings(prev => ({
+      ...prev,
+      sounds: {
+        ...prev.sounds,
+        [soundKey]: {
+          ...prev.sounds[soundKey],
+          enabled: !prev.sounds[soundKey].enabled
+        }
+      }
+    }));
+  };
+
   return (
-    <SettingsLayout 
-      title="Zarządzanie dźwiękami"
-      description="Dodawaj, modyfikuj i zarządzaj efektami dźwiękowymi w grze."
-    >
-      <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Ustawienia globalne</h3>
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <Switch 
-              checked={soundsEnabled} 
-              onCheckedChange={setSoundsEnabled} 
-              id="sound-toggle"
-            />
-            <Label htmlFor="sound-toggle">Dźwięki włączone</Label>
-          </div>
-        </div>
-        
-        <div className="space-y-3">
+    <div className="space-y-6">
+      <SettingsLayout 
+        title="Ustawienia Główne" 
+        description="Globalne ustawienia dźwięku w aplikacji"
+      >
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label htmlFor="volume-slider">Głośność:</Label>
-            <span className="text-white">{volumeLevel}%</span>
-          </div>
-          <Slider
-            id="volume-slider"
-            min={0}
-            max={100}
-            step={1}
-            value={[volumeLevel]}
-            onValueChange={([value]) => setVolumeLevel(value)}
-            className="w-full"
-            disabled={!soundsEnabled}
-          />
-        </div>
-        
-        <Button 
-          variant="outline" 
-          className="mt-4 border-gray-700 text-white"
-          onClick={() => {
-            setSoundsEnabled(true);
-            setVolumeLevel(50);
-          }}
-        >
-          <RefreshCcw size={16} className="mr-2" /> Resetuj wszystkie dźwięki
-        </Button>
-      </div>
-      
-      {/* Add custom sound section */}
-      <div className="mb-8 p-4 bg-black/20 border border-gray-800 rounded-lg">
-        <h3 className="text-lg font-semibold mb-4">Dodaj własny dźwięk</h3>
-        
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="custom-sound-name">Nazwa dźwięku</Label>
-            <Input 
-              id="custom-sound-name"
-              value={customSoundName}
-              onChange={(e) => setCustomSoundName(e.target.value)}
-              placeholder="np. Fanfary, Alarm, itp."
-              className="bg-black/30 mt-1"
+            <Label>Dźwięki Włączone</Label>
+            <Switch
+              checked={soundSettings.enabled}
+              onCheckedChange={(checked) => 
+                setSoundSettings(prev => ({ ...prev, enabled: checked }))
+              }
             />
           </div>
           
           <div>
-            <Label htmlFor="sound-file">Plik dźwiękowy</Label>
-            <div className="flex gap-2 mt-1">
-              <input
-                type="file"
-                id="sound-file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept="audio/*"
-                className="hidden"
-              />
-              <Button
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
+            <Label>Głośność Główna ({soundSettings.masterVolume}%)</Label>
+            <div className="flex items-center gap-4 mt-2">
+              <Volume2 className="w-4 h-4 text-gray-400" />
+              <Slider
+                value={[soundSettings.masterVolume]}
+                onValueChange={([value]) => 
+                  setSoundSettings(prev => ({ ...prev, masterVolume: value }))
+                }
+                max={100}
+                step={5}
                 className="flex-1"
-              >
-                <Upload size={16} className="mr-2" />
-                {selectedFile ? selectedFile.name : 'Wybierz plik...'}
-              </Button>
-              {selectedFile && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={clearFileSelection}
-                >
-                  <X size={18} />
-                </Button>
-              )}
+                disabled={!soundSettings.enabled}
+              />
             </div>
-            <p className="text-xs text-white/50 mt-1">
-              Obsługiwane formaty: MP3, WAV, OGG (max 2MB)
-            </p>
           </div>
-          
-          <Button
-            onClick={handleAddCustomSound}
-            disabled={!selectedFile || !customSoundName.trim()}
-            className="w-full"
-          >
-            <Plus size={16} className="mr-2" /> Dodaj nowy dźwięk
-          </Button>
         </div>
-      </div>
-      
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Dźwięki gry</h3>
-        <div className="space-y-4">
-          {gameSounds.map((sound) => (
-            <div 
-              key={sound.id}
-              className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-black/30 border border-gray-800 rounded gap-3"
-            >
-              <div>
+      </SettingsLayout>
+
+      <SettingsLayout 
+        title="Dźwięki Systemowe" 
+        description="Konfiguracja poszczególnych dźwięków w grze"
+      >
+        <div className="space-y-6">
+          {Object.entries(soundSettings.sounds).map(([soundKey, sound]) => (
+            <div key={soundKey} className="bg-white/5 border border-white/10 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-lg font-semibold">
+                  {soundLabels[soundKey]}
+                </Label>
                 <div className="flex items-center gap-2">
-                  <h4 className="font-medium">{sound.name}</h4>
-                  {soundLoadStatus[sound.id] === 'error' && (
-                    <span className="text-yellow-400 flex items-center">
-                      <AlertTriangle size={14} className="mr-1" /> Brak pliku
-                    </span>
-                  )}
+                  <Switch
+                    checked={sound.enabled}
+                    onCheckedChange={() => toggleSound(soundKey)}
+                    disabled={!soundSettings.enabled}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => playSound(soundKey)}
+                    disabled={!soundSettings.enabled || !sound.enabled}
+                    className="px-3"
+                  >
+                    <Play className="w-3 h-3" />
+                  </Button>
                 </div>
-                <p className="text-sm text-white/60">{sound.description}</p>
               </div>
-              <div className="flex items-center gap-2 mt-2 md:mt-0">
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="h-9 px-3 border-gray-700"
-                  onClick={() => handleTestSound(sound.id)}
-                  disabled={!soundsEnabled}
-                >
-                  {soundLoadStatus[sound.id] === 'loading' ? (
-                    <Skeleton className="h-4 w-4 rounded-full mr-1" />
-                  ) : (
-                    <Play size={16} className="mr-1" />
-                  )}
-                  Test
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="h-9 px-3 border-gray-700"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload size={16} className="mr-1" /> Zmień
-                </Button>
+              
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-sm">URL Pliku</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      value={sound.url}
+                      onChange={(e) => updateSoundUrl(soundKey, e.target.value)}
+                      placeholder="https://example.com/sound.mp3"
+                      className="flex-1"
+                      disabled={!soundSettings.enabled}
+                    />
+                    <Button size="sm" variant="outline" disabled={!soundSettings.enabled}>
+                      <Upload className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label className="text-sm">Głośność ({sound.volume}%)</Label>
+                  <Slider
+                    value={[sound.volume]}
+                    onValueChange={([value]) => updateSoundVolume(soundKey, value)}
+                    max={100}
+                    step={5}
+                    className="mt-1"
+                    disabled={!soundSettings.enabled || !sound.enabled}
+                  />
+                </div>
               </div>
             </div>
           ))}
         </div>
+      </SettingsLayout>
+
+      <div className="flex justify-end">
+        <Button className="bg-[#00FFA3] hover:bg-[#00FFA3]/80 text-black">
+          Zapisz Ustawienia Dźwięku
+        </Button>
       </div>
-      
-      <div className="mt-8 p-4 bg-black/20 rounded border border-gray-700">
-        <h3 className="text-lg font-semibold mb-2">Wskazówki</h3>
-        <ul className="space-y-2 text-sm text-white/80">
-          <li className="flex items-start gap-2">
-            <span className="text-neon-purple">•</span>
-            <span>Wszystkie dźwięki są zapisywane lokalnie w przeglądarce.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-neon-purple">•</span>
-            <span>Zalecane formaty plików: MP3, WAV, OGG.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-neon-purple">•</span>
-            <span>Maksymalny rozmiar pliku: 2MB.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-neon-purple">•</span>
-            <span>Dla najlepszej kompatybilności, używaj krótkich dźwięków (poniżej 5 sekund).</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-neon-purple">•</span>
-            <span>Jeśli plik dźwiękowy nie jest dostępny, zostanie użyty dźwięk zastępczy.</span>
-          </li>
-        </ul>
-      </div>
-    </SettingsLayout>
+    </div>
   );
 };
 

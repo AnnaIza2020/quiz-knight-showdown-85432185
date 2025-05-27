@@ -1,93 +1,252 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Trophy, Download, RotateCcw, Eye, Trash } from 'lucide-react';
+import SettingsLayout from '@/components/SettingsLayout';
+import { toast } from 'sonner';
 
-interface RankingEntry {
+interface GameHistory {
   id: string;
-  nick: string;
-  points: number;
-  cardsUsed: number;
-  eliminationRound: string;
+  name: string;
+  date: string;
+  winner: string;
+  players: string[];
+  duration: string;
+  rounds: number;
 }
 
-const SettingsRanking = () => {
-  const [selectedEdition, setSelectedEdition] = useState('current');
-  
-  // Mock ranking data - in a real app, this would come from the GameContext
-  const rankingData: RankingEntry[] = [];
-  
+interface RankingEntry {
+  position: number;
+  nickname: string;
+  avatar: string;
+  points: number;
+  gamesPlayed: number;
+  winRate: number;
+}
+
+const SettingsRanking: React.FC = () => {
+  const [gameHistory, setGameHistory] = useState<GameHistory[]>([
+    {
+      id: '1',
+      name: 'Sesja #001',
+      date: '2024-01-15',
+      winner: 'Player1',
+      players: ['Player1', 'Player2', 'Player3', 'Player4'],
+      duration: '45 min',
+      rounds: 3
+    },
+    {
+      id: '2',
+      name: 'Sesja #002',
+      date: '2024-01-14',
+      winner: 'Player2',
+      players: ['Player1', 'Player2', 'Player3'],
+      duration: '38 min',
+      rounds: 3
+    }
+  ]);
+
+  const [globalRanking, setGlobalRanking] = useState<RankingEntry[]>([
+    {
+      position: 1,
+      nickname: 'Player1',
+      avatar: '🎮',
+      points: 850,
+      gamesPlayed: 12,
+      winRate: 75
+    },
+    {
+      position: 2,
+      nickname: 'Player2',
+      avatar: '🎯',
+      points: 720,
+      gamesPlayed: 10,
+      winRate: 60
+    },
+    {
+      position: 3,
+      nickname: 'Player3',
+      avatar: '🎪',
+      points: 650,
+      gamesPlayed: 8,
+      winRate: 50
+    }
+  ]);
+
+  const [rankingMode, setRankingMode] = useState<'points' | 'winRate' | 'gamesPlayed'>('points');
+
+  const removeGameHistory = (gameId: string) => {
+    setGameHistory(prev => prev.filter(game => game.id !== gameId));
+    toast.success('Historia gry została usunięta');
+  };
+
+  const resetGlobalRanking = () => {
+    setGlobalRanking([]);
+    toast.success('Globalny ranking został zresetowany');
+  };
+
+  const exportRankingData = () => {
+    const data = {
+      gameHistory,
+      globalRanking,
+      exportDate: new Date().toISOString()
+    };
+    
+    const dataStr = JSON.stringify(data, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = `ranking_${new Date().toLocaleDateString('pl-PL')}.json`;
+    downloadLink.click();
+    
+    toast.success('Dane rankingowe zostały wyeksportowane');
+  };
+
+  const sortedRanking = [...globalRanking].sort((a, b) => {
+    switch (rankingMode) {
+      case 'winRate':
+        return b.winRate - a.winRate;
+      case 'gamesPlayed':
+        return b.gamesPlayed - a.gamesPlayed;
+      default:
+        return b.points - a.points;
+    }
+  });
+
   return (
-    <div className="bg-[#0c0e1a] rounded-lg p-6 shadow-lg border border-gray-800">
-      <h2 className="text-xl font-bold mb-2 text-white">Ranking</h2>
-      <p className="text-white/60 text-sm mb-6">
-        Zestawienie wyników i przebiegu rozgrywek.
-      </p>
-      
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center gap-2">
-          <label htmlFor="edition" className="text-white mr-2">Edycja:</label>
-          <select 
-            id="edition"
-            className="bg-black/50 border border-gray-700 text-white px-3 py-1 rounded"
-            value={selectedEdition}
-            onChange={(e) => setSelectedEdition(e.target.value)}
-          >
-            <option value="current">Bieżąca edycja</option>
-            <option value="previous">Poprzednia edycja</option>
-            <option value="archive">Archiwum</option>
-          </select>
-        </div>
-        
-        <div className="flex gap-2">
-          <Button variant="outline" className="text-white border-gray-700 flex items-center gap-2">
-            <Download size={16} /> Eksportuj do PDF
+    <div className="space-y-6">
+      <SettingsLayout 
+        title="Historia Gier" 
+        description="Przegląd zakończonych sesji i ich wyników"
+        actions={
+          <Button onClick={exportRankingData} variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Eksportuj Dane
           </Button>
-          <Button variant="outline" className="text-white border-gray-700 flex items-center gap-2">
-            <Download size={16} /> Eksportuj do CSV
+        }
+      >
+        <div className="space-y-4">
+          {gameHistory.length > 0 ? (
+            <div className="space-y-3">
+              {gameHistory.map((game) => (
+                <div key={game.id} className="bg-white/5 border border-white/10 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Trophy className="w-5 h-5 text-[#FFD700]" />
+                      <div>
+                        <h3 className="font-semibold">{game.name}</h3>
+                        <p className="text-sm text-gray-400">
+                          {game.date} • {game.duration} • {game.rounds} rundy
+                        </p>
+                      </div>
+                      <Badge variant="secondary">
+                        Zwycięzca: {game.winner}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline">
+                        <Eye className="w-3 h-3" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => removeGameHistory(game.id)}
+                      >
+                        <Trash className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-300">
+                      Gracze: {game.players.join(', ')}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              <Trophy className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>Brak historii gier</p>
+            </div>
+          )}
+        </div>
+      </SettingsLayout>
+
+      <SettingsLayout 
+        title="Globalny Ranking" 
+        description="Ranking wszystkich graczy na podstawie wybranych kryteriów"
+        actions={
+          <Button onClick={resetGlobalRanking} variant="outline">
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Resetuj Ranking
           </Button>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant={rankingMode === 'points' ? 'default' : 'outline'}
+              onClick={() => setRankingMode('points')}
+            >
+              Punkty
+            </Button>
+            <Button
+              size="sm"
+              variant={rankingMode === 'winRate' ? 'default' : 'outline'}
+              onClick={() => setRankingMode('winRate')}
+            >
+              % Wygranych
+            </Button>
+            <Button
+              size="sm"
+              variant={rankingMode === 'gamesPlayed' ? 'default' : 'outline'}
+              onClick={() => setRankingMode('gamesPlayed')}
+            >
+              Ilość Gier
+            </Button>
+          </div>
+
+          {sortedRanking.length > 0 ? (
+            <div className="space-y-2">
+              {sortedRanking.map((entry, index) => (
+                <div key={entry.nickname} className="bg-white/5 border border-white/10 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#00FFA3] flex items-center justify-center text-black font-bold">
+                        {index + 1}
+                      </div>
+                      <span className="text-2xl">{entry.avatar}</span>
+                      <div>
+                        <h4 className="font-semibold">{entry.nickname}</h4>
+                        <p className="text-sm text-gray-400">
+                          {entry.gamesPlayed} gier • {entry.winRate}% wygranych
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-[#00FFA3]">
+                        {rankingMode === 'points' && `${entry.points} pkt`}
+                        {rankingMode === 'winRate' && `${entry.winRate}%`}
+                        {rankingMode === 'gamesPlayed' && `${entry.gamesPlayed} gier`}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              <Trophy className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>Brak danych rankingowych</p>
+            </div>
+          )}
         </div>
-      </div>
-      
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-black/40 text-left">
-              <th className="p-3 text-white">#</th>
-              <th className="p-3 text-white">Nick</th>
-              <th className="p-3 text-white">Punkty</th>
-              <th className="p-3 text-white">Karty użyte</th>
-              <th className="p-3 text-white">Runda eliminacji</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rankingData.length > 0 ? (
-              rankingData.map((entry, index) => (
-                <tr key={entry.id} className="border-t border-gray-800">
-                  <td className="p-3 text-white">{index + 1}</td>
-                  <td className="p-3 text-white font-medium">{entry.nick}</td>
-                  <td className="p-3 text-white">{entry.points}</td>
-                  <td className="p-3 text-white">{entry.cardsUsed}</td>
-                  <td className="p-3 text-white">{entry.eliminationRound}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={5} className="p-6 text-center text-white/60">
-                  Brak danych do wyświetlenia
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      
-      <div className="mt-8">
-        <h3 className="text-lg font-semibold mb-4">Statystyki graczy</h3>
-        <div className="bg-black/30 rounded-lg p-6 border border-gray-800 text-center">
-          <p className="text-white/60">Brak danych statystycznych</p>
-        </div>
-      </div>
+      </SettingsLayout>
     </div>
   );
 };
