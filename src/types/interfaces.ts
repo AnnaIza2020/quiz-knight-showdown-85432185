@@ -2,6 +2,7 @@
 export interface Player {
   id: string;
   nickname: string;
+  name: string; // Add name for compatibility
   points: number;
   health: number;
   lives: number;
@@ -22,7 +23,7 @@ export interface Question {
   categoryId: string;
   difficulty: number;
   type: 'open' | 'multiple_choice' | 'true_false';
-  options?: string[];
+  options: string[]; // Make this required for consistency
   correctAnswer: string;
   timeLimit: number;
   points: number;
@@ -64,8 +65,8 @@ export interface GameState {
 export interface RoundSettings {
   round1: {
     startingHealth: number;
-    pointValues: { easy: 5; medium: 10; hard: 15; expert: 20 };
-    healthLoss: { easy: 10; medium: 10; hard: 20; expert: 20 };
+    pointValues: { easy: number; medium: number; hard: number; expert: number };
+    healthLoss: { easy: number; medium: number; hard: number; expert: number };
     questionsPerCategory: number;
   };
   round2: {

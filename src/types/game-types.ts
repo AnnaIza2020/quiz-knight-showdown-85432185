@@ -14,6 +14,7 @@ export enum GameRound {
 export interface Player {
   id: string;
   name: string;
+  nickname?: string; // Add for compatibility
   points: number;
   health: number;
   lives: number;
@@ -27,7 +28,7 @@ export interface Player {
   uniqueLinkToken?: string;
   avatar?: string; // For backward compatibility
   cameraUrl?: string; // For backward compatibility
-  forcedEliminated?: boolean; // Added missing property
+  forcedEliminated?: boolean;
 }
 
 export interface Question {
