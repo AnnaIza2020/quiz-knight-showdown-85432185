@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useGameContext } from '@/context/GameContext';
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Plus, Save, Trash, Pencil } from 'lucide-react';
-import { SpecialCard } from '@/types/card-types';
+import { SpecialCard } from '@/types/interfaces';
 
 const SettingsCards = () => {
   const { specialCards, addSpecialCard, updateSpecialCard, removeSpecialCard } = useGameContext();
@@ -15,15 +16,11 @@ const SettingsCards = () => {
     id: uuidv4(),
     name: '',
     description: '',
-    imageUrl: '',
-    image_url: '',
     soundEffect: '',
-    sound_effect: '',
     iconName: '',
-    icon_name: '',
-    animationStyle: '',
-    animation_style: '',
-    type: 'bonus' // Set default type
+    animationStyle: 'glow',
+    type: 'bonus',
+    defaultQuantity: 1
   });
   const [isEditing, setIsEditing] = useState(false);
 
@@ -33,15 +30,7 @@ const SettingsCards = () => {
       if (card) {
         setNewCard({
           ...card,
-          // Make sure all fields are properly set for both legacy and new formats
-          imageUrl: card.imageUrl || card.image_url || '',
-          image_url: card.image_url || card.imageUrl || '',
-          soundEffect: card.soundEffect || card.sound_effect || '',
-          sound_effect: card.sound_effect || card.soundEffect || '',
-          iconName: card.iconName || card.icon_name || '',
-          icon_name: card.icon_name || card.iconName || '',
-          animationStyle: card.animationStyle || card.animation_style || '',
-          animation_style: card.animation_style || card.animationStyle || ''
+          animationStyle: card.animationStyle || 'glow'
         });
         setIsEditing(true);
       }
@@ -50,35 +39,22 @@ const SettingsCards = () => {
         id: uuidv4(),
         name: '',
         description: '',
-        imageUrl: '',
-        image_url: '',
         soundEffect: '',
-        sound_effect: '',
         iconName: '',
-        icon_name: '',
-        animationStyle: '',
-        animation_style: '',
-        type: 'bonus'
+        animationStyle: 'glow',
+        type: 'bonus',
+        defaultQuantity: 1
       });
       setIsEditing(false);
     }
   }, [selectedCardId, specialCards]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setNewCard(prevCard => {
-      // Handle special cases for dual-named fields
-      if (name === 'image_url') {
-        return { ...prevCard, image_url: value, imageUrl: value };
-      } else if (name === 'sound_effect') {
-        return { ...prevCard, sound_effect: value, soundEffect: value };
-      } else if (name === 'icon_name') {
-        return { ...prevCard, icon_name: value, iconName: value };
-      } else if (name === 'animation_style') {
-        return { ...prevCard, animation_style: value, animationStyle: value };
-      }
-      return { ...prevCard, [name]: value };
-    });
+    setNewCard(prevCard => ({
+      ...prevCard,
+      [name]: value
+    }));
   };
 
   const handleAddCard = () => {
@@ -87,24 +63,15 @@ const SettingsCards = () => {
       return;
     }
     
-    // Ensure all required fields are properly set
     const cardToAdd: SpecialCard = {
       id: newCard.id || uuidv4(),
       name: newCard.name,
       description: newCard.description || '',
       type: newCard.type,
-      // Set both formats for compatibility
-      imageUrl: newCard.imageUrl || newCard.image_url || '',
-      image_url: newCard.image_url || newCard.imageUrl || '',
-      soundEffect: newCard.soundEffect || newCard.sound_effect || '',
-      sound_effect: newCard.sound_effect || newCard.soundEffect || '',
-      iconName: newCard.iconName || newCard.icon_name || '',
-      icon_name: newCard.icon_name || newCard.iconName || '',
-      animationStyle: newCard.animationStyle || newCard.animation_style || '',
-      animation_style: newCard.animation_style || newCard.animationStyle || '',
-      effectType: newCard.effectType || '',
-      effectHook: newCard.effectHook || '',
-      effectParams: newCard.effectParams || {}
+      soundEffect: newCard.soundEffect || '',
+      iconName: newCard.iconName || '',
+      animationStyle: newCard.animationStyle || 'glow',
+      defaultQuantity: newCard.defaultQuantity || 1
     };
     
     addSpecialCard(cardToAdd);
@@ -114,15 +81,11 @@ const SettingsCards = () => {
       id: uuidv4(),
       name: '',
       description: '',
-      imageUrl: '',
-      image_url: '',
       soundEffect: '',
-      sound_effect: '',
       iconName: '',
-      icon_name: '',
-      animationStyle: '',
-      animation_style: '',
-      type: 'bonus'
+      animationStyle: 'glow',
+      type: 'bonus',
+      defaultQuantity: 1
     });
     
     toast.success('Karta dodana pomyślnie!');
@@ -139,24 +102,15 @@ const SettingsCards = () => {
       return;
     }
     
-    // Ensure all required fields are properly set
     const cardToUpdate: SpecialCard = {
       id: newCard.id,
       name: newCard.name,
       description: newCard.description || '',
       type: newCard.type,
-      // Set both formats for compatibility
-      imageUrl: newCard.imageUrl || newCard.image_url || '',
-      image_url: newCard.image_url || newCard.imageUrl || '',
-      soundEffect: newCard.soundEffect || newCard.sound_effect || '',
-      sound_effect: newCard.sound_effect || newCard.soundEffect || '',
-      iconName: newCard.iconName || newCard.icon_name || '',
-      icon_name: newCard.icon_name || newCard.iconName || '',
-      animationStyle: newCard.animationStyle || newCard.animation_style || '',
-      animation_style: newCard.animation_style || newCard.animationStyle || '',
-      effectType: newCard.effectType || '',
-      effectHook: newCard.effectHook || '',
-      effectParams: newCard.effectParams || {}
+      soundEffect: newCard.soundEffect || '',
+      iconName: newCard.iconName || '',
+      animationStyle: newCard.animationStyle || 'glow',
+      defaultQuantity: newCard.defaultQuantity || 1
     };
     
     updateSpecialCard(cardToUpdate.id, cardToUpdate);
@@ -216,43 +170,52 @@ const SettingsCards = () => {
       />
       <Input
         type="text"
-        name="image_url"
-        placeholder="URL obrazu"
-        value={newCard.image_url || ''}
-        onChange={handleInputChange}
-        className="bg-black/40 border-gray-700 text-white"
-      />
-      <Input
-        type="text"
-        name="sound_effect"
+        name="soundEffect"
         placeholder="Nazwa efektu dźwiękowego"
-        value={newCard.sound_effect || ''}
+        value={newCard.soundEffect || ''}
         onChange={handleInputChange}
         className="bg-black/40 border-gray-700 text-white"
       />
       <Input
         type="text"
-        name="icon_name"
+        name="iconName"
         placeholder="Nazwa ikony"
-        value={newCard.icon_name || ''}
+        value={newCard.iconName || ''}
         onChange={handleInputChange}
         className="bg-black/40 border-gray-700 text-white"
       />
-      <Input
-        type="text"
-        name="animation_style"
-        placeholder="Styl animacji"
-        value={newCard.animation_style || ''}
+      <select
+        name="animationStyle"
+        value={newCard.animationStyle || 'glow'}
         onChange={handleInputChange}
-        className="bg-black/40 border-gray-700 text-white"
-      />
-      <Input
-        type="text"
+        className="w-full bg-black/40 border border-gray-700 text-white rounded px-3 py-2"
+      >
+        <option value="glow">Glow</option>
+        <option value="neon-blue">Neon Blue</option>
+        <option value="neon-green">Neon Green</option>
+        <option value="neon-red">Neon Red</option>
+        <option value="neon-purple">Neon Purple</option>
+        <option value="rainbow">Rainbow</option>
+      </select>
+      <select
         name="type"
-        placeholder="Typ karty"
-        value={newCard.type || ''}
+        value={newCard.type || 'bonus'}
+        onChange={handleInputChange}
+        className="w-full bg-black/40 border border-gray-700 text-white rounded px-3 py-2"
+      >
+        <option value="bonus">Bonus</option>
+        <option value="defense">Defense</option>
+        <option value="attack">Attack</option>
+        <option value="manipulation">Manipulation</option>
+      </select>
+      <Input
+        type="number"
+        name="defaultQuantity"
+        placeholder="Domyślna ilość"
+        value={newCard.defaultQuantity || 1}
         onChange={handleInputChange}
         className="bg-black/40 border-gray-700 text-white"
+        min="1"
       />
       
       <div className="flex justify-end gap-2">

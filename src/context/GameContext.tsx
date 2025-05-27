@@ -166,7 +166,24 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
   });
 
   const updateRoundSettings = (settings: Partial<RoundSettings>) => {
-    setRoundSettings(prev => ({ ...prev, ...settings }));
+    setRoundSettings(prev => {
+      const updated = { ...prev };
+      
+      if (settings.round1) {
+        updated.round1 = { ...prev.round1, ...settings.round1 };
+      }
+      if (settings.round2) {
+        updated.round2 = { ...prev.round2, ...settings.round2 };
+      }
+      if (settings.round3) {
+        updated.round3 = { ...prev.round3, ...settings.round3 };
+      }
+      if (settings.timerDurations) {
+        updated.timerDurations = { ...prev.timerDurations, ...settings.timerDurations };
+      }
+      
+      return updated;
+    });
   };
 
   // Log management

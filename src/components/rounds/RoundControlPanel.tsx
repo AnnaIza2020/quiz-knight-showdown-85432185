@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { GameRound, Player, Question } from '@/types/game-types';
-import { RoundSettings } from '@/types/round-settings';
+import { RoundSettings } from '@/types/interfaces';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -138,21 +137,25 @@ const RoundControlPanel: React.FC<RoundControlPanelProps> = ({
     if (!player) return;
     
     const newHealth = Math.max(0, Math.min(100, player.health + healthChange));
-    const updatedPlayer: Player = { ...player, health: newHealth, isActive: true };
+    const updatedPlayer: Player = { 
+      ...player, 
+      health: newHealth,
+      nickname: player.nickname || player.name // Ensure nickname is set
+    };
     updatePlayer(updatedPlayer);
     toast.info(`Zdrowie gracza zmienione o ${healthChange}%`);
   };
 
   // Eliminate player manually
   const handleEliminatePlayer = (playerId: string) => {
-    const updatedPlayer = activePlayers.find(p => p.id === playerId);
-    if (updatedPlayer) {
+    const player = activePlayers.find(p => p.id === playerId);
+    if (player) {
       const eliminatedPlayer: Player = { 
-        ...updatedPlayer, 
+        ...player, 
         isEliminated: true,
         health: 0,
         lives: 0,
-        isActive: true // Keep isActive required
+        nickname: player.nickname || player.name // Ensure nickname is set
       };
       updatePlayer(eliminatedPlayer);
       toast.error('Gracz został wyeliminowany!');
@@ -173,7 +176,11 @@ const RoundControlPanel: React.FC<RoundControlPanelProps> = ({
     
     setPlayers(prev => prev.map(player => {
       if (toEliminate.find(p => p.id === player.id)) {
-        return { ...player, isEliminated: true, isActive: true };
+        return { 
+          ...player, 
+          isEliminated: true,
+          nickname: player.nickname || player.name // Ensure nickname is set
+        };
       }
       return player;
     }));
@@ -183,7 +190,12 @@ const RoundControlPanel: React.FC<RoundControlPanelProps> = ({
     // Check for lucky loser
     if (settings.luckyLoserEnabled && toEliminate.length > 0) {
       const luckyLoser = toEliminate[Math.floor(Math.random() * toEliminate.length)];
-      updatePlayer({ ...luckyLoser, isEliminated: false, isActive: true });
+      const updatedLuckyLoser = { 
+        ...luckyLoser, 
+        isEliminated: false,
+        nickname: luckyLoser.nickname || luckyLoser.name
+      };
+      updatePlayer(updatedLuckyLoser);
       toast.info(`Lucky Loser: ${luckyLoser.name} wraca do gry!`);
     }
   };
