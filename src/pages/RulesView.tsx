@@ -67,7 +67,7 @@ const RulesView: React.FC = () => {
                 <li>• <strong>Mechanika:</strong> Koło losuje kategorię pytania</li>
                 <li>• <strong>Punkty:</strong> 25 punktów za poprawną odpowiedź</li>
                 <li>• <strong>Kara:</strong> -25% życia za błędną odpowiedź</li>
-                <li>• <strong>Zwycięzca:</strong> Ostatni gracz z życiem > 0%</li>
+                <li>• <strong>Zwycięzca:</strong> Ostatni gracz z życiem większym niż 0%</li>
               </ul>
             </div>
           </section>
