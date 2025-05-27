@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { v4 as uuidv4 } from 'uuid';
 import { useGameContext } from '@/context/GameContext';
-import { Player, GameRound } from '@/types/game-types';
+import { Player } from '@/types/interfaces';
+import { GameRound } from '@/types/game-types';
 import PlayerCardWithControls from './PlayerCardWithControls';
 import { User, UserPlus, AlertCircle } from 'lucide-react';
 import { getRandomName } from '@/utils/name-generator';
@@ -25,13 +26,15 @@ const PreparationView: React.FC<PreparationViewProps> = ({ onStartGameClicked })
     const newPlayer: Player = {
       id: uuidv4(),
       name,
+      nickname: name, // Add nickname for compatibility
       points: 0,
       health: 100,
       lives: 3,
       isEliminated: false,
       specialCards: [],
       color: getRandomNeonColor(),
-      isActive: true
+      isActive: true,
+      status: 'online'
     };
     
     addPlayer(newPlayer);
@@ -43,16 +46,19 @@ const PreparationView: React.FC<PreparationViewProps> = ({ onStartGameClicked })
     const newPlayers: Player[] = [];
     
     for (let i = 0; i < count; i++) {
+      const name = getRandomName();
       newPlayers.push({
         id: uuidv4(),
-        name: getRandomName(),
+        name,
+        nickname: name, // Add nickname for compatibility
         points: 0,
         health: 100,
         lives: 3,
         isEliminated: false,
         specialCards: [],
         color: getRandomNeonColor(),
-        isActive: true
+        isActive: true,
+        status: 'online'
       });
     }
     
@@ -130,7 +136,7 @@ const PreparationView: React.FC<PreparationViewProps> = ({ onStartGameClicked })
               <PlayerCardWithControls
                 key={player.id}
                 player={player}
-                onEliminate={handleRemovePlayer} // Fixed: Pass the wrapper function
+                onEliminate={handleRemovePlayer}
               />
             ))}
             

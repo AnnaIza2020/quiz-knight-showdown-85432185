@@ -1,14 +1,14 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Player, GameState, Question, RoundSettings, AppSettings } from '@/types/interfaces';
+import { GameRound } from '@/types/game-types';
 import { useGameStateManagement } from '@/hooks/useGameStateManagement';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { SoundEffect, GameBackup, LogEntry } from '@/types/game-types';
 
 interface GameContextType {
   // Game State Management
-  round: string;
-  setRound: (round: string) => void;
+  round: GameRound;
+  setRound: (round: GameRound) => void;
   players: Player[];
   setPlayers: (players: Player[]) => void;
   categories: any[];
@@ -67,6 +67,15 @@ interface GameContextType {
   usePlayerCard: (playerId: string, cardId: string) => void;
   giveCardToPlayer: (playerId: string, cardId: string) => void;
   
+  // Game Logic Methods
+  awardPoints: (playerId: string, points: number) => void;
+  deductHealth: (playerId: string, percentage: number) => void;
+  deductLife: (playerId: string, lives?: number) => void;
+  advanceToRoundTwo: () => void;
+  advanceToRoundThree: () => void;
+  finishGame: (winnerIds: string[]) => void;
+  markQuestionAsUsed: (questionId: string) => Promise<any>;
+  
   // Methods
   addPlayer: (player: Player) => void;
   updatePlayer: (player: Player) => void;
@@ -109,26 +118,33 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
   const [gameTitle, setGameTitle] = useState('Discord Game Show');
   const [usedQuestionIds, setUsedQuestionIds] = useState<string[]>([]);
   
-  // Mock round settings
+  // Mock round settings with extended properties
   const roundSettings: RoundSettings = {
     round1: {
       startingHealth: 100,
       pointValues: { easy: 5, medium: 10, hard: 15, expert: 20 },
       healthLoss: { easy: 10, medium: 10, hard: 20, expert: 20 },
-      questionsPerCategory: 5
+      questionsPerCategory: 5,
+      maxQuestions: 10,
+      pointsForCorrectAnswer: 10,
+      healthDeductionPercentage: 20
     },
     round2: {
       startingHealth: 100,
       pointValue: 10,
       healthLoss: 15,
-      timeLimit: 5
+      timeLimit: 5,
+      maxQuestions: 8,
+      pointsForCorrectAnswer: 15
     },
     round3: {
       startingHealth: 100,
       pointValue: 15,
       healthLoss: 20,
       timeLimit: 10,
-      wheelCategories: []
+      wheelCategories: [],
+      maxSpins: 3,
+      pointsForCorrectAnswer: 20
     }
   };
 
@@ -244,6 +260,62 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
     addLog(`Card ${cardId} given to player ${playerId}`);
   };
 
+  // Game logic methods
+  const awardPoints = (playerId: string, points: number) => {
+    gameStateManagement.setPlayers(prev => 
+      prev.map(player => 
+        player.id === playerId 
+          ? { ...player, points: player.points + points }
+          : player
+      )
+    );
+    addLog(`Player ${playerId} awarded ${points} points`);
+  };
+
+  const deductHealth = (playerId: string, percentage: number) => {
+    gameStateManagement.setPlayers(prev => 
+      prev.map(player => 
+        player.id === playerId 
+          ? { ...player, health: Math.max(0, player.health - percentage) }
+          : player
+      )
+    );
+    addLog(`Player ${playerId} lost ${percentage}% health`);
+  };
+
+  const deductLife = (playerId: string, lives: number = 1) => {
+    gameStateManagement.setPlayers(prev => 
+      prev.map(player => 
+        player.id === playerId 
+          ? { ...player, lives: Math.max(0, player.lives - lives) }
+          : player
+      )
+    );
+    addLog(`Player ${playerId} lost ${lives} life(s)`);
+  };
+
+  const advanceToRoundTwo = () => {
+    gameStateManagement.setRound(GameRound.ROUND_TWO);
+    addLog('Advanced to Round 2');
+  };
+
+  const advanceToRoundThree = () => {
+    gameStateManagement.setRound(GameRound.ROUND_THREE);
+    addLog('Advanced to Round 3');
+  };
+
+  const finishGame = (winnerIds: string[]) => {
+    gameStateManagement.setRound(GameRound.FINISHED);
+    gameStateManagement.setWinnerIds(winnerIds);
+    addLog('Game finished');
+  };
+
+  const markQuestionAsUsed = async (questionId: string): Promise<any> => {
+    setUsedQuestionIds(prev => [...prev, questionId]);
+    addLog(`Question ${questionId} marked as used`);
+    return { success: true };
+  };
+
   // Special Cards Methods
   const addSpecialCard = (card: any) => {
     gameStateManagement.setSpecialCards(prev => [...prev, card]);
@@ -303,6 +375,13 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
     addSpecialCard,
     updateSpecialCard,
     removeSpecialCard,
+    awardPoints,
+    deductHealth,
+    deductLife,
+    advanceToRoundTwo,
+    advanceToRoundThree,
+    finishGame,
+    markQuestionAsUsed,
   };
 
   return (

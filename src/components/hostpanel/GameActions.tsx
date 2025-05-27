@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { GameRound } from '@/types/game-types';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,7 @@ const GameActions: React.FC<GameActionsProps> = ({
 }) => {
   const [isSkipping, setIsSkipping] = useState(false);
   const { playSound } = useGameContext();
-  const { broadcast } = useSubscription('game_events', 'new_event', () => {}, { immediate: false });
+  const { broadcast } = useSubscription('game_events', { immediate: false });
   
   const handleStartGame = () => {
     toast.success('Rozpoczynamy grę!');

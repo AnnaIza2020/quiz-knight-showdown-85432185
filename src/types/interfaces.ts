@@ -1,8 +1,8 @@
 
 export interface Player {
   id: string;
-  nickname: string;
-  name: string; // Add name for compatibility
+  nickname?: string; // Make optional to be compatible with game-types
+  name: string;
   points: number;
   health: number;
   lives: number;
@@ -14,6 +14,9 @@ export interface Player {
   specialCards: string[];
   status: 'online' | 'offline' | 'active';
   uniqueLinkToken?: string;
+  avatar_url?: string; // For backward compatibility
+  camera_url?: string; // For backward compatibility
+  forcedEliminated?: boolean;
 }
 
 export interface Question {
@@ -22,12 +25,16 @@ export interface Question {
   category: string;
   categoryId: string;
   difficulty: number;
-  type: 'open' | 'multiple_choice' | 'true_false';
-  options: string[]; // Make this required for consistency
+  type: 'text' | 'multiple_choice' | 'true_false'; // Align with game-types
+  options: string[];
   correctAnswer: string;
   timeLimit: number;
   points: number;
   used?: boolean;
+  imageUrl?: string;
+  question?: string; // For backward compatibility
+  answer?: string; // For backward compatibility
+  image_url?: string; // For backward compatibility
 }
 
 export interface Category {
@@ -44,15 +51,17 @@ export interface SpecialCard {
   name: string;
   description: string;
   iconUrl?: string;
+  iconName?: string;
   type: 'defense' | 'attack' | 'bonus' | 'manipulation';
   jsHook?: string;
   soundEffect?: string;
   animation?: string;
+  animationStyle?: 'glow' | 'neon-blue' | 'neon-green' | 'neon-red' | 'neon-purple' | 'rainbow';
   defaultQuantity: number;
 }
 
 export interface GameState {
-  currentRound: 'lobby' | 'round1' | 'round2' | 'round3' | 'finished';
+  currentRound: 'lobby' | 'setup' | 'round1' | 'round2' | 'round3' | 'finished';
   currentPhase: 'waiting' | 'question' | 'answering' | 'results';
   currentQuestion: Question | null;
   activePlayerId: string | null;
@@ -68,12 +77,17 @@ export interface RoundSettings {
     pointValues: { easy: number; medium: number; hard: number; expert: number };
     healthLoss: { easy: number; medium: number; hard: number; expert: number };
     questionsPerCategory: number;
+    maxQuestions?: number;
+    pointsForCorrectAnswer?: number;
+    healthDeductionPercentage?: number;
   };
   round2: {
     startingHealth: number;
     pointValue: number;
     healthLoss: number;
     timeLimit: number;
+    maxQuestions?: number;
+    pointsForCorrectAnswer?: number;
   };
   round3: {
     startingHealth: number;
@@ -81,6 +95,8 @@ export interface RoundSettings {
     healthLoss: number;
     timeLimit: number;
     wheelCategories: string[];
+    maxSpins?: number;
+    pointsForCorrectAnswer?: number;
   };
 }
 

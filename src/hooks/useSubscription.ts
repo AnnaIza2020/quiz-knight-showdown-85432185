@@ -6,14 +6,15 @@ interface SubscriptionOptions {
   onError?: (error: Error) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
+  immediate?: boolean;
 }
 
 export const useSubscription = (channel: string, options: SubscriptionOptions = {}) => {
-  const { onMessage, onError, onConnect, onDisconnect } = options;
+  const { onMessage, onError, onConnect, onDisconnect, immediate = true } = options;
   const subscribedRef = useRef(false);
 
   useEffect(() => {
-    if (subscribedRef.current) return;
+    if (!immediate || subscribedRef.current) return;
     
     subscribedRef.current = true;
     
@@ -33,7 +34,7 @@ export const useSubscription = (channel: string, options: SubscriptionOptions = 
         onDisconnect();
       }
     };
-  }, [channel, onConnect, onDisconnect]);
+  }, [channel, onConnect, onDisconnect, immediate]);
 
   // Mock methods
   const send = (data: any) => {
@@ -47,6 +48,17 @@ export const useSubscription = (channel: string, options: SubscriptionOptions = 
     }, 100);
   };
 
+  const broadcast = (data: any) => {
+    console.log(`Broadcasting to ${channel}:`, data);
+    
+    // Simulate broadcasting
+    setTimeout(() => {
+      if (onMessage) {
+        onMessage({ type: 'broadcast', data });
+      }
+    }, 50);
+  };
+
   const disconnect = () => {
     subscribedRef.current = false;
     if (onDisconnect) {
@@ -56,6 +68,7 @@ export const useSubscription = (channel: string, options: SubscriptionOptions = 
 
   return {
     send,
+    broadcast,
     disconnect,
     isConnected: subscribedRef.current
   };
