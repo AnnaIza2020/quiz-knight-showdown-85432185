@@ -1,13 +1,13 @@
 
 export interface Player {
   id: string;
-  nickname?: string; // Make optional to be compatible with game-types
+  nickname: string; // Required now
   name: string;
   points: number;
   health: number;
   lives: number;
   isEliminated: boolean;
-  isActive: boolean;
+  isActive: boolean; // Required now
   color: string;
   avatar?: string;
   cameraUrl?: string;
@@ -26,7 +26,7 @@ export interface Question {
   categoryId: string;
   difficulty: number;
   type: 'text' | 'multiple_choice' | 'true_false'; // Align with game-types
-  options: string[];
+  options: string[]; // Required now
   correctAnswer: string;
   timeLimit: number;
   points: number;

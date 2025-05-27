@@ -26,14 +26,14 @@ const PreparationView: React.FC<PreparationViewProps> = ({ onStartGameClicked })
     const newPlayer: Player = {
       id: uuidv4(),
       name,
-      nickname: name, // Add nickname for compatibility
+      nickname: name, // Required now
       points: 0,
       health: 100,
       lives: 3,
       isEliminated: false,
       specialCards: [],
       color: getRandomNeonColor(),
-      isActive: true,
+      isActive: true, // Required now
       status: 'online'
     };
     
@@ -50,14 +50,14 @@ const PreparationView: React.FC<PreparationViewProps> = ({ onStartGameClicked })
       newPlayers.push({
         id: uuidv4(),
         name,
-        nickname: name, // Add nickname for compatibility
+        nickname: name, // Required now
         points: 0,
         health: 100,
         lives: 3,
         isEliminated: false,
         specialCards: [],
         color: getRandomNeonColor(),
-        isActive: true,
+        isActive: true, // Required now
         status: 'online'
       });
     }

@@ -39,6 +39,7 @@ interface GameContextType {
   hostCameraUrl: string;
   setHostCameraUrl: (url: string) => void;
   roundSettings: RoundSettings;
+  updateRoundSettings: (settings: Partial<RoundSettings>) => void;
   
   // Sound Management
   playSound: (sound: SoundEffect, volume?: number) => void;
@@ -118,8 +119,8 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
   const [gameTitle, setGameTitle] = useState('Discord Game Show');
   const [usedQuestionIds, setUsedQuestionIds] = useState<string[]>([]);
   
-  // Mock round settings with extended properties
-  const roundSettings: RoundSettings = {
+  // Extended round settings with all required properties
+  const [roundSettings, setRoundSettings] = useState<RoundSettings>({
     round1: {
       startingHealth: 100,
       pointValues: { easy: 5, medium: 10, hard: 15, expert: 20 },
@@ -127,7 +128,11 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
       questionsPerCategory: 5,
       maxQuestions: 10,
       pointsForCorrectAnswer: 10,
-      healthDeductionPercentage: 20
+      pointsForIncorrectAnswer: -5,
+      livesCount: 3,
+      healthDeductionPercentage: 20,
+      eliminateCount: 4,
+      luckyLoserEnabled: true
     },
     round2: {
       startingHealth: 100,
@@ -135,17 +140,33 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
       healthLoss: 15,
       timeLimit: 5,
       maxQuestions: 8,
-      pointsForCorrectAnswer: 15
+      pointsForCorrectAnswer: 15,
+      pointsForIncorrectAnswer: -10,
+      livesCount: 3,
+      livesDeductedOnIncorrectAnswer: 1
     },
     round3: {
       startingHealth: 100,
       pointValue: 15,
       healthLoss: 20,
       timeLimit: 10,
-      wheelCategories: [],
+      wheelCategories: ['Kategoria 1', 'Kategoria 2', 'Kategoria 3'],
       maxSpins: 3,
-      pointsForCorrectAnswer: 20
+      pointsForCorrectAnswer: 20,
+      pointsForIncorrectAnswer: -15,
+      livesCount: 3,
+      livesDeductedOnIncorrectAnswer: 1,
+      finalRoundEnabled: true
+    },
+    timerDurations: {
+      round1: 30,
+      round2: 15,
+      round3: 45
     }
+  });
+
+  const updateRoundSettings = (settings: Partial<RoundSettings>) => {
+    setRoundSettings(prev => ({ ...prev, ...settings }));
   };
 
   // Log management
@@ -366,6 +387,7 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
     setGameTitle,
     usedQuestionIds,
     roundSettings,
+    updateRoundSettings,
     createBackup,
     restoreBackup,
     getBackups,

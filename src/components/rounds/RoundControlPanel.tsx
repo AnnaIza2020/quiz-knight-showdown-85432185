@@ -1,29 +1,29 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { 
-  AlertTriangle, 
-  Check, 
-  Clock, 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  SkipForward, 
-  Trophy,
-  X
-} from 'lucide-react';
 import { GameRound, Player, Question } from '@/types/game-types';
 import { RoundSettings } from '@/types/round-settings';
-import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { useGameContext } from '@/context/GameContext';
-import QuestionBoard from '../QuestionBoard';
-import FortuneWheel from '../FortuneWheel';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
-import { useWheelSync } from '@/hooks/useWheelSync';
-import { Badge } from '../ui/badge';
-import { Progress } from '../ui/progress';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { toast } from 'sonner';
+import { 
+  Trophy, 
+  Heart, 
+  SkullIcon, 
+  Timer, 
+  Target,
+  Users,
+  Award,
+  Minus,
+  Plus,
+  CheckCircle,
+  XCircle,
+  ArrowRight
+} from 'lucide-react';
 
 interface RoundControlPanelProps {
   round: GameRound;
@@ -47,793 +47,331 @@ const RoundControlPanel: React.FC<RoundControlPanelProps> = ({
   roundSettings
 }) => {
   const { 
-    setActivePlayer,
-    startTimer,
-    stopTimer,
-    awardPoints,
-    deductHealth,
+    awardPoints, 
+    deductHealth, 
     deductLife,
-    playSound,
-    selectQuestion,
+    updatePlayer,
     advanceToRoundTwo,
     advanceToRoundThree,
     finishGame,
-    categories,
-    markQuestionAsUsed
+    setPlayers,
+    markQuestionAsUsed 
   } = useGameContext();
   
-  const [luckyLoserDialogOpen, setLuckyLoserDialogOpen] = useState(false);
-  const [resetRoundDialogOpen, setResetRoundDialogOpen] = useState(false);
-  const [skipQuestionDialogOpen, setSkipQuestionDialogOpen] = useState(false);
+  const [customPoints, setCustomPoints] = useState<number>(0);
+  const [customHealth, setCustomHealth] = useState<number>(0);
   
-  // Track round progress
-  const [currentQuestionNumber, setCurrentQuestionNumber] = useState(1);
-  const maxQuestionsForRound = round === GameRound.ROUND_ONE 
-    ? roundSettings[GameRound.ROUND_ONE].maxQuestions
-    : round === GameRound.ROUND_TWO 
-      ? roundSettings[GameRound.ROUND_TWO].maxQuestions 
-      : roundSettings[GameRound.ROUND_THREE].maxSpins;
-  
-  // Lucky loser handling
-  const [luckyLoser, setLuckyLoser] = useState<Player | null>(null);
-  
-  // Wheel of Fortune in Round 3
-  const { 
-    isSpinning,
-    selectedCategory,
-    triggerSpin,
-    resetWheel
-  } = useWheelSync({
-    onCategorySelected: (category) => {
-      toast.success(`Kategoria: ${category}`, {
-        description: 'Kliknij "Pokaż pytanie" aby wylosować pytanie z tej kategorii'
-      });
-      playSound('success');
+  // Get current round settings
+  const getCurrentSettings = () => {
+    switch (round) {
+      case GameRound.ROUND_ONE:
+        return {
+          maxQuestions: roundSettings.round1.maxQuestions || 10,
+          eliminateCount: roundSettings.round1.eliminateCount || 4,
+          maxSpins: 0,
+          pointsForCorrectAnswer: roundSettings.round1.pointsForCorrectAnswer || 10,
+          healthDeductionPercentage: roundSettings.round1.healthDeductionPercentage || 20,
+          luckyLoserEnabled: roundSettings.round1.luckyLoserEnabled || false
+        };
+      case GameRound.ROUND_TWO:
+        return {
+          maxQuestions: roundSettings.round2.maxQuestions || 8,
+          eliminateCount: 0,
+          maxSpins: 0,
+          pointsForCorrectAnswer: roundSettings.round2.pointsForCorrectAnswer || 15
+        };
+      case GameRound.ROUND_THREE:
+        return {
+          maxQuestions: 0,
+          eliminateCount: 0,
+          maxSpins: roundSettings.round3.maxSpins || 3,
+          pointsForCorrectAnswer: roundSettings.round3.pointsForCorrectAnswer || 20
+        };
+      default:
+        return { maxQuestions: 0, eliminateCount: 0, maxSpins: 0, pointsForCorrectAnswer: 0 };
     }
-  });
-  
-  // Find the best-performing eliminated player for Lucky Loser
-  const findLuckyLoser = () => {
-    // Get all eliminated players
-    const eliminatedPlayers = activePlayers.filter(player => player.isEliminated);
-    
-    if (eliminatedPlayers.length === 0) {
-      toast.info('Brak wyeliminowanych graczy');
-      return null;
-    }
-    
-    // Sort by points (highest first)
-    const sortedPlayers = [...eliminatedPlayers].sort((a, b) => b.points - a.points);
-    return sortedPlayers[0] || null;
   };
-  
+
+  const settings = getCurrentSettings();
+
   // Handle correct answer
-  const handleCorrectAnswer = () => {
-    if (!activePlayerId) {
-      toast.error('Wybierz aktywnego gracza');
-      return;
-    }
+  const handleCorrectAnswer = (playerId: string) => {
+    if (!playerId) return;
     
-    const player = activePlayers.find(p => p.id === activePlayerId);
-    if (!player) return;
+    const points = settings.pointsForCorrectAnswer;
+    awardPoints(playerId, points);
     
-    // Get points based on round and question difficulty
-    let pointsToAward = 0;
-    
-    if (round === GameRound.ROUND_ONE) {
-      pointsToAward = roundSettings[GameRound.ROUND_ONE].pointsForCorrectAnswer;
-      if (currentQuestion?.difficulty) {
-        pointsToAward = currentQuestion.difficulty;
-      }
-    } else if (round === GameRound.ROUND_TWO) {
-      pointsToAward = roundSettings[GameRound.ROUND_TWO].pointsForCorrectAnswer;
-    } else if (round === GameRound.ROUND_THREE) {
-      pointsToAward = roundSettings[GameRound.ROUND_THREE].pointsForCorrectAnswer;
-    }
-    
-    // Award points
-    awardPoints(activePlayerId, pointsToAward);
-    
-    // Play sound and show toast
-    playSound('success');
-    toast.success(`Poprawna odpowiedź! +${pointsToAward} punktów`, {
-      description: `${player.name} ma teraz ${player.points + pointsToAward} punktów`
-    });
-    
-    // Mark question as used
     if (currentQuestion) {
       markQuestionAsUsed(currentQuestion.id);
     }
     
-    // Increment question counter
-    setCurrentQuestionNumber(prev => Math.min(prev + 1, maxQuestionsForRound));
-    
-    // Stop timer if running
-    if (timerRunning) {
-      stopTimer();
-    }
+    toast.success(`Gracz otrzymał ${points} punktów za poprawną odpowiedź!`);
   };
-  
+
   // Handle incorrect answer
-  const handleIncorrectAnswer = () => {
-    if (!activePlayerId) {
-      toast.error('Wybierz aktywnego gracza');
-      return;
+  const handleIncorrectAnswer = (playerId: string) => {
+    if (!playerId) return;
+    
+    if (round === GameRound.ROUND_ONE) {
+      const healthDeduction = settings.healthDeductionPercentage || 20;
+      deductHealth(playerId, healthDeduction);
+      toast.warning(`Gracz stracił ${healthDeduction}% zdrowia!`);
+    } else {
+      deductLife(playerId, 1);
+      toast.warning('Gracz stracił życie!');
     }
     
-    const player = activePlayers.find(p => p.id === activePlayerId);
+    if (currentQuestion) {
+      markQuestionAsUsed(currentQuestion.id);
+    }
+  };
+
+  // Handle manual point adjustment
+  const handleManualPoints = (playerId: string, points: number) => {
+    awardPoints(playerId, points);
+    toast.success(`Ręcznie dodano ${points} punktów!`);
+  };
+
+  // Handle manual health adjustment
+  const handleManualHealth = (playerId: string, healthChange: number) => {
+    const player = activePlayers.find(p => p.id === playerId);
     if (!player) return;
     
-    // Determine health deduction based on round
-    let healthDeduction = 0;
-    
-    if (round === GameRound.ROUND_ONE) {
-      healthDeduction = roundSettings[GameRound.ROUND_ONE].healthDeductionPercentage;
-    } else if (round === GameRound.ROUND_TWO) {
-      healthDeduction = 20; // 20% in Round 2
-    } else if (round === GameRound.ROUND_THREE) {
-      healthDeduction = 25; // 25% in Round 3
+    const newHealth = Math.max(0, Math.min(100, player.health + healthChange));
+    const updatedPlayer: Player = { ...player, health: newHealth, isActive: true };
+    updatePlayer(updatedPlayer);
+    toast.info(`Zdrowie gracza zmienione o ${healthChange}%`);
+  };
+
+  // Eliminate player manually
+  const handleEliminatePlayer = (playerId: string) => {
+    const updatedPlayer = activePlayers.find(p => p.id === playerId);
+    if (updatedPlayer) {
+      const eliminatedPlayer: Player = { 
+        ...updatedPlayer, 
+        isEliminated: true,
+        health: 0,
+        lives: 0,
+        isActive: true // Keep isActive required
+      };
+      updatePlayer(eliminatedPlayer);
+      toast.error('Gracz został wyeliminowany!');
     }
+  };
+
+  // Auto eliminate based on round 1 settings
+  const handleAutoEliminate = () => {
+    if (round !== GameRound.ROUND_ONE) return;
     
-    // Deduct health
-    deductHealth(activePlayerId, healthDeduction);
-    
-    // Play sound and show toast
-    playSound('failure');
-    toast.error(`Błędna odpowiedź! -${healthDeduction}% życia`, {
-      description: `${player.name} ma teraz ${Math.max(0, player.health - healthDeduction)}% życia`
+    const sortedPlayers = [...activePlayers].sort((a, b) => {
+      // Sort by health first, then by points
+      if (a.health !== b.health) return a.health - b.health;
+      return a.points - b.points;
     });
     
-    // Mark question as used
-    if (currentQuestion) {
-      markQuestionAsUsed(currentQuestion.id);
-    }
+    const toEliminate = sortedPlayers.slice(0, settings.eliminateCount);
     
-    // Increment question counter
-    setCurrentQuestionNumber(prev => Math.min(prev + 1, maxQuestionsForRound));
+    setPlayers(prev => prev.map(player => {
+      if (toEliminate.find(p => p.id === player.id)) {
+        return { ...player, isEliminated: true, isActive: true };
+      }
+      return player;
+    }));
     
-    // Stop timer if running
-    if (timerRunning) {
-      stopTimer();
-    }
+    toast.success(`Wyeliminowano ${toEliminate.length} graczy!`);
     
-    // Check if player should be eliminated
-    if (player.health <= healthDeduction) {
-      toast.info(`${player.name} został wyeliminowany!`);
-      playSound('eliminate');
+    // Check for lucky loser
+    if (settings.luckyLoserEnabled && toEliminate.length > 0) {
+      const luckyLoser = toEliminate[Math.floor(Math.random() * toEliminate.length)];
+      updatePlayer({ ...luckyLoser, isEliminated: false, isActive: true });
+      toast.info(`Lucky Loser: ${luckyLoser.name} wraca do gry!`);
     }
   };
-  
-  // Handle lucky loser dialog
-  const handleOpenLuckyLoserDialog = () => {
-    const luckyLoser = findLuckyLoser();
-    setLuckyLoser(luckyLoser);
-    setLuckyLoserDialogOpen(true);
-  };
-  
-  // Handle lucky loser confirmation
-  const handleConfirmLuckyLoser = () => {
-    if (!luckyLoser) return;
-    
-    // Reset player's life and remove elimination
-    const updatedPlayer = {
-      ...luckyLoser,
-      health: 100, // Full health
-      lives: 3, // Reset lives
-      isEliminated: false // No longer eliminated
-    };
-    
-    // Update player (this should internally call setPlayers)
-    useGameContext().updatePlayer(updatedPlayer);
-    
-    // Show toast and play sound
-    toast.success(`${luckyLoser.name} wraca do gry jako Lucky Loser!`);
-    playSound('bonus');
-    
-    // Close dialog
-    setLuckyLoserDialogOpen(false);
-  };
-  
-  // Handle round reset
-  const handleResetRound = () => {
-    // Reset round-specific state
-    setCurrentQuestionNumber(1);
-    resetWheel();
-    selectQuestion(null);
-    stopTimer();
-    
-    // Close dialog
-    setResetRoundDialogOpen(false);
-    
-    toast.success('Runda została zresetowana');
-  };
-  
-  // Handle skip question
-  const handleSkipQuestion = () => {
-    // Mark current question as skipped
-    if (currentQuestion) {
-      markQuestionAsUsed(currentQuestion.id);
-    }
-    
-    // Clear current question
-    selectQuestion(null);
-    
-    // Stop timer if running
-    if (timerRunning) {
-      stopTimer();
-    }
-    
-    // Show notification
-    toast.info('Pytanie pominięto');
-    
-    // Close dialog
-    setSkipQuestionDialogOpen(false);
-  };
-  
-  // Spin the Wheel of Fortune
-  const handleSpinWheel = () => {
-    triggerSpin();
-    playSound('wheel-spin');
-    toast.info('Koło fortuny kręci się...');
-  };
-  
-  // Get a random question from the selected category
-  const handleGetCategoryQuestion = () => {
-    if (!selectedCategory) {
-      toast.error('Najpierw wylosuj kategorię za pomocą Koła Fortuny');
-      return;
-    }
-    
-    // Find the category
-    const category = categories.find(c => c.name === selectedCategory);
-    if (!category) {
-      toast.error('Nie znaleziono kategorii');
-      return;
-    }
-    
-    // Get available questions (not used yet)
-    const availableQuestions = category.questions.filter(q => !usedQuestionIds.includes(q.id));
-    
-    if (availableQuestions.length === 0) {
-      toast.error('Brak dostępnych pytań w tej kategorii');
-      return;
-    }
-    
-    // Get a random question
-    const randomIndex = Math.floor(Math.random() * availableQuestions.length);
-    const question = availableQuestions[randomIndex];
-    
-    // Select the question
-    selectQuestion(question);
-    
-    // Play sound and show notification
-    playSound('card-reveal');
-    toast.success('Wylosowano pytanie z kategorii: ' + selectedCategory);
-  };
-  
-  // Render controls based on current round
-  const renderRoundControls = () => {
-    if (round === GameRound.SETUP) {
-      return (
-        <div className="p-6 text-center">
-          <h3 className="text-xl font-semibold mb-4">Przygotowanie do gry</h3>
-          <p className="text-white/70 mb-6">
-            Kliknij przycisk "Start Rundy 1" w górnym pasku, aby rozpocząć teleturniej.
-          </p>
-          <Button 
-            onClick={() => advanceToRoundTwo()}
-            className="bg-neon-blue hover:bg-neon-blue/80"
-          >
-            <Play className="h-4 w-4 mr-2" />
-            Rozpocznij Rundę 1
-          </Button>
-        </div>
-      );
-    }
-    
-    if (round === GameRound.ROUND_ONE) {
-      return (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold">Runda 1: Eliminacje</h3>
-            <Badge className="bg-neon-blue">
-              Pytanie {currentQuestionNumber}/{maxQuestionsForRound}
-            </Badge>
-          </div>
-          
-          <Progress 
-            value={(currentQuestionNumber / maxQuestionsForRound) * 100} 
-            className="h-2 mb-4"
-          />
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <QuestionBoard question={currentQuestion} />
-            
-            <div>
-              <Card className="bg-black/30 border border-white/10 mb-4">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Timer i Ocena</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    <Button 
-                      onClick={() => startTimer(30)}
-                      className="bg-neon-blue hover:bg-neon-blue/80 text-white"
-                      disabled={timerRunning}
-                    >
-                      <Play className="h-4 w-4 mr-1" />
-                      Start (30s)
-                    </Button>
-                    
-                    <Button 
-                      onClick={stopTimer}
-                      className="bg-red-600 hover:bg-red-700 text-white"
-                      disabled={!timerRunning}
-                    >
-                      <Pause className="h-4 w-4 mr-1" />
-                      Stop
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            onClick={handleCorrectAnswer}
-                            className="bg-green-600 hover:bg-green-700 text-white h-16"
-                            disabled={!currentQuestion}
-                          >
-                            <Check className="h-6 w-6 mr-2" />
-                            Poprawna odpowiedź
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          Gracz otrzyma {currentQuestion?.difficulty || roundSettings[GameRound.ROUND_ONE].pointsForCorrectAnswer} punktów
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            onClick={handleIncorrectAnswer}
-                            className="bg-red-600 hover:bg-red-700 text-white h-16"
-                            disabled={!currentQuestion}
-                          >
-                            <X className="h-6 w-6 mr-2" />
-                            Błędna odpowiedź
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          Gracz straci {roundSettings[GameRound.ROUND_ONE].healthDeductionPercentage}% życia
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <Button 
-                  variant="outline" 
-                  className="border-orange-400 text-orange-400 hover:bg-orange-400/10"
-                  onClick={() => setSkipQuestionDialogOpen(true)}
-                >
-                  <SkipForward className="h-4 w-4 mr-1" />
-                  Pomiń pytanie
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  className="border-yellow-400 text-yellow-400 hover:bg-yellow-400/10"
-                  onClick={handleOpenLuckyLoserDialog}
-                  disabled={roundSettings[GameRound.ROUND_ONE].luckyLoserEnabled === false}
-                >
-                  <Trophy className="h-4 w-4 mr-1" />
-                  Lucky Loser
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex justify-between mt-4">
-            <Button 
-              variant="outline" 
-              className="border-purple-400 text-purple-400 hover:bg-purple-400/10"
-              onClick={() => setResetRoundDialogOpen(true)}
-            >
-              <RotateCcw className="h-4 w-4 mr-1" />
-              Reset rundy
-            </Button>
-            
-            <Button 
-              onClick={() => advanceToRoundTwo()}
-              className="bg-neon-green hover:bg-neon-green/80 text-black"
-            >
-              <Play className="h-4 w-4 mr-1" />
-              Przejdź do Rundy 2
-            </Button>
-          </div>
-        </div>
-      );
-    }
-    
-    if (round === GameRound.ROUND_TWO) {
-      return (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold">Runda 2: Szybka Odpowiedź</h3>
-            <Badge className="bg-neon-yellow text-black">
-              Pytanie {currentQuestionNumber}/{maxQuestionsForRound}
-            </Badge>
-          </div>
-          
-          <Progress 
-            value={(currentQuestionNumber / maxQuestionsForRound) * 100} 
-            className="h-2 mb-4"
-          />
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <QuestionBoard question={currentQuestion} />
-            
-            <div>
-              <Card className="bg-black/30 border border-white/10 mb-4">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Timer 5 Sekund</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    <Button 
-                      onClick={() => startTimer(5)}
-                      className="bg-neon-yellow hover:bg-neon-yellow/80 text-black"
-                      disabled={timerRunning}
-                    >
-                      <Play className="h-4 w-4 mr-1" />
-                      Start (5s)
-                    </Button>
-                    
-                    <Button 
-                      onClick={stopTimer}
-                      className="bg-red-600 hover:bg-red-700 text-white"
-                      disabled={!timerRunning}
-                    >
-                      <Pause className="h-4 w-4 mr-1" />
-                      Stop
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            onClick={handleCorrectAnswer}
-                            className="bg-green-600 hover:bg-green-700 text-white h-16"
-                            disabled={!currentQuestion}
-                          >
-                            <Check className="h-6 w-6 mr-2" />
-                            Poprawna odpowiedź
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          Gracz otrzyma {roundSettings[GameRound.ROUND_TWO].pointsForCorrectAnswer} punktów
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            onClick={handleIncorrectAnswer}
-                            className="bg-red-600 hover:bg-red-700 text-white h-16"
-                            disabled={!currentQuestion}
-                          >
-                            <X className="h-6 w-6 mr-2" />
-                            Błędna odpowiedź
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          Gracz straci 20% życia
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <Button 
-                  variant="outline" 
-                  className="border-orange-400 text-orange-400 hover:bg-orange-400/10"
-                  onClick={() => setSkipQuestionDialogOpen(true)}
-                >
-                  <SkipForward className="h-4 w-4 mr-1" />
-                  Pomiń pytanie
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  className="border-purple-400 text-purple-400 hover:bg-purple-400/10"
-                  onClick={() => setResetRoundDialogOpen(true)}
-                >
-                  <RotateCcw className="h-4 w-4 mr-1" />
-                  Reset rundy
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex justify-end mt-4">
-            <Button 
-              onClick={() => advanceToRoundThree()}
-              className="bg-neon-green hover:bg-neon-green/80 text-black"
-            >
-              <Play className="h-4 w-4 mr-1" />
-              Przejdź do Rundy 3
-            </Button>
-          </div>
-        </div>
-      );
-    }
-    
-    if (round === GameRound.ROUND_THREE) {
-      return (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold">Runda 3: Koło Fortuny</h3>
-            <Badge className="bg-neon-purple">
-              Obrót {currentQuestionNumber}/{maxQuestionsForRound}
-            </Badge>
-          </div>
-          
-          <Progress 
-            value={(currentQuestionNumber / maxQuestionsForRound) * 100} 
-            className="h-2 mb-4"
-          />
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <Card className="bg-black/30 border border-white/10">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Koło Fortuny</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <FortuneWheel 
-                  categories={categories.map(c => c.name)}
-                  isSpinning={isSpinning}
-                />
-                
-                <div className="mt-4 flex justify-center">
-                  {selectedCategory ? (
-                    <Badge className="text-md py-2 px-4 bg-neon-purple">
-                      {selectedCategory}
-                    </Badge>
-                  ) : (
-                    <Badge className="text-md py-2 px-4 bg-gray-700">
-                      Zakręć kołem aby wylosować kategorię
-                    </Badge>
-                  )}
-                </div>
-                
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Button 
-                    onClick={handleSpinWheel}
-                    className="bg-neon-purple hover:bg-neon-purple/80 text-white"
-                    disabled={isSpinning}
-                  >
-                    <RotateCcw className="h-4 w-4 mr-1" />
-                    Zakręć kołem
-                  </Button>
-                  
-                  <Button 
-                    onClick={handleGetCategoryQuestion}
-                    className="bg-neon-green hover:bg-neon-green/80 text-black"
-                    disabled={!selectedCategory}
-                  >
-                    <Play className="h-4 w-4 mr-1" />
-                    Pokaż pytanie
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <div>
-              <QuestionBoard question={currentQuestion} />
-              
-              <div className="grid grid-cols-2 gap-2 mt-4">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        onClick={handleCorrectAnswer}
-                        className="bg-green-600 hover:bg-green-700 text-white h-12"
-                        disabled={!currentQuestion}
-                      >
-                        <Check className="h-5 w-5 mr-2" />
-                        Poprawna odpowiedź
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Gracz otrzyma {roundSettings[GameRound.ROUND_THREE].pointsForCorrectAnswer} punktów
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        onClick={handleIncorrectAnswer}
-                        className="bg-red-600 hover:bg-red-700 text-white h-12"
-                        disabled={!currentQuestion}
-                      >
-                        <X className="h-5 w-5 mr-2" />
-                        Błędna odpowiedź
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Gracz straci 25% życia
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <Button 
-                  onClick={() => startTimer(30)}
-                  className="bg-neon-blue hover:bg-neon-blue/80 text-white"
-                  disabled={timerRunning || !currentQuestion}
-                >
-                  <Clock className="h-4 w-4 mr-1" />
-                  Timer (30s)
-                </Button>
-                
-                <Button 
-                  onClick={stopTimer}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                  disabled={!timerRunning}
-                >
-                  <Pause className="h-4 w-4 mr-1" />
-                  Stop
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex justify-between mt-4">
-            <Button 
-              variant="outline" 
-              className="border-orange-400 text-orange-400 hover:bg-orange-400/10"
-              onClick={() => setSkipQuestionDialogOpen(true)}
-            >
-              <SkipForward className="h-4 w-4 mr-1" />
-              Pomiń pytanie
-            </Button>
-            
-            <Button 
-              onClick={() => finishGame([])} // Empty array will trigger automatic winner detection
-              className="bg-neon-green hover:bg-neon-green/80 text-black"
-            >
-              <Trophy className="h-4 w-4 mr-1" />
-              Zakończ grę
-            </Button>
-          </div>
-        </div>
-      );
-    }
-    
-    if (round === GameRound.FINISHED) {
-      return (
-        <div className="p-6 text-center">
-          <h3 className="text-xl font-semibold mb-4">Teleturniej zakończony!</h3>
-          <p className="text-white/70 mb-6">
-            Zwycięzcy zostali ogłoszeni. Możesz zresetować grę lub wrócić do menu głównego.
-          </p>
-        </div>
-      );
-    }
-    
-    return null;
-  };
-  
+
   return (
-    <div>
-      {renderRoundControls()}
-      
-      {/* Lucky Loser Dialog */}
-      <Dialog open={luckyLoserDialogOpen} onOpenChange={setLuckyLoserDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Lucky Loser</DialogTitle>
-            <DialogDescription>
-              {luckyLoser ? (
-                <span>
-                  Gracz <span className="font-bold">{luckyLoser.name}</span> ma najwyższy wynik ({luckyLoser.points} pkt) wśród wyeliminowanych graczy. Czy chcesz przywrócić tego gracza do gry jako "Lucky Loser"?
-                </span>
-              ) : (
-                <span>Nie znaleziono wyeliminowanych graczy.</span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setLuckyLoserDialogOpen(false)}
-            >
-              Anuluj
-            </Button>
+    <div className="space-y-6">
+      {/* Round Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            {round === GameRound.ROUND_ONE && 'Runda 1 - Eliminacje'}
+            {round === GameRound.ROUND_TWO && 'Runda 2 - Szybka Odpowiedź'}
+            {round === GameRound.ROUND_THREE && 'Runda 3 - Koło Fortuny'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <Users className="h-6 w-6 mx-auto mb-2 text-blue-500" />
+              <div className="text-2xl font-bold">{activePlayers.length}</div>
+              <div className="text-sm text-gray-500">Aktywni gracze</div>
+            </div>
             
-            <Button 
-              onClick={handleConfirmLuckyLoser}
-              className="bg-neon-green hover:bg-neon-green/80 text-black"
-              disabled={!luckyLoser}
-            >
-              Przywróć jako Lucky Loser
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Reset Round Dialog */}
-      <Dialog open={resetRoundDialogOpen} onOpenChange={setResetRoundDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reset rundy</DialogTitle>
-            <DialogDescription>
-              <AlertTriangle className="h-8 w-8 text-yellow-500 mx-auto my-2" />
-              Czy na pewno chcesz zresetować bieżącą rundę? Ta akcja wyczyści aktualny postęp rundy.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setResetRoundDialogOpen(false)}
-            >
-              Anuluj
-            </Button>
+            {settings.maxQuestions > 0 && (
+              <div className="text-center">
+                <Award className="h-6 w-6 mx-auto mb-2 text-green-500" />
+                <div className="text-2xl font-bold">{usedQuestionIds.length}/{settings.maxQuestions}</div>
+                <div className="text-sm text-gray-500">Użyte pytania</div>
+              </div>
+            )}
             
-            <Button 
-              onClick={handleResetRound}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Reset rundy
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Skip Question Dialog */}
-      <Dialog open={skipQuestionDialogOpen} onOpenChange={setSkipQuestionDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Pomiń pytanie</DialogTitle>
-            <DialogDescription>
-              Czy na pewno chcesz pominąć bieżące pytanie? 
-              To pytanie zostanie oznaczone jako użyte i nie będzie dostępne w bieżącej sesji.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setSkipQuestionDialogOpen(false)}
-            >
-              Anuluj
-            </Button>
+            <div className="text-center">
+              <Trophy className="h-6 w-6 mx-auto mb-2 text-yellow-500" />
+              <div className="text-2xl font-bold">{settings.pointsForCorrectAnswer}</div>
+              <div className="text-sm text-gray-500">Punkty za odpowiedź</div>
+            </div>
             
-            <Button 
-              onClick={handleSkipQuestion}
-              className="bg-orange-600 hover:bg-orange-700 text-white"
-            >
-              Pomiń
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <div className="text-center">
+              <Timer className="h-6 w-6 mx-auto mb-2 text-red-500" />
+              <div className="text-2xl font-bold">{timerSeconds}s</div>
+              <div className="text-sm text-gray-500">Pozostały czas</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions for Current Question */}
+      {currentQuestion && activePlayerId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Szybkie Akcje - Aktualne Pytanie</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => handleCorrectAnswer(activePlayerId)}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Poprawna (+{settings.pointsForCorrectAnswer} pkt)
+              </Button>
+              
+              <Button
+                onClick={() => handleIncorrectAnswer(activePlayerId)}
+                variant="destructive"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Niepoprawna
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Manual Controls */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Ręczne Kontrole</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Punkty do dodania/odjęcia</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  value={customPoints}
+                  onChange={(e) => setCustomPoints(parseInt(e.target.value) || 0)}
+                  placeholder="0"
+                />
+                <Button
+                  onClick={() => activePlayerId && handleManualPoints(activePlayerId, customPoints)}
+                  disabled={!activePlayerId}
+                  size="sm"
+                >
+                  Zastosuj
+                </Button>
+              </div>
+            </div>
+            
+            <div>
+              <Label>Zdrowie do dodania/odjęcia (%)</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  value={customHealth}
+                  onChange={(e) => setCustomHealth(parseInt(e.target.value) || 0)}
+                  placeholder="0"
+                />
+                <Button
+                  onClick={() => activePlayerId && handleManualHealth(activePlayerId, customHealth)}
+                  disabled={!activePlayerId}
+                  size="sm"
+                >
+                  Zastosuj
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          <Separator />
+          
+          <div className="flex gap-3">
+            {activePlayerId && (
+              <Button
+                onClick={() => handleEliminatePlayer(activePlayerId)}
+                variant="destructive"
+                size="sm"
+              >
+                <SkullIcon className="h-4 w-4 mr-2" />
+                Eliminuj gracza
+              </Button>
+            )}
+            
+            {round === GameRound.ROUND_ONE && (
+              <Button
+                onClick={handleAutoEliminate}
+                variant="outline"
+                size="sm"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Auto eliminacja ({settings.eliminateCount})
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Round Progression */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Przejście do następnej rundy</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-3">
+            {round === GameRound.ROUND_ONE && (
+              <Button
+                onClick={advanceToRoundTwo}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <ArrowRight className="h-4 w-4 mr-2" />
+                Przejdź do Rundy 2
+              </Button>
+            )}
+            
+            {round === GameRound.ROUND_TWO && (
+              <Button
+                onClick={advanceToRoundThree}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                <ArrowRight className="h-4 w-4 mr-2" />
+                Przejdź do Rundy 3
+              </Button>
+            )}
+            
+            {round === GameRound.ROUND_THREE && (
+              <Button
+                onClick={() => finishGame(activePlayers.slice(0, 3).map(p => p.id))}
+                className="bg-yellow-600 hover:bg-yellow-700"
+              >
+                <Trophy className="h-4 w-4 mr-2" />
+                Zakończ Grę
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
