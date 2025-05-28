@@ -8,16 +8,19 @@ interface UseSubscriptionOptions {
   onDisconnect?: () => void;
 }
 
-export const useSubscription = (options: UseSubscriptionOptions = {}) => {
+export const useSubscription = (
+  topic?: string, 
+  options: UseSubscriptionOptions = {}
+) => {
   const connectionRef = useRef<{
     send: (data: any) => void;
     disconnect: () => void;
     isConnected: boolean;
+    broadcast: (data: any) => void;
   }>({
     send: (data: any) => {
       console.log('Mock send:', data);
       if (options.onMessage) {
-        // Simulate async message
         setTimeout(() => options.onMessage?.(data), 100);
       }
     },
@@ -27,17 +30,21 @@ export const useSubscription = (options: UseSubscriptionOptions = {}) => {
         options.onDisconnect();
       }
     },
-    isConnected: true
+    isConnected: true,
+    broadcast: (data: any) => {
+      console.log('Mock broadcast:', data);
+      if (options.onMessage) {
+        setTimeout(() => options.onMessage?.(data), 100);
+      }
+    }
   });
 
   useEffect(() => {
-    // Simulate connection
     if (options.onConnect) {
       options.onConnect();
     }
 
     return () => {
-      // Cleanup on unmount
       if (options.onDisconnect) {
         options.onDisconnect();
       }

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+
+import React, { createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { PlayerAvailabilitySlot, AvailabilityStatus, AvailabilityContextType } from '@/types/availability-types';
 
@@ -17,7 +18,6 @@ interface AvailabilityProviderProps {
 }
 
 export const AvailabilityProvider: React.FC<AvailabilityProviderProps> = ({ children }) => {
-  // Fetch all availability data
   const fetchAvailability = async (): Promise<PlayerAvailabilitySlot[]> => {
     try {
       const { data, error } = await supabase
@@ -26,16 +26,15 @@ export const AvailabilityProvider: React.FC<AvailabilityProviderProps> = ({ chil
 
       if (error) throw error;
 
-      // Transform the data to match our expected type
       const transformedData: PlayerAvailabilitySlot[] = data.map(item => ({
         id: item.id,
         playerId: item.player_id,
         date: item.date,
-        timeSlots: item.time_slots as Record<string, AvailabilityStatus>,
-        player_id: item.player_id, // For backward compatibility
-        time_slots: item.time_slots, // For backward compatibility
-        created_at: item.created_at,
-        updated_at: item.updated_at
+        startTime: '09:00',
+        endTime: '21:00',
+        available: true,
+        timeSlots: item.time_slots as Record<string, AvailabilityStatus> || {},
+        notes: ''
       }));
 
       return transformedData;
@@ -45,13 +44,11 @@ export const AvailabilityProvider: React.FC<AvailabilityProviderProps> = ({ chil
     }
   };
 
-  // Convert between different timeSlot formats
   const convertTimeSlots = (slots: any): Record<string, AvailabilityStatus> => {
     if (!slots) return {};
     
     const result: Record<string, AvailabilityStatus> = {};
     
-    // Convert boolean values to AvailabilityStatus enum
     Object.entries(slots).forEach(([key, value]) => {
       if (typeof value === 'boolean') {
         result[key] = value ? AvailabilityStatus.AVAILABLE : AvailabilityStatus.UNAVAILABLE;
@@ -65,7 +62,6 @@ export const AvailabilityProvider: React.FC<AvailabilityProviderProps> = ({ chil
     return result;
   };
 
-  // Get availability for a specific player
   const getPlayerAvailability = async (playerId: string): Promise<PlayerAvailabilitySlot[]> => {
     try {
       const { data, error } = await supabase
@@ -83,12 +79,11 @@ export const AvailabilityProvider: React.FC<AvailabilityProviderProps> = ({ chil
         id: item.id,
         playerId: item.player_id,
         date: item.date,
+        startTime: '09:00',
+        endTime: '21:00',
+        available: true,
         timeSlots: convertTimeSlots(item.time_slots),
-        // Keep original fields for backwards compatibility
-        player_id: item.player_id,
-        time_slots: item.time_slots,
-        created_at: item.created_at,
-        updated_at: item.updated_at
+        notes: ''
       }));
     } catch (error) {
       console.error('Unexpected error fetching player availability:', error);
@@ -96,10 +91,8 @@ export const AvailabilityProvider: React.FC<AvailabilityProviderProps> = ({ chil
     }
   };
 
-  // Update player availability
   const updateAvailability = async (data: PlayerAvailabilitySlot): Promise<{success: boolean}> => {
     try {
-      // Update the data
       const { error } = await supabase
         .from('player_availability')
         .upsert({
@@ -116,10 +109,8 @@ export const AvailabilityProvider: React.FC<AvailabilityProviderProps> = ({ chil
     }
   };
 
-  // Save batch of availability records
   const saveAvailabilityBatch = async (dataArray: PlayerAvailabilitySlot[]): Promise<{success: boolean}> => {
     try {
-      // Convert our format to database format
       const dbRecords = dataArray.map(data => ({
         player_id: data.playerId,
         date: data.date,
@@ -142,7 +133,6 @@ export const AvailabilityProvider: React.FC<AvailabilityProviderProps> = ({ chil
     }
   };
 
-  // Delete availability record
   const deleteAvailability = async (id: string): Promise<{success: boolean}> => {
     try {
       const { error } = await supabase
@@ -163,6 +153,7 @@ export const AvailabilityProvider: React.FC<AvailabilityProviderProps> = ({ chil
   };
 
   const value: AvailabilityContextType = {
+    availabilityData: [],
     fetchAvailability,
     updateAvailability,
     saveAvailabilityBatch,

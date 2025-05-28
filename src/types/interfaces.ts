@@ -44,6 +44,7 @@ export interface Category {
   round: number;
   color?: string;
   icon?: string;
+  questions?: Question[];
 }
 
 export interface SpecialCard {

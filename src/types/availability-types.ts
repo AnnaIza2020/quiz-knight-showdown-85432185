@@ -10,7 +10,13 @@ export interface PlayerAvailabilitySlot {
   timeSlots?: Record<string, AvailabilityStatus>;
 }
 
-export type AvailabilityStatus = 'available' | 'busy' | 'maybe';
+export enum AvailabilityStatus {
+  AVAILABLE = 'available',
+  BUSY = 'busy',
+  MAYBE = 'maybe',
+  UNAVAILABLE = 'unavailable',
+  UNKNOWN = 'unknown'
+}
 
 export interface AvailabilityContextType {
   availabilityData: PlayerAvailabilitySlot[];

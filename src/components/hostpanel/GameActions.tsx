@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { GameRound } from '@/types/game-types';
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,7 @@ const GameActions: React.FC<GameActionsProps> = ({
 }) => {
   const [isSkipping, setIsSkipping] = useState(false);
   const { playSound } = useGameContext();
-  const { broadcast } = useSubscription('game_events', { immediate: false });
+  const subscription = useSubscription('game_events', { immediate: false });
   
   const handleStartGame = () => {
     toast.success('Rozpoczynamy grę!');
@@ -39,21 +40,17 @@ const GameActions: React.FC<GameActionsProps> = ({
   const handleSkipQuestion = () => {
     setIsSkipping(true);
     
-    // Play skip sound
     playSound('wheel-tick');
     
-    // Show toast
     toast.info('Pytanie pominięte!', {
       description: 'Przechodzę do następnego pytania'
     });
     
-    // Broadcast event to overlay
-    broadcast({
+    subscription.broadcast({
       type: 'game_event',
       event: 'question_skipped'
     });
     
-    // Visual animation effect for skipping
     setTimeout(() => {
       setIsSkipping(false);
     }, 1000);

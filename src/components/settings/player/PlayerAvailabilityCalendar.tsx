@@ -1,256 +1,227 @@
 
 import React, { useState, useEffect } from 'react';
-import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Player } from '@/types/game-types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAvailabilityContext } from '@/context/AvailabilityContext';
 import { PlayerAvailabilitySlot, AvailabilityStatus } from '@/types/availability-types';
-import { format } from 'date-fns';
+import { useGameContext } from '@/context/GameContext';
+import { toast } from 'sonner';
+import { Calendar, Clock, Save, Users } from 'lucide-react';
 
-interface PlayerAvailabilityCalendarProps {
-  players: Player[];
-  isHost: boolean;
-  playerId?: string;
-  onSaveAvailability?: (availability: PlayerAvailabilitySlot) => void;
-}
-
-const TIME_SLOTS = [
-  '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'
-];
-
-const PlayerAvailabilityCalendar: React.FC<PlayerAvailabilityCalendarProps> = ({
-  players,
-  isHost,
-  playerId,
-  onSaveAvailability
-}) => {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(playerId || null);
+const PlayerAvailabilityCalendar: React.FC = () => {
+  const { players } = useGameContext();
+  const { fetchAvailability, updateAvailability, saveAvailabilityBatch } = useAvailabilityContext();
   const [availabilityData, setAvailabilityData] = useState<PlayerAvailabilitySlot[]>([]);
-  
-  // Initialize availability data for selected date and player
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const timeSlots = [
+    '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', 
+    '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'
+  ];
+
   useEffect(() => {
-    if (!selectedPlayer || !selectedDate) return;
-    
-    // Check if there's existing availability data for this date/player
-    const dateString = format(selectedDate, 'yyyy-MM-dd');
-    const existingData = availabilityData.find(
-      item => item.playerId === selectedPlayer && item.date === dateString
-    );
-    
-    if (!existingData) {
-      // Create default availability with all slots set to 'unknown'
-      const defaultTimeSlots: Record<string, AvailabilityStatus> = {};
-      TIME_SLOTS.forEach(hour => {
-        defaultTimeSlots[hour] = AvailabilityStatus.UNKNOWN;
-      });
-      
-      setAvailabilityData(prevData => [
-        ...prevData,
-        {
-          playerId: selectedPlayer,
-          date: dateString,
-          timeSlots: defaultTimeSlots
-        }
-      ]);
+    loadAvailabilityData();
+  }, []);
+
+  const loadAvailabilityData = async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchAvailability();
+      setAvailabilityData(data);
+    } catch (error) {
+      toast.error('Błąd podczas ładowania dostępności');
+    } finally {
+      setIsLoading(false);
     }
-  }, [selectedPlayer, selectedDate, availabilityData]);
-  
-  // Get current time slots for selected date & player
-  const getCurrentTimeSlots = (): Record<string, AvailabilityStatus> => {
-    if (!selectedPlayer || !selectedDate) return {};
-    
-    const dateString = format(selectedDate, 'yyyy-MM-dd');
-    const data = availabilityData.find(
-      item => item.playerId === selectedPlayer && item.date === dateString
-    );
-    
-    return data?.timeSlots || {};
   };
-  
-  // Update a time slot status
-  const updateTimeSlotStatus = (hour: string, status: AvailabilityStatus) => {
-    if (!selectedPlayer || !selectedDate) return;
-    
-    const dateString = format(selectedDate, 'yyyy-MM-dd');
-    
+
+  const handleTimeSlotChange = (playerId: string, timeSlot: string, status: AvailabilityStatus) => {
     setAvailabilityData(prevData => {
-      const updatedData = [...prevData];
-      const dataIndex = updatedData.findIndex(
-        item => item.playerId === selectedPlayer && item.date === dateString
+      const existingSlot = prevData.find(slot => 
+        slot.playerId === playerId && slot.date === selectedDate
       );
-      
-      if (dataIndex >= 0) {
-        // Update existing entry
-        const updatedTimeSlots = { ...updatedData[dataIndex].timeSlots };
-        updatedTimeSlots[hour] = status;
-        
-        updatedData[dataIndex] = {
-          ...updatedData[dataIndex],
-          timeSlots: updatedTimeSlots
-        };
+
+      if (existingSlot) {
+        return prevData.map(slot => 
+          slot.playerId === playerId && slot.date === selectedDate
+            ? {
+                ...slot,
+                timeSlots: {
+                  ...slot.timeSlots,
+                  [timeSlot]: status
+                }
+              }
+            : slot
+        );
       } else {
-        // Create new entry
-        const newTimeSlots: Record<string, AvailabilityStatus> = {};
-        TIME_SLOTS.forEach(h => {
-          newTimeSlots[h] = h === hour ? status : AvailabilityStatus.UNKNOWN;
-        });
-        
-        updatedData.push({
-          playerId: selectedPlayer,
-          date: dateString,
-          timeSlots: newTimeSlots
-        });
+        const newSlot: PlayerAvailabilitySlot = {
+          id: `${playerId}-${selectedDate}`,
+          playerId,
+          date: selectedDate,
+          startTime: '09:00',
+          endTime: '21:00',
+          available: true,
+          timeSlots: { [timeSlot]: status }
+        };
+        return [...prevData, newSlot];
       }
-      
-      return updatedData;
     });
-    
-    // If there's a save callback, invoke it
-    if (onSaveAvailability) {
-      const dateString = format(selectedDate, 'yyyy-MM-dd');
-      const updatedEntry = availabilityData.find(
-        item => item.playerId === selectedPlayer && item.date === dateString
-      );
+  };
+
+  const saveAvailability = async () => {
+    setIsLoading(true);
+    try {
+      const currentDateSlots = availabilityData.filter(slot => slot.date === selectedDate);
       
-      if (updatedEntry) {
-        const updatedTimeSlots = { ...updatedEntry.timeSlots };
-        updatedTimeSlots[hour] = status;
-        
-        onSaveAvailability({
-          ...updatedEntry,
-          timeSlots: updatedTimeSlots
-        });
+      for (const slot of currentDateSlots) {
+        await updateAvailability(slot);
       }
+      
+      toast.success('Dostępność została zapisana');
+    } catch (error) {
+      toast.error('Błąd podczas zapisywania');
+    } finally {
+      setIsLoading(false);
     }
   };
-  
-  // Render status cell with appropriate color
-  const renderStatusCell = (hour: string) => {
-    const timeSlots = getCurrentTimeSlots();
-    const status = timeSlots[hour] || AvailabilityStatus.UNKNOWN;
-    
-    let bgColor = 'bg-gray-200';
-    if (status === AvailabilityStatus.AVAILABLE) bgColor = 'bg-green-200';
-    if (status === AvailabilityStatus.UNAVAILABLE) bgColor = 'bg-red-200';
-    if (status === AvailabilityStatus.MAYBE) bgColor = 'bg-yellow-200';
-    
-    return (
-      <td 
-        className={`border p-2 ${bgColor} cursor-pointer`}
-        onClick={() => {
-          // Cycle through statuses when clicking
-          if (status === AvailabilityStatus.UNKNOWN) {
-            updateTimeSlotStatus(hour, AvailabilityStatus.AVAILABLE);
-          } else if (status === AvailabilityStatus.AVAILABLE) {
-            updateTimeSlotStatus(hour, AvailabilityStatus.UNAVAILABLE);
-          } else if (status === AvailabilityStatus.UNAVAILABLE) {
-            updateTimeSlotStatus(hour, AvailabilityStatus.MAYBE);
-          } else {
-            updateTimeSlotStatus(hour, AvailabilityStatus.UNKNOWN);
-          }
-        }}
-      >
-        {status === AvailabilityStatus.AVAILABLE && "Dostępny"}
-        {status === AvailabilityStatus.UNAVAILABLE && "Niedostępny"}
-        {status === AvailabilityStatus.MAYBE && "Może"}
-        {status === AvailabilityStatus.UNKNOWN && "?"}
-      </td>
+
+  const getPlayerAvailability = (playerId: string, timeSlot: string): AvailabilityStatus => {
+    const slot = availabilityData.find(s => 
+      s.playerId === playerId && s.date === selectedDate
     );
+    return slot?.timeSlots?.[timeSlot] || AvailabilityStatus.UNKNOWN;
   };
-  
+
+  const getStatusColor = (status: AvailabilityStatus): string => {
+    switch (status) {
+      case AvailabilityStatus.AVAILABLE:
+        return 'bg-green-500 hover:bg-green-600';
+      case AvailabilityStatus.BUSY:
+        return 'bg-red-500 hover:bg-red-600';
+      case AvailabilityStatus.MAYBE:
+        return 'bg-yellow-500 hover:bg-yellow-600';
+      case AvailabilityStatus.UNAVAILABLE:
+        return 'bg-gray-500 hover:bg-gray-600';
+      default:
+        return 'bg-gray-300 hover:bg-gray-400';
+    }
+  };
+
+  const getStatusText = (status: AvailabilityStatus): string => {
+    switch (status) {
+      case AvailabilityStatus.AVAILABLE:
+        return 'Dostępny';
+      case AvailabilityStatus.BUSY:
+        return 'Zajęty';
+      case AvailabilityStatus.MAYBE:
+        return 'Może';
+      case AvailabilityStatus.UNAVAILABLE:
+        return 'Niedostępny';
+      default:
+        return 'Nieznane';
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Kalendarz</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              className="rounded-md border"
-            />
-          </CardContent>
-        </Card>
-      </div>
-      
-      <div className="md:col-span-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex justify-between">
-              <span>Dostępność {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''}</span>
-              
-              {isHost && (
-                <Select
-                  value={selectedPlayer || undefined}
-                  onValueChange={setSelectedPlayer}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Wybierz gracza" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {players.map(player => (
-                      <SelectItem key={player.id} value={player.id}>
-                        {player.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {selectedPlayer && selectedDate ? (
-              <div>
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className="border p-2">Godzina</th>
-                      <th className="border p-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {TIME_SLOTS.map(hour => (
-                      <tr key={hour}>
-                        <td className="border p-2">{hour}</td>
-                        {renderStatusCell(hour)}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                
-                <div className="mt-4">
-                  <div className="text-sm text-gray-500 mb-2">Legenda:</div>
-                  <div className="flex space-x-4 text-xs">
-                    <span className="flex items-center">
-                      <div className="w-3 h-3 bg-green-200 mr-1"></div> Dostępny
-                    </span>
-                    <span className="flex items-center">
-                      <div className="w-3 h-3 bg-red-200 mr-1"></div> Niedostępny
-                    </span>
-                    <span className="flex items-center">
-                      <div className="w-3 h-3 bg-yellow-200 mr-1"></div> Może
-                    </span>
-                    <span className="flex items-center">
-                      <div className="w-3 h-3 bg-gray-200 mr-1"></div> Nieznany
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                {!selectedPlayer && "Wybierz gracza"}
-                {!selectedDate && "Wybierz datę"}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <Card className="bg-black/40 border border-white/10">
+      <CardHeader>
+        <CardTitle className="text-white flex items-center gap-2">
+          <Calendar className="h-5 w-5" />
+          Kalendarz dostępności graczy
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Date selector */}
+        <div className="flex items-center gap-4">
+          <label className="text-white font-medium">Data:</label>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="bg-black/60 text-white border border-gray-600 rounded px-3 py-2"
+          />
+          <Button
+            onClick={saveAvailability}
+            disabled={isLoading}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Zapisz
+          </Button>
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap gap-4 p-4 bg-black/20 rounded">
+          <div className="text-white font-medium">Legenda:</div>
+          {Object.values(AvailabilityStatus).map((status) => (
+            <div key={status} className="flex items-center gap-2">
+              <div className={`w-4 h-4 rounded ${getStatusColor(status)}`}></div>
+              <span className="text-white text-sm">{getStatusText(status)}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Availability grid */}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th className="text-white text-left p-2">
+                  <Users className="h-4 w-4 inline mr-2" />
+                  Gracz
+                </th>
+                {timeSlots.map(time => (
+                  <th key={time} className="text-white text-center p-2 min-w-[80px]">
+                    <Clock className="h-3 w-3 inline mr-1" />
+                    {time}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {players.map(player => (
+                <tr key={player.id} className="border-t border-gray-700">
+                  <td className="text-white p-2 font-medium">
+                    {player.name}
+                  </td>
+                  {timeSlots.map(timeSlot => {
+                    const currentStatus = getPlayerAvailability(player.id, timeSlot);
+                    return (
+                      <td key={timeSlot} className="p-1">
+                        <select
+                          value={currentStatus}
+                          onChange={(e) => handleTimeSlotChange(
+                            player.id, 
+                            timeSlot, 
+                            e.target.value as AvailabilityStatus
+                          )}
+                          className={`w-full p-1 rounded text-white text-xs ${getStatusColor(currentStatus)}`}
+                        >
+                          {Object.values(AvailabilityStatus).map(status => (
+                            <option key={status} value={status} className="bg-gray-800">
+                              {getStatusText(status)}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {players.length === 0 && (
+          <div className="text-center text-gray-400 py-8">
+            <Users className="h-8 w-8 mx-auto mb-2" />
+            <p>Brak graczy do wyświetlenia</p>
+            <p className="text-sm">Dodaj graczy aby zarządzać ich dostępnością</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
