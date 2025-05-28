@@ -1,75 +1,48 @@
 
 import { useEffect, useRef } from 'react';
 
-interface SubscriptionOptions {
+interface UseSubscriptionOptions {
   onMessage?: (data: any) => void;
-  onError?: (error: Error) => void;
+  onError?: (error: any) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
-  immediate?: boolean;
 }
 
-export const useSubscription = (channel: string, options: SubscriptionOptions = {}) => {
-  const { onMessage, onError, onConnect, onDisconnect, immediate = true } = options;
-  const subscribedRef = useRef(false);
+export const useSubscription = (options: UseSubscriptionOptions = {}) => {
+  const connectionRef = useRef<{
+    send: (data: any) => void;
+    disconnect: () => void;
+    isConnected: boolean;
+  }>({
+    send: (data: any) => {
+      console.log('Mock send:', data);
+      if (options.onMessage) {
+        // Simulate async message
+        setTimeout(() => options.onMessage?.(data), 100);
+      }
+    },
+    disconnect: () => {
+      console.log('Mock disconnect');
+      if (options.onDisconnect) {
+        options.onDisconnect();
+      }
+    },
+    isConnected: true
+  });
 
   useEffect(() => {
-    if (!immediate || subscribedRef.current) return;
-    
-    subscribedRef.current = true;
-    
-    // Mock subscription logic
-    console.log(`Subscribed to channel: ${channel}`);
-    
-    if (onConnect) {
-      onConnect();
+    // Simulate connection
+    if (options.onConnect) {
+      options.onConnect();
     }
 
-    // Cleanup function
     return () => {
-      subscribedRef.current = false;
-      console.log(`Unsubscribed from channel: ${channel}`);
-      
-      if (onDisconnect) {
-        onDisconnect();
+      // Cleanup on unmount
+      if (options.onDisconnect) {
+        options.onDisconnect();
       }
     };
-  }, [channel, onConnect, onDisconnect, immediate]);
+  }, []);
 
-  // Mock methods
-  const send = (data: any) => {
-    console.log(`Sending data to ${channel}:`, data);
-    
-    // Simulate processing
-    setTimeout(() => {
-      if (onMessage) {
-        onMessage({ type: 'response', data });
-      }
-    }, 100);
-  };
-
-  const broadcast = (data: any) => {
-    console.log(`Broadcasting to ${channel}:`, data);
-    
-    // Simulate broadcasting
-    setTimeout(() => {
-      if (onMessage) {
-        onMessage({ type: 'broadcast', data });
-      }
-    }, 50);
-  };
-
-  const disconnect = () => {
-    subscribedRef.current = false;
-    if (onDisconnect) {
-      onDisconnect();
-    }
-  };
-
-  return {
-    send,
-    broadcast,
-    disconnect,
-    isConnected: subscribedRef.current
-  };
+  return connectionRef.current;
 };

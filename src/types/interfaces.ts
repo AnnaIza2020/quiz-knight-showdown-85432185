@@ -1,21 +1,21 @@
 
 export interface Player {
   id: string;
-  nickname: string; // Required now
+  nickname: string;
   name: string;
   points: number;
   health: number;
   lives: number;
   isEliminated: boolean;
-  isActive: boolean; // Required now
+  isActive: boolean;
   color: string;
   avatar?: string;
   cameraUrl?: string;
   specialCards: string[];
   status: 'online' | 'offline' | 'active';
   uniqueLinkToken?: string;
-  avatar_url?: string; // For backward compatibility
-  camera_url?: string; // For backward compatibility
+  avatar_url?: string;
+  camera_url?: string;
   forcedEliminated?: boolean;
 }
 
@@ -25,16 +25,16 @@ export interface Question {
   category: string;
   categoryId: string;
   difficulty: number;
-  type: 'text' | 'multiple_choice' | 'true_false'; // Align with game-types
-  options: string[]; // Required now
+  type: 'text' | 'multiple_choice' | 'true_false';
+  options: string[];
   correctAnswer: string;
   timeLimit: number;
   points: number;
   used?: boolean;
   imageUrl?: string;
-  question?: string; // For backward compatibility
-  answer?: string; // For backward compatibility
-  image_url?: string; // For backward compatibility
+  question?: string;
+  answer?: string;
+  image_url?: string;
 }
 
 export interface Category {
@@ -58,6 +58,9 @@ export interface SpecialCard {
   animation?: string;
   animationStyle?: 'glow' | 'neon-blue' | 'neon-green' | 'neon-red' | 'neon-purple' | 'rainbow';
   defaultQuantity: number;
+  effectHook?: string;
+  effectType?: string;
+  effectParams?: Record<string, any>;
 }
 
 export interface GameState {

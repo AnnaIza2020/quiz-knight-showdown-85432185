@@ -14,4 +14,7 @@ export interface SpecialCard {
   animationStyle?: 'glow' | 'neon-blue' | 'neon-green' | 'neon-red' | 'neon-purple' | 'rainbow';
   defaultQuantity: number;
   size?: CardSize;
+  effectHook?: string;
+  effectType?: string;
+  effectParams?: Record<string, any>;
 }

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Player, GameState, Question, RoundSettings, AppSettings } from '@/types/interfaces';
 import { GameRound } from '@/types/game-types';
@@ -76,6 +77,11 @@ interface GameContextType {
   advanceToRoundThree: () => void;
   finishGame: (winnerIds: string[]) => void;
   markQuestionAsUsed: (questionId: string) => Promise<any>;
+  
+  // Question Management
+  addQuestion: (categoryId: string, question: Question) => void;
+  removeQuestion: (categoryId: string, questionId: string) => void;
+  updateQuestion: (categoryId: string, updatedQuestion: Question) => void;
   
   // Methods
   addPlayer: (player: Player) => void;
@@ -194,7 +200,7 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
       message,
       level: 'info'
     };
-    setLogs(prev => [newLog, ...prev.slice(0, 99)]); // Keep last 100 logs
+    setLogs(prev => [newLog, ...prev.slice(0, 99)]);
   };
 
   const clearLogs = () => {
@@ -354,6 +360,45 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
     return { success: true };
   };
 
+  // Question Management
+  const addQuestion = (categoryId: string, question: Question) => {
+    gameStateManagement.setCategories(prev => 
+      prev.map(category => 
+        category.id === categoryId 
+          ? { ...category, questions: [...(category.questions || []), question] }
+          : category
+      )
+    );
+    addLog(`Question added to category ${categoryId}`);
+  };
+
+  const removeQuestion = (categoryId: string, questionId: string) => {
+    gameStateManagement.setCategories(prev => 
+      prev.map(category => 
+        category.id === categoryId 
+          ? { ...category, questions: (category.questions || []).filter((q: any) => q.id !== questionId) }
+          : category
+      )
+    );
+    addLog(`Question ${questionId} removed from category ${categoryId}`);
+  };
+
+  const updateQuestion = (categoryId: string, updatedQuestion: Question) => {
+    gameStateManagement.setCategories(prev => 
+      prev.map(category => 
+        category.id === categoryId 
+          ? { 
+              ...category, 
+              questions: (category.questions || []).map((q: any) => 
+                q.id === updatedQuestion.id ? updatedQuestion : q
+              )
+            }
+          : category
+      )
+    );
+    addLog(`Question ${updatedQuestion.id} updated in category ${categoryId}`);
+  };
+
   // Special Cards Methods
   const addSpecialCard = (card: any) => {
     gameStateManagement.setSpecialCards(prev => [...prev, card]);
@@ -421,6 +466,9 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
     advanceToRoundThree,
     finishGame,
     markQuestionAsUsed,
+    addQuestion,
+    removeQuestion,
+    updateQuestion,
   };
 
   return (
