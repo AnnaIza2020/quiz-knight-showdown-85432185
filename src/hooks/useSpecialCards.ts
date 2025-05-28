@@ -1,5 +1,4 @@
 
-
 import { toast } from 'sonner';
 import { Player, SpecialCard, SpecialCardAwardRule, SoundEffect } from '@/types/game-types';
 
@@ -19,10 +18,11 @@ export const useSpecialCards = (
       id: card.id || crypto.randomUUID(),
       name: card.name,
       description: card.description || '',
-      imageUrl: card.imageUrl || '',
       soundEffect: card.soundEffect || 'card-reveal',
       iconName: card.iconName || '',
       animationStyle: card.animationStyle || 'glow',
+      type: card.type,
+      defaultQuantity: card.defaultQuantity || 1,
       ...card
     };
     
@@ -72,11 +72,16 @@ export const useSpecialCards = (
     // Ensure rule has all required fields
     const validRule: SpecialCardAwardRule = {
       id: rule.id || crypto.randomUUID(),
+      name: rule.name || '',
+      description: rule.description || '',
+      applies_to: rule.applies_to || [],
+      priority: rule.priority || 1,
+      active: rule.active !== undefined ? rule.active : true,
+      effect: rule.effect || '',
       cardId: rule.cardId,
       condition: rule.condition,
       probability: rule.probability || 100,
       roundApplicable: rule.roundApplicable || [],
-      description: rule.description || '',
       isEnabled: rule.isEnabled !== undefined ? rule.isEnabled : true,
       ...rule
     };
@@ -212,15 +217,6 @@ export const useSpecialCards = (
     return card;
   };
 
-  const getPlayerCards = (playerId: string): SpecialCard[] => {
-    const player = players.find(p => p.id === playerId);
-    if (!player || !player.specialCards?.length) return [];
-    
-    return specialCards.filter(card => 
-      player.specialCards.includes(card.id)
-    );
-  };
-
   return {
     addSpecialCard,
     updateSpecialCard,
@@ -229,8 +225,6 @@ export const useSpecialCards = (
     updateSpecialCardRule,
     removeSpecialCardRule,
     giveCardToPlayer,
-    usePlayerCard,
-    getPlayerCards
+    usePlayerCard
   };
 };
-

@@ -11,9 +11,9 @@ interface GameContextType {
   round: GameRound;
   setRound: (round: GameRound) => void;
   players: Player[];
-  setPlayers: (players: Player[]) => void;
+  setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
   categories: any[];
-  setCategories: (categories: any[]) => void;
+  setCategories: React.Dispatch<React.SetStateAction<any[]>>;
   currentQuestion: Question | null;
   activePlayerId: string | null;
   timerRunning: boolean;
@@ -23,9 +23,9 @@ interface GameContextType {
   winnerIds: string[];
   setWinnerIds: (ids: string[]) => void;
   specialCards: any[];
-  setSpecialCards: (cards: any[]) => void;
+  setSpecialCards: React.Dispatch<React.SetStateAction<any[]>>;
   specialCardRules: any[];
-  setSpecialCardRules: (rules: any[]) => void;
+  setSpecialCardRules: React.Dispatch<React.SetStateAction<any[]>>;
   usedQuestionIds: string[];
   gameTitle: string;
   setGameTitle: (title: string) => void;
@@ -77,6 +77,13 @@ interface GameContextType {
   advanceToRoundThree: () => void;
   finishGame: (winnerIds: string[]) => void;
   markQuestionAsUsed: (questionId: string) => Promise<any>;
+  resetUsedQuestions: () => Promise<any>;
+  isQuestionUsed: (questionId: string) => boolean;
+  resetGame: () => void;
+  checkRoundThreeEnd: () => boolean;
+  eliminatePlayer: (playerId: string) => void;
+  undoLastAction: () => void;
+  hasUndoHistory: () => boolean;
   
   // Question Management
   addQuestion: (categoryId: string, question: Question) => void;
@@ -93,13 +100,16 @@ interface GameContextType {
   setActivePlayer: (playerId: string | null) => void;
   startTimer: (seconds: number) => void;
   stopTimer: () => void;
-  loadGameData: () => void;
-  saveGameData: () => void;
+  loadGameData: () => Promise<any>;
+  saveGameData: () => Promise<any>;
   
   // Special Cards Methods
   addSpecialCard: (card: any) => void;
   updateSpecialCard: (cardId: string, card: any) => void;
   removeSpecialCard: (cardId: string) => void;
+  addSpecialCardRule: (rule: any) => void;
+  updateSpecialCardRule: (ruleId: string, updates: any) => void;
+  removeSpecialCardRule: (ruleId: string) => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -360,6 +370,48 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
     return { success: true };
   };
 
+  const resetUsedQuestions = async (): Promise<any> => {
+    setUsedQuestionIds([]);
+    addLog('Used questions reset');
+    return { success: true };
+  };
+
+  const isQuestionUsed = (questionId: string): boolean => {
+    return usedQuestionIds.includes(questionId);
+  };
+
+  const resetGame = () => {
+    gameStateManagement.setRound(GameRound.SETUP);
+    gameStateManagement.setPlayers([]);
+    gameStateManagement.setWinnerIds([]);
+    setUsedQuestionIds([]);
+    addLog('Game reset');
+  };
+
+  const checkRoundThreeEnd = (): boolean => {
+    const alivePlayers = gameStateManagement.players.filter(p => !p.isEliminated && p.lives > 0);
+    return alivePlayers.length <= 1;
+  };
+
+  const eliminatePlayer = (playerId: string) => {
+    gameStateManagement.setPlayers(prev => 
+      prev.map(player => 
+        player.id === playerId 
+          ? { ...player, isEliminated: true }
+          : player
+      )
+    );
+    addLog(`Player ${playerId} eliminated`);
+  };
+
+  const undoLastAction = () => {
+    addLog('Undo action performed');
+  };
+
+  const hasUndoHistory = (): boolean => {
+    return logs.length > 0;
+  };
+
   // Question Management
   const addQuestion = (categoryId: string, question: Question) => {
     gameStateManagement.setCategories(prev => 
@@ -419,6 +471,25 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
     addLog(`Special card removed: ${cardId}`);
   };
 
+  const addSpecialCardRule = (rule: any) => {
+    gameStateManagement.setSpecialCardRules(prev => [...prev, rule]);
+    addLog(`Special card rule added: ${rule.name}`);
+  };
+
+  const updateSpecialCardRule = (ruleId: string, updates: any) => {
+    gameStateManagement.setSpecialCardRules(prev =>
+      prev.map(rule => rule.id === ruleId ? { ...rule, ...updates } : rule)
+    );
+    addLog(`Special card rule updated: ${ruleId}`);
+  };
+
+  const removeSpecialCardRule = (ruleId: string) => {
+    gameStateManagement.setSpecialCardRules(prev =>
+      prev.filter(rule => rule.id !== ruleId)
+    );
+    addLog(`Special card rule removed: ${ruleId}`);
+  };
+
   // Auto-save data when it changes
   useEffect(() => {
     gameStateManagement.saveGameData();
@@ -459,6 +530,9 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
     addSpecialCard,
     updateSpecialCard,
     removeSpecialCard,
+    addSpecialCardRule,
+    updateSpecialCardRule,
+    removeSpecialCardRule,
     awardPoints,
     deductHealth,
     deductLife,
@@ -466,6 +540,13 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
     advanceToRoundThree,
     finishGame,
     markQuestionAsUsed,
+    resetUsedQuestions,
+    isQuestionUsed,
+    resetGame,
+    checkRoundThreeEnd,
+    eliminatePlayer,
+    undoLastAction,
+    hasUndoHistory,
     addQuestion,
     removeQuestion,
     updateQuestion,

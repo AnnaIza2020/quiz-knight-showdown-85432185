@@ -1,18 +1,18 @@
 
 export interface Player {
   id: string;
-  nickname: string;
+  nickname?: string;
   name: string;
   points: number;
   health: number;
   lives: number;
   isEliminated: boolean;
-  isActive: boolean;
-  color: string;
+  isActive?: boolean;
+  color?: string;
   avatar?: string;
   cameraUrl?: string;
   specialCards: string[];
-  status: 'online' | 'offline' | 'active';
+  status?: 'online' | 'offline' | 'active';
   uniqueLinkToken?: string;
   avatar_url?: string;
   camera_url?: string;
