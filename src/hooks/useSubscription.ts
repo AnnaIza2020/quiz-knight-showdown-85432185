@@ -6,10 +6,13 @@ interface UseSubscriptionOptions {
   onError?: (error: any) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
+  immediate?: boolean;
 }
 
 export const useSubscription = (
   topic?: string, 
+  eventType?: string,
+  callback?: (data: any) => void,
   options: UseSubscriptionOptions = {}
 ) => {
   const connectionRef = useRef<{
@@ -35,6 +38,9 @@ export const useSubscription = (
       console.log('Mock broadcast:', data);
       if (options.onMessage) {
         setTimeout(() => options.onMessage?.(data), 100);
+      }
+      if (callback) {
+        setTimeout(() => callback(data), 100);
       }
     }
   });

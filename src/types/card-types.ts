@@ -18,3 +18,14 @@ export interface SpecialCard {
   effectType?: string;
   effectParams?: Record<string, any>;
 }
+
+export type CardEffectType = 'shield' | 'reflect' | 'counter' | 'wildcard' | 'bonus' | 'life' | 'skip';
+
+export interface CardEffect {
+  type: CardEffectType;
+  sourcePlayerId: string;
+  targetPlayerId?: string;
+  soundEffect?: string;
+  animationDuration?: number;
+  points?: number;
+}

@@ -12,7 +12,7 @@ export interface Player {
   avatar?: string;
   cameraUrl?: string;
   specialCards: string[];
-  status?: 'online' | 'offline' | 'active';
+  status?: 'online' | 'offline' | 'active' | string;
   uniqueLinkToken?: string;
   avatar_url?: string;
   camera_url?: string;
@@ -35,6 +35,7 @@ export interface Question {
   question?: string;
   answer?: string;
   image_url?: string;
+  time?: number;
 }
 
 export interface Category {
@@ -118,6 +119,9 @@ export interface RoundSettings {
     round2: number;
     round3: number;
   };
+  pointValues?: { easy: number; medium: number; hard: number; expert: number };
+  lifePenalties?: { easy: number; medium: number; hard: number; expert: number };
+  luckyLoserThreshold?: number;
 }
 
 export interface AppSettings {

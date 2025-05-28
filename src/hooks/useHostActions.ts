@@ -1,149 +1,82 @@
 
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useGameContext } from '@/context/GameContext';
 import { GameRound } from '@/types/game-types';
 import { toast } from 'sonner';
-import { useGameContext } from '@/context/GameContext';
-import { useGamePersistence } from '@/hooks/useGamePersistence';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useSoundEffects } from '@/hooks/useSoundEffects';
 
-export const useHostActions = (addEvent: (event: string) => void) => {
-  // State variables
-  const [soundMuted, setSoundMuted] = useState(false);
-  const [welcomeShown, setWelcomeShown] = useState(false);
-  
-  // Context and hooks
+export const useHostActions = () => {
   const { 
-    loadGameData: loadContextGameData, 
-    saveGameData: saveContextGameData, 
-    resetGame,
-    setRound,
-    round,
-    players,
+    round, 
+    setRound, 
+    players, 
+    setPlayers,
+    playSound,
+    addLog 
   } = useGameContext();
   
-  const { saveGame, loadGame, getSavedGames } = useGamePersistence();
-  const { broadcast } = useSubscription('game_events', 'new_event', () => {});
-  const { playSound, stopAllSounds, soundsEnabled, setSoundsEnabled } = useSoundEffects();
-  
-  // Load game data on initial render
-  useEffect(() => {
-    loadContextGameData();
-    
-    // Show welcome toast just once per session
-    if (!welcomeShown) {
-      toast.success('Witaj w panelu prowadzącego!', {
-        description: 'Wybierz potrzebne narzędzia i rozpocznij grę',
-      });
-      setWelcomeShown(true);
-    }
-    
-    // Check sound mute status
-    setSoundMuted(!soundsEnabled);
-  }, []); 
+  const [events, setEvents] = useState<string[]>([]);
 
-  // Save game data whenever important game state changes
-  useEffect(() => {
-    const saveInterval = setInterval(() => {
-      saveContextGameData();
-      addEvent('Stan gry zapisany automatycznie');
-    }, 30000); // Save every 30 seconds
-    
-    // Cleanup
-    return () => clearInterval(saveInterval);
-  }, [saveContextGameData, addEvent]);
-  
-  // Handle sound toggle
-  const toggleSound = () => {
-    setSoundMuted(!soundMuted);
-    setSoundsEnabled(soundMuted);
-    toast.info(soundMuted ? 'Dźwięki włączone' : 'Dźwięki wyciszone');
-    addEvent(soundMuted ? 'Dźwięki włączone' : 'Dźwięki wyciszone');
-    
-    // Broadcast sound setting to overlay
-    broadcast({
-      type: 'sound_control',
-      action: soundMuted ? 'play' : 'stop'
-    });
+  const addEvent = (event: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const eventWithTime = `[${timestamp}] ${event}`;
+    setEvents(prev => [eventWithTime, ...prev.slice(0, 9)]);
+    addLog(event);
   };
-  
-  // Start game (simplified, no intro)
+
   const startGame = () => {
-    // Only allow starting if we have at least one player
-    if (players.length === 0) {
-      toast.error('Dodaj co najmniej jednego gracza przed rozpoczęciem gry');
-      return;
-    }
-    
     setRound(GameRound.ROUND_ONE);
-    addEvent('Runda 1 rozpoczęta!');
-    playSound('success');
-      
-    toast.success('Runda 1 rozpoczęta!');
-  };
-  
-  // Start new game
-  const startNewGame = () => {
-    resetGame();
-    setRound(GameRound.SETUP);
-    
-    toast.success('Nowa gra przygotowana!', {
-      description: 'Wszystkie dane zostały zresetowane.'
-    });
-    addEvent('Utworzono nową grę - wszystkie dane zresetowane');
+    playSound('round-start');
+    addEvent('Gra rozpoczęta!');
+    toast.success('Gra rozpoczęta!');
   };
 
-  // Save game locally
+  const startNewGame = () => {
+    setRound(GameRound.SETUP);
+    setPlayers([]);
+    addEvent('Nowa gra rozpoczęta');
+    toast.info('Nowa gra rozpoczęta');
+  };
+
   const handleSaveLocal = () => {
-    const result = saveGame({
-      round,
-      players,
-      categories: [],
-      activePlayerId: null,
-      winnerIds: [],
-      primaryColor: '#ff00ff',
-      secondaryColor: '#00ffff',
-      hostCameraUrl: '',
-      gameLogo: null
-    }, `Zapisano ${new Date().toLocaleString()}`);
-    
-    if (result.success) {
-      toast.success('Gra zapisana lokalnie!');
-      addEvent('Zapisano grę w pamięci lokalnej');
-    } else {
-      toast.error('Nie udało się zapisać gry');
+    try {
+      const gameData = {
+        players,
+        round,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('gameData', JSON.stringify(gameData));
+      addEvent('Gra zapisana lokalnie');
+      toast.success('Gra zapisana lokalnie');
+    } catch (error) {
+      addEvent('Błąd zapisywania gry');
+      toast.error('Błąd zapisywania gry');
     }
   };
-  
-  // Load game locally
+
   const handleLoadLocal = () => {
-    const saves = getSavedGames();
-    if (saves.success && saves.saves.length > 0) {
-      const latestSave = saves.saves[0];
-      const loadResult = loadGame(latestSave.id);
-      
-      if (loadResult.success && loadResult.data) {
-        // Apply loaded data
-        setRound(loadResult.data.round);
-        // Additional loading logic would go here
-        toast.success(`Wczytano grę: ${latestSave.name}`);
-        addEvent(`Wczytano zapisaną grę: ${latestSave.name}`);
+    try {
+      const savedData = localStorage.getItem('gameData');
+      if (savedData) {
+        const gameData = JSON.parse(savedData);
+        setPlayers(gameData.players || []);
+        setRound(gameData.round || GameRound.SETUP);
+        addEvent('Gra wczytana z pamięci lokalnej');
+        toast.success('Gra wczytana pomyślnie');
+      } else {
+        toast.error('Brak zapisanych danych');
       }
-    } else {
-      toast.error('Nie znaleziono zapisanych gier');
+    } catch (error) {
+      addEvent('Błąd wczytywania gry');
+      toast.error('Błąd wczytywania gry');
     }
   };
 
   return {
-    soundMuted,
-    toggleSound,
+    events,
+    addEvent,
     startGame,
     startNewGame,
     handleSaveLocal,
-    handleLoadLocal,
-    soundsEnabled,
-    playSound
+    handleLoadLocal
   };
 };
-

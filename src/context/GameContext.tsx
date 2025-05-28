@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Player, GameState, Question, RoundSettings, AppSettings } from '@/types/interfaces';
 import { GameRound } from '@/types/game-types';
@@ -84,6 +83,9 @@ interface GameContextType {
   eliminatePlayer: (playerId: string) => void;
   undoLastAction: () => void;
   hasUndoHistory: () => boolean;
+  addManualPoints: (playerId: string, points: number) => void;
+  adjustHealthManually: (playerId: string, newHealth: number) => void;
+  fetchAvailability: () => Promise<any[]>;
   
   // Question Management
   addQuestion: (categoryId: string, question: Question) => void;
@@ -412,6 +414,34 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
     return logs.length > 0;
   };
 
+  // Add missing methods
+  const addManualPoints = (playerId: string, points: number) => {
+    gameStateManagement.setPlayers(prev => 
+      prev.map(player => 
+        player.id === playerId 
+          ? { ...player, points: player.points + points }
+          : player
+      )
+    );
+    addLog(`Manual points adjustment: ${playerId} +${points} points`);
+  };
+
+  const adjustHealthManually = (playerId: string, newHealth: number) => {
+    gameStateManagement.setPlayers(prev => 
+      prev.map(player => 
+        player.id === playerId 
+          ? { ...player, health: Math.max(0, Math.min(100, newHealth)) }
+          : player
+      )
+    );
+    addLog(`Manual health adjustment: ${playerId} set to ${newHealth}%`);
+  };
+
+  const fetchAvailability = async () => {
+    // Mock implementation - return empty array for now
+    return [];
+  };
+
   // Question Management
   const addQuestion = (categoryId: string, question: Question) => {
     gameStateManagement.setCategories(prev => 
@@ -547,6 +577,9 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
     eliminatePlayer,
     undoLastAction,
     hasUndoHistory,
+    addManualPoints,
+    adjustHealthManually,
+    fetchAvailability,
     addQuestion,
     removeQuestion,
     updateQuestion,

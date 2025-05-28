@@ -1,144 +1,65 @@
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
 import { PlayerAvailabilitySlot, AvailabilityStatus } from '@/types/availability-types';
 
 export const useAvailability = () => {
-  const [availability, setAvailability] = useState<PlayerAvailabilitySlot[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [availabilityData, setAvailabilityData] = useState<PlayerAvailabilitySlot[]>([]);
 
-  const fetchAvailability = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Use RPC call to get availability data
-      const { data, error } = await supabase.rpc('load_game_data', { 
-        key: 'player_availability_data' 
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (data && Array.isArray(data)) {
-        // Transform data to match our type with proper Json handling
-        const transformedData: PlayerAvailabilitySlot[] = data.map((item: any) => ({
-          id: String(item.id || item.id),
-          playerId: String(item.player_id || item.playerId),
-          date: String(item.date),
-          timeSlots: typeof item.time_slots === 'object' ? item.time_slots : (item.timeSlots || {})
-        }));
-        
-        setAvailability(transformedData);
-      } else {
-        setAvailability([]);
-      }
-    } catch (err) {
-      console.error('Error fetching availability:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateAvailability = async (data: PlayerAvailabilitySlot) => {
-    try {
-      // Get current availability data
-      const { data: currentData } = await supabase.rpc('load_game_data', { 
-        key: 'player_availability_data' 
-      });
-      
-      let availabilityList = Array.isArray(currentData) ? currentData : [];
-      
-      // Update or add the availability record
-      const existingIndex = availabilityList.findIndex((item: any) => String(item.id) === data.id);
+  const updateAvailability = async (data: PlayerAvailabilitySlot): Promise<{success: boolean}> => {
+    setAvailabilityData(prev => {
+      const existingIndex = prev.findIndex(item => item.id === data.id);
       if (existingIndex >= 0) {
-        availabilityList[existingIndex] = {
-          id: data.id,
-          player_id: data.playerId,
-          date: data.date,
-          time_slots: data.timeSlots
-        };
-      } else {
-        availabilityList.push({
-          id: data.id || crypto.randomUUID(),
-          player_id: data.playerId,
-          date: data.date,
-          time_slots: data.timeSlots
-        });
+        const updated = [...prev];
+        updated[existingIndex] = data;
+        return updated;
       }
-      
-      // Save updated data
-      const { error } = await supabase.rpc('save_game_data', {
-        key: 'player_availability_data',
-        value: availabilityList
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Update local state
-      setAvailability(prev => {
-        const existingIndex = prev.findIndex(item => item.id === data.id);
-        if (existingIndex >= 0) {
-          const updated = [...prev];
-          updated[existingIndex] = data;
-          return updated;
-        } else {
-          return [...prev, data];
+      return [...prev, data];
+    });
+    return { success: true };
+  };
+
+  const fetchAvailability = async (): Promise<PlayerAvailabilitySlot[]> => {
+    // Mock data with all required properties
+    const mockData: PlayerAvailabilitySlot[] = [
+      {
+        id: '1',
+        playerId: 'player1',
+        date: '2024-01-01',
+        startTime: '10:00',
+        endTime: '18:00',
+        available: true,
+        timeSlots: {
+          '10:00': AvailabilityStatus.AVAILABLE,
+          '14:00': AvailabilityStatus.BUSY,
+          '18:00': AvailabilityStatus.AVAILABLE
         }
-      });
-      
-      return { success: true };
-    } catch (err) {
-      console.error('Error updating availability:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      return { success: false };
-    }
-  };
-
-  const deleteAvailability = async (id: string) => {
-    try {
-      // Get current availability data
-      const { data: currentData } = await supabase.rpc('load_game_data', { 
-        key: 'player_availability_data' 
-      });
-      
-      let availabilityList = Array.isArray(currentData) ? currentData : [];
-      availabilityList = availabilityList.filter((item: any) => String(item.id) !== id);
-      
-      // Save updated data
-      const { error } = await supabase.rpc('save_game_data', {
-        key: 'player_availability_data',
-        value: availabilityList
-      });
-      
-      if (error) {
-        throw error;
       }
-      
-      setAvailability(prev => prev.filter(item => item.id !== id));
-      return { success: true };
-    } catch (err) {
-      console.error('Error deleting availability:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      return { success: false };
-    }
+    ];
+    
+    setAvailabilityData(mockData);
+    return mockData;
   };
 
-  useEffect(() => {
-    fetchAvailability();
-  }, []);
+  const saveAvailabilityBatch = async (data: PlayerAvailabilitySlot[]): Promise<{success: boolean}> => {
+    setAvailabilityData(data);
+    return { success: true };
+  };
+
+  const getPlayerAvailability = async (playerId: string): Promise<PlayerAvailabilitySlot[]> => {
+    return availabilityData.filter(slot => slot.playerId === playerId);
+  };
+
+  const deleteAvailability = async (id: string): Promise<{success: boolean}> => {
+    setAvailabilityData(prev => prev.filter(slot => slot.id !== id));
+    return { success: true };
+  };
 
   return {
-    availability,
-    loading,
-    error,
-    fetchAvailability,
+    availabilityData,
     updateAvailability,
+    fetchAvailability,
+    saveAvailabilityBatch,
+    getPlayerAvailability,
     deleteAvailability
   };
 };

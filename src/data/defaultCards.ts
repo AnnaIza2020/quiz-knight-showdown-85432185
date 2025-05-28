@@ -3,53 +3,43 @@ import { SpecialCard } from '@/types/interfaces';
 
 export const defaultSpecialCards: SpecialCard[] = [
   {
-    id: 'dejavu',
-    name: 'Déjà Vu',
-    description: 'Powtórz ostatnie pytanie dla wszystkich graczy',
-    type: 'manipulation',
-    iconUrl: '/icons/cards/dejavu.svg',
-    soundEffect: 'card-dejavu',
-    animation: 'time-rewind',
-    defaultQuantity: 1
-  },
-  {
-    id: 'kontra',
-    name: 'Kontra',
-    description: 'Przekaż pytanie innemu graczowi',
+    id: '1',
+    name: 'Tarcza',
+    description: 'Chroni przed jedną błędną odpowiedzią',
     type: 'defense',
-    iconUrl: '/icons/cards/kontra.svg',
-    soundEffect: 'card-kontra',
-    animation: 'redirect-arrow',
+    iconName: 'shield',
+    soundEffect: 'card-reveal',
+    animationStyle: 'neon-blue',
     defaultQuantity: 2
   },
   {
-    id: 'reanimacja',
-    name: 'Reanimacja',
-    description: 'Przywróć 25% życia',
-    type: 'defense',
-    iconUrl: '/icons/cards/reanimacja.svg',
-    soundEffect: 'card-heal',
-    animation: 'health-restore',
+    id: '2',
+    name: 'Odbicie',
+    description: 'Przekierowuje pytanie do innego gracza',
+    type: 'attack',
+    iconName: 'zap',
+    soundEffect: 'card-reveal',
+    animationStyle: 'neon-red',
     defaultQuantity: 1
   },
   {
-    id: 'skip',
-    name: 'Skip',
-    description: 'Pomiń swoje pytanie bez kary',
-    type: 'defense',
-    iconUrl: '/icons/cards/skip.svg',
-    soundEffect: 'card-skip',
-    animation: 'fast-forward',
-    defaultQuantity: 2
-  },
-  {
-    id: 'turbo',
-    name: 'Turbo',
-    description: 'Podwój punkty za następną poprawną odpowiedź',
+    id: '3',
+    name: 'Bonus',
+    description: 'Daje dodatkowe punkty za poprawną odpowiedź',
     type: 'bonus',
-    iconUrl: '/icons/cards/turbo.svg',
-    soundEffect: 'card-turbo',
-    animation: 'speed-boost',
+    iconName: 'star',
+    soundEffect: 'bonus',
+    animationStyle: 'neon-yellow',
+    defaultQuantity: 3
+  },
+  {
+    id: '4',
+    name: 'Joker',
+    description: 'Pozwala na wybór dowolnej odpowiedzi',
+    type: 'manipulation',
+    iconName: 'shuffle',
+    soundEffect: 'card-reveal',
+    animationStyle: 'rainbow',
     defaultQuantity: 1
   }
 ];

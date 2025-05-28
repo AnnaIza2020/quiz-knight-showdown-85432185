@@ -1,8 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Player, GameState, Question, RoundSettings, AppSettings } from '@/types/interfaces';
 import { defaultQuestions, defaultCategories } from '@/data/defaultQuestions';
-import { defaultSpecialCards } from '@/data/defaultCards';
 
 interface GameStateContextType {
   // Game State
@@ -47,13 +45,25 @@ const defaultRoundSettings: RoundSettings = {
     startingHealth: 100,
     pointValues: { easy: 5, medium: 10, hard: 15, expert: 20 },
     healthLoss: { easy: 10, medium: 10, hard: 20, expert: 20 },
-    questionsPerCategory: 5
+    questionsPerCategory: 5,
+    maxQuestions: 10,
+    pointsForCorrectAnswer: 10,
+    pointsForIncorrectAnswer: -5,
+    livesCount: 3,
+    healthDeductionPercentage: 20,
+    eliminateCount: 4,
+    luckyLoserEnabled: true
   },
   round2: {
     startingHealth: 100,
     pointValue: 15,
     healthLoss: 20,
-    timeLimit: 5
+    timeLimit: 5,
+    maxQuestions: 8,
+    pointsForCorrectAnswer: 15,
+    pointsForIncorrectAnswer: -10,
+    livesCount: 3,
+    livesDeductedOnIncorrectAnswer: 1
   },
   round3: {
     startingHealth: 100,
@@ -67,8 +77,22 @@ const defaultRoundSettings: RoundSettings = {
       'Czy jesteś mądrzejszy od 8-klasisty',
       'Gry, które podbiły Polskę',
       'Technologie i internet w Polsce'
-    ]
-  }
+    ],
+    maxSpins: 3,
+    pointsForCorrectAnswer: 20,
+    pointsForIncorrectAnswer: -15,
+    livesCount: 3,
+    livesDeductedOnIncorrectAnswer: 1,
+    finalRoundEnabled: true
+  },
+  timerDurations: {
+    round1: 30,
+    round2: 15,
+    round3: 45
+  },
+  pointValues: { easy: 5, medium: 10, hard: 15, expert: 20 },
+  lifePenalties: { easy: 10, medium: 10, hard: 20, expert: 20 },
+  luckyLoserThreshold: 50
 };
 
 const defaultAppSettings: AppSettings = {
@@ -155,19 +179,20 @@ export const GameStateProvider: React.FC<GameStateProviderProps> = ({ children }
   };
 
   const startGame = () => {
-    setGameState({
+    setGameStateInternal(prev => ({
+      ...prev,
       gameStarted: true,
       currentRound: 'round1',
       currentPhase: 'waiting'
-    });
+    }));
   };
 
   const pauseGame = () => {
-    setGameState({ gamePaused: true, timerRunning: false });
+    setGameStateInternal(prev => ({ ...prev, gamePaused: true, timerRunning: false }));
   };
 
   const resumeGame = () => {
-    setGameState({ gamePaused: false });
+    setGameStateInternal(prev => ({ ...prev, gamePaused: false }));
   };
 
   const nextRound = () => {
@@ -175,21 +200,23 @@ export const GameStateProvider: React.FC<GameStateProviderProps> = ({ children }
     const currentIndex = roundOrder.indexOf(gameState.currentRound);
     const nextRound = roundOrder[Math.min(currentIndex + 1, roundOrder.length - 1)];
     
-    setGameState({
+    setGameStateInternal(prev => ({
+      ...prev,
       currentRound: nextRound,
       currentPhase: 'waiting'
-    });
+    }));
   };
 
   const startTimer = (seconds: number) => {
-    setGameState({
+    setGameStateInternal(prev => ({
+      ...prev,
       timerSeconds: seconds,
       timerRunning: true
-    });
+    }));
   };
 
   const stopTimer = () => {
-    setGameState({ timerRunning: false });
+    setGameStateInternal(prev => ({ ...prev, timerRunning: false }));
   };
 
   const resetGame = () => {
@@ -204,21 +231,58 @@ export const GameStateProvider: React.FC<GameStateProviderProps> = ({ children }
     currentQuestion,
     roundSettings,
     appSettings,
-    setGameState,
+    setGameState: setGameStateInternal,
     setPlayers,
-    addPlayer,
-    updatePlayer,
-    removePlayer,
+    addPlayer: (player: Player) => setPlayers(prev => [...prev, player]),
+    updatePlayer: (playerId: string, updates: Partial<Player>) => {
+      setPlayers(prev => 
+        prev.map(player => 
+          player.id === playerId ? { ...player, ...updates } : player
+        )
+      );
+    },
+    removePlayer: (playerId: string) => setPlayers(prev => prev.filter(player => player.id !== playerId)),
     setCurrentQuestion,
-    updateRoundSettings,
-    updateAppSettings,
-    startGame,
-    pauseGame,
-    resumeGame,
-    nextRound,
-    startTimer,
-    stopTimer,
-    resetGame
+    updateRoundSettings: (settings: Partial<RoundSettings>) => {
+      setRoundSettings(prev => ({ ...prev, ...settings }));
+    },
+    updateAppSettings: (settings: Partial<AppSettings>) => {
+      setAppSettings(prev => ({ ...prev, ...settings }));
+    },
+    startGame: () => {
+      setGameStateInternal(prev => ({
+        ...prev,
+        gameStarted: true,
+        currentRound: 'round1',
+        currentPhase: 'waiting'
+      }));
+    },
+    pauseGame: () => setGameStateInternal(prev => ({ ...prev, gamePaused: true, timerRunning: false })),
+    resumeGame: () => setGameStateInternal(prev => ({ ...prev, gamePaused: false })),
+    nextRound: () => {
+      const roundOrder: GameState['currentRound'][] = ['lobby', 'round1', 'round2', 'round3', 'finished'];
+      const currentIndex = roundOrder.indexOf(gameState.currentRound);
+      const nextRound = roundOrder[Math.min(currentIndex + 1, roundOrder.length - 1)];
+      
+      setGameStateInternal(prev => ({
+        ...prev,
+        currentRound: nextRound,
+        currentPhase: 'waiting'
+      }));
+    },
+    startTimer: (seconds: number) => {
+      setGameStateInternal(prev => ({
+        ...prev,
+        timerSeconds: seconds,
+        timerRunning: true
+      }));
+    },
+    stopTimer: () => setGameStateInternal(prev => ({ ...prev, timerRunning: false })),
+    resetGame: () => {
+      setGameStateInternal(defaultGameState);
+      setPlayers([]);
+      setCurrentQuestion(null);
+    }
   };
 
   return (

@@ -1,28 +1,15 @@
 
-import React, { createContext, useContext, ReactNode, useCallback } from 'react';
-import { Question, Category, GameRound } from '@/types/game-types';
-import { toast } from 'sonner';
-import { useGameContext } from './GameContext';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { Question } from '@/types/interfaces';
 
-// Define the Questions Context type
 interface QuestionsContextType {
-  categories: Category[];
-  setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
-  currentQuestion: Question | null;
-  usedQuestionIds: string[];
-  
-  // Questions methods
-  selectQuestion: (question: Question | null) => void;
+  usedQuestions: string[];
+  markQuestionAsUsed: (questionId: string) => void;
+  resetUsedQuestions: () => void;
+  isQuestionUsed: (questionId: string) => boolean;
   addQuestion: (categoryId: string, question: Question) => void;
   removeQuestion: (categoryId: string, questionId: string) => void;
-  updateQuestion: (categoryId: string, updatedQuestion: Question) => void;
-  markQuestionAsUsed: (questionId: string) => Promise<{ success: boolean }>;
-  resetUsedQuestions: () => Promise<{ success: boolean }>;
-  isQuestionUsed: (questionId: string) => boolean;
-  
-  // Helper methods
-  findQuestionById: (questionId: string) => Question | null;
-  findCategoryByQuestionId: (questionId: string) => Category | null;
+  updateQuestion: (categoryId: string, question: Question) => void;
 }
 
 const QuestionsContext = createContext<QuestionsContextType | undefined>(undefined);
@@ -30,122 +17,55 @@ const QuestionsContext = createContext<QuestionsContextType | undefined>(undefin
 export const useQuestionsContext = () => {
   const context = useContext(QuestionsContext);
   if (!context) {
-    throw new Error('useQuestionsContext must be used within a QuestionsProvider');
+    throw new Error('useQuestionsContext must be used within a QuestionsContextProvider');
   }
   return context;
 };
 
-interface QuestionsProviderProps {
+interface QuestionsContextProviderProps {
   children: ReactNode;
 }
 
-export const QuestionsProvider: React.FC<QuestionsProviderProps> = ({ children }) => {
-  // Get game context data
-  const gameCtx = useGameContext();
-  
-  // Access properties from gameCtx
-  const categories = gameCtx.categories || [];
-  const setCategories = gameCtx.setCategories || (() => {});
-  const currentQuestion = gameCtx.currentQuestion || null;
-  const selectQuestion = gameCtx.selectQuestion || (() => {});
-  const usedQuestionIds = gameCtx.usedQuestionIds || [];
-  const markQuestionAsUsed = gameCtx.markQuestionAsUsed || (() => Promise.resolve({ success: true }));
-  const resetUsedQuestions = gameCtx.resetUsedQuestions || (() => Promise.resolve({ success: true }));
-  const isQuestionUsed = gameCtx.isQuestionUsed || (() => false);
+export const QuestionsContextProvider: React.FC<QuestionsContextProviderProps> = ({ children }) => {
+  const [usedQuestions, setUsedQuestions] = useState<string[]>([]);
 
-  // Helper to find a question by id across all categories
-  const findQuestionById = useCallback((questionId: string): Question | null => {
-    for (const category of categories) {
-      const question = category.questions.find(q => q.id === questionId);
-      if (question) return question;
-    }
-    return null;
-  }, [categories]);
+  const markQuestionAsUsed = (questionId: string) => {
+    setUsedQuestions(prev => [...prev, questionId]);
+  };
 
-  // Helper to find category containing a specific question
-  const findCategoryByQuestionId = useCallback((questionId: string): Category | null => {
-    const category = categories.find(cat => 
-      cat.questions.some(q => q.id === questionId)
-    );
-    return category || null;
-  }, [categories]);
+  const resetUsedQuestions = () => {
+    setUsedQuestions([]);
+  };
 
-  // Question management
-  const addQuestion = useCallback((categoryId: string, question: Question) => {
-    const categoryExists = categories.some(cat => cat.id === categoryId);
-    if (!categoryExists) {
-      toast.error(`Kategoria o ID ${categoryId} nie istnieje`);
-      return;
-    }
+  const isQuestionUsed = (questionId: string) => {
+    return usedQuestions.includes(questionId);
+  };
 
-    // Make sure the question has required fields
-    if (!question.id) {
-      question.id = crypto.randomUUID();
-    }
+  const addQuestion = (categoryId: string, question: Question) => {
+    console.log(`Adding question to category ${categoryId}:`, question);
+  };
 
-    // Use functional update correctly
-    setCategories((prevCategories: Category[]) => {
-      return prevCategories.map(category => {
-        if (category.id === categoryId) {
-          return {
-            ...category,
-            questions: [...category.questions, question]
-          };
-        }
-        return category;
-      });
-    });
+  const removeQuestion = (categoryId: string, questionId: string) => {
+    console.log(`Removing question ${questionId} from category ${categoryId}`);
+  };
 
-    toast.success(`Dodano pytanie do kategorii "${categories.find(c => c.id === categoryId)?.name}"`);
-  }, [categories, setCategories]);
-
-  const removeQuestion = useCallback((categoryId: string, questionId: string) => {
-    // Use functional update correctly
-    setCategories((prevCategories: Category[]) => {
-      return prevCategories.map(category => {
-        if (category.id === categoryId) {
-          return {
-            ...category,
-            questions: category.questions.filter(q => q.id !== questionId)
-          };
-        }
-        return category;
-      });
-    });
-  }, [setCategories]);
-
-  const updateQuestion = useCallback((categoryId: string, updatedQuestion: Question) => {
-    // Use functional update correctly
-    setCategories((prevCategories: Category[]) => {
-      return prevCategories.map(category => {
-        if (category.id === categoryId) {
-          return {
-            ...category,
-            questions: category.questions.map(q => 
-              q.id === updatedQuestion.id ? updatedQuestion : q
-            )
-          };
-        }
-        return category;
-      });
-    });
-  }, [setCategories]);
+  const updateQuestion = (categoryId: string, question: Question) => {
+    console.log(`Updating question in category ${categoryId}:`, question);
+  };
 
   const value: QuestionsContextType = {
-    categories,
-    setCategories,
-    currentQuestion,
-    usedQuestionIds,
-    selectQuestion,
-    addQuestion,
-    removeQuestion,
-    updateQuestion,
+    usedQuestions,
     markQuestionAsUsed,
     resetUsedQuestions,
     isQuestionUsed,
-    findQuestionById,
-    findCategoryByQuestionId
+    addQuestion,
+    removeQuestion,
+    updateQuestion
   };
 
-  return <QuestionsContext.Provider value={value}>{children}</QuestionsContext.Provider>;
+  return (
+    <QuestionsContext.Provider value={value}>
+      {children}
+    </QuestionsContext.Provider>
+  );
 };

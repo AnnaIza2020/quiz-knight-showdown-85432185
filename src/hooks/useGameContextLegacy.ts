@@ -48,8 +48,8 @@ export const useGameContextLegacy = (): GameContextType => {
     giveCardToPlayer: specialCardsContext.giveCardToPlayer,
     usePlayerCard: specialCardsContext.usePlayerCard,
     
-    // Logs functions (to match the updated GameContextType)
-    logs: gameContext.logs || [],
+    // Logs functions (convert LogEntry[] to string[])
+    logs: gameContext.logs?.map(log => log.message) || [],
     addLog: gameContext.addLog || ((log: string) => {}),
     clearLogs: gameContext.clearLogs || (() => {})
   };
