@@ -4,36 +4,40 @@ import { useGameContext } from '@/context/GameContext';
 import { GameRound } from '@/types/game-types';
 import { toast } from 'sonner';
 
-export const useHostActions = () => {
+export const useHostActions = (addEvent?: (event: string) => void) => {
   const { 
     round, 
     setRound, 
     players, 
     setPlayers,
     playSound,
-    addLog 
+    addLog,
+    soundsEnabled,
+    setSoundsEnabled
   } = useGameContext();
   
   const [events, setEvents] = useState<string[]>([]);
+  const [soundMuted, setSoundMuted] = useState(!soundsEnabled);
 
-  const addEvent = (event: string) => {
+  const addHostEvent = (event: string) => {
     const timestamp = new Date().toLocaleTimeString();
     const eventWithTime = `[${timestamp}] ${event}`;
     setEvents(prev => [eventWithTime, ...prev.slice(0, 9)]);
+    if (addEvent) addEvent(event);
     addLog(event);
   };
 
   const startGame = () => {
     setRound(GameRound.ROUND_ONE);
     playSound('round-start');
-    addEvent('Gra rozpoczęta!');
+    addHostEvent('Gra rozpoczęta!');
     toast.success('Gra rozpoczęta!');
   };
 
   const startNewGame = () => {
     setRound(GameRound.SETUP);
     setPlayers([]);
-    addEvent('Nowa gra rozpoczęta');
+    addHostEvent('Nowa gra rozpoczęta');
     toast.info('Nowa gra rozpoczęta');
   };
 
@@ -45,10 +49,10 @@ export const useHostActions = () => {
         timestamp: Date.now()
       };
       localStorage.setItem('gameData', JSON.stringify(gameData));
-      addEvent('Gra zapisana lokalnie');
+      addHostEvent('Gra zapisana lokalnie');
       toast.success('Gra zapisana lokalnie');
     } catch (error) {
-      addEvent('Błąd zapisywania gry');
+      addHostEvent('Błąd zapisywania gry');
       toast.error('Błąd zapisywania gry');
     }
   };
@@ -60,23 +64,32 @@ export const useHostActions = () => {
         const gameData = JSON.parse(savedData);
         setPlayers(gameData.players || []);
         setRound(gameData.round || GameRound.SETUP);
-        addEvent('Gra wczytana z pamięci lokalnej');
+        addHostEvent('Gra wczytana z pamięci lokalnej');
         toast.success('Gra wczytana pomyślnie');
       } else {
         toast.error('Brak zapisanych danych');
       }
     } catch (error) {
-      addEvent('Błąd wczytywania gry');
+      addHostEvent('Błąd wczytywania gry');
       toast.error('Błąd wczytywania gry');
     }
   };
 
+  const toggleSound = () => {
+    const newSoundState = !soundsEnabled;
+    setSoundsEnabled(newSoundState);
+    setSoundMuted(!newSoundState);
+    toast.info(newSoundState ? 'Dźwięki włączone' : 'Dźwięki wyłączone');
+  };
+
   return {
     events,
-    addEvent,
+    addEvent: addHostEvent,
     startGame,
     startNewGame,
     handleSaveLocal,
-    handleLoadLocal
+    handleLoadLocal,
+    soundMuted,
+    toggleSound
   };
 };

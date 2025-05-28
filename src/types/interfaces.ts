@@ -119,7 +119,11 @@ export interface RoundSettings {
     round2: number;
     round3: number;
   };
-  pointValues?: { easy: number; medium: number; hard: number; expert: number };
+  pointValues: { 
+    round1: { easy: number; medium: number; hard: number; expert: number };
+    round2: number;
+    round3: number;
+  };
   lifePenalties?: { easy: number; medium: number; hard: number; expert: number };
   luckyLoserThreshold?: number;
 }

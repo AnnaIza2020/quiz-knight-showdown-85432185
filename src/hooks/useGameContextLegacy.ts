@@ -26,6 +26,20 @@ export const useGameContextLegacy = (): GameContextType => {
     questionsContext.resetUsedQuestions();
     return Promise.resolve({ success: true });
   };
+
+  const updateAvailability = async (data: any) => {
+    console.log('Mock updateAvailability:', data);
+    return Promise.resolve({ success: true });
+  };
+
+  const playSoundWithOptions = (sound: string, options?: any) => {
+    gameContext.playSound(sound);
+  };
+
+  const soundStatus = {
+    isPlaying: false,
+    currentSound: null
+  };
   
   // Merge all contexts into one
   return {
@@ -47,6 +61,11 @@ export const useGameContextLegacy = (): GameContextType => {
     removeSpecialCardRule: specialCardsContext.removeSpecialCardRule,
     giveCardToPlayer: specialCardsContext.giveCardToPlayer,
     usePlayerCard: specialCardsContext.usePlayerCard,
+    
+    // Additional required properties
+    playSoundWithOptions,
+    soundStatus,
+    updateAvailability,
     
     // Logs functions (convert LogEntry[] to string[])
     logs: gameContext.logs?.map(log => log.message) || [],

@@ -14,15 +14,16 @@ import QuestionTable from './questions/QuestionTable';
 import QuestionFormDialog from './questions/QuestionFormDialog';
 import ImportExportButtons from './questions/ImportExportButtons';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Question } from '@/types/game-types';
+import { Question } from '@/types/interfaces';
+import { convertGameTypeToInterface } from '@/utils/questionUtils';
 
 const SettingsQuestions = () => {
   const [activeTab, setActiveTab] = useState('runda1');
   const [isQuestionsManagerTab, setIsQuestionsManagerTab] = useState(false);
   const [isQuestionFormOpen, setIsQuestionFormOpen] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState<any | null>(null);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [questionToDelete, setQuestionToDelete] = useState<any | null>(null);
+  const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
 
   const { categories, saveGameData, removeQuestion, updateQuestion, markQuestionAsUsed } = useGameContext();
   
@@ -133,7 +134,8 @@ const SettingsQuestions = () => {
   
   // Open edit form for a question
   const handleEditQuestion = (question: any) => {
-    setEditingQuestion(question);
+    const convertedQuestion = convertGameTypeToInterface(question);
+    setEditingQuestion(convertedQuestion);
     setIsQuestionFormOpen(true);
   };
   
@@ -155,7 +157,8 @@ const SettingsQuestions = () => {
   
   // Open delete confirmation dialog
   const handleDeleteQuestion = (question: any) => {
-    setQuestionToDelete(question);
+    const convertedQuestion = convertGameTypeToInterface(question);
+    setQuestionToDelete(convertedQuestion);
     setDeleteDialogOpen(true);
   };
   
@@ -314,7 +317,7 @@ const SettingsQuestions = () => {
               {questionToDelete && (
                 <div className="py-4">
                   <p className="font-semibold text-white">{questionToDelete.text}</p>
-                  <p className="text-sm text-gray-400 mt-2">Kategoria: {questionToDelete.categoryName || 'Nieznana'}</p>
+                  <p className="text-sm text-gray-400 mt-2">Kategoria: {questionToDelete.category || 'Nieznana'}</p>
                 </div>
               )}
               

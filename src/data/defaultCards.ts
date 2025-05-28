@@ -29,7 +29,7 @@ export const defaultSpecialCards: SpecialCard[] = [
     type: 'bonus',
     iconName: 'star',
     soundEffect: 'bonus',
-    animationStyle: 'neon-yellow',
+    animationStyle: 'neon-green',
     defaultQuantity: 3
   },
   {

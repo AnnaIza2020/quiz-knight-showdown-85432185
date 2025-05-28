@@ -11,10 +11,21 @@ interface UseSubscriptionOptions {
 
 export const useSubscription = (
   topic?: string, 
-  eventType?: string,
+  eventType?: string | UseSubscriptionOptions,
   callback?: (data: any) => void,
   options: UseSubscriptionOptions = {}
 ) => {
+  // Handle different parameter configurations
+  let finalOptions: UseSubscriptionOptions = {};
+  let finalCallback = callback;
+  
+  if (typeof eventType === 'object') {
+    finalOptions = eventType;
+    finalCallback = callback;
+  } else {
+    finalOptions = options;
+  }
+
   const connectionRef = useRef<{
     send: (data: any) => void;
     disconnect: () => void;
@@ -23,36 +34,36 @@ export const useSubscription = (
   }>({
     send: (data: any) => {
       console.log('Mock send:', data);
-      if (options.onMessage) {
-        setTimeout(() => options.onMessage?.(data), 100);
+      if (finalOptions.onMessage) {
+        setTimeout(() => finalOptions.onMessage?.(data), 100);
       }
     },
     disconnect: () => {
       console.log('Mock disconnect');
-      if (options.onDisconnect) {
-        options.onDisconnect();
+      if (finalOptions.onDisconnect) {
+        finalOptions.onDisconnect();
       }
     },
     isConnected: true,
     broadcast: (data: any) => {
       console.log('Mock broadcast:', data);
-      if (options.onMessage) {
-        setTimeout(() => options.onMessage?.(data), 100);
+      if (finalOptions.onMessage) {
+        setTimeout(() => finalOptions.onMessage?.(data), 100);
       }
-      if (callback) {
-        setTimeout(() => callback(data), 100);
+      if (finalCallback) {
+        setTimeout(() => finalCallback(data), 100);
       }
     }
   });
 
   useEffect(() => {
-    if (options.onConnect) {
-      options.onConnect();
+    if (finalOptions.onConnect) {
+      finalOptions.onConnect();
     }
 
     return () => {
-      if (options.onDisconnect) {
-        options.onDisconnect();
+      if (finalOptions.onDisconnect) {
+        finalOptions.onDisconnect();
       }
     };
   }, []);
