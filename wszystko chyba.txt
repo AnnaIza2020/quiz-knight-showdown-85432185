@@ -1,0 +1,1102 @@
+Makieta - Overlay Runda 1 (1920x1080px)
+Wyobraź sobie ciemne tło (ciemny szary lub czerń), które będzie tłem dla całego overlay'a.
+1. Górna Część (Około 1/3 wysokości):
+ * Kamery Uczestników (5): Pięć prostokątnych ramek na kamery uczestników, rozmieszczonych równomiernie w górnej części ekranu. Każda ramka ma cienką, pulsującą neonową obwódkę w unikalnym kolorze dla danego gracza. Pod każdą ramką, w neonowym kolorze gracza, wyświetla się jego nick (np. "GRACZ 1").
+2. Środkowa Część (Około 1/3 wysokości):
+ * Kamera Prowadzącego: zajmuje ⅓ szerokości czyli około 640px 
+* Tabela Pytań około 640px po lewej stronie środkowego obszaru 
+Siatka z komórkami, każda z cienką neonową obwódką. Pierwszy wiersz zawiera nazwy kategorii w jaskrawych neonowych kolorach. Pierwsza kolumna zawiera wartości punktowe/trudności w neonowych kolorach. Wybrana komórka (kategoria i trudność) jest podświetlona pulsującym, kontrastującym neonowym kolorem (np. jasnoróżowym na niebieskim).
+
+ * Kontener Pytania około 640 px
+Kontener Pytania w Rundzie 1 (Overlay)
+Cel: Wyświetlenie aktualnie zadanego pytania oraz dostępnych wariantów odpowiedzi dla graczy i widzów podczas Rundy 1 (Eliminacje). Kontener ten jest centralnym elementem środkowego pasa overlayu w tej rundzie.
+Położenie i Układ:
+ * Środkowy Pas Overlayu: Kontener pytania zajmuje środkową część środkowego pasa overlayu (obok kamery hosta po lewej stronie i tabeli pytań po prawej stronie) Jego szerokość jest dynamicznie dostosowywana, aby pomieścić treść pytania i warianty odpowiedzi, nie zasłaniając innych kluczowych elementów.
+ * Układ Wewnętrzny:
+   * Tekst Pytania (Góra): Treść pytania wyświetlana jest w górnej części kontenera, zazwyczaj większą i bardziej czytelną czcionką, aby była dobrze widoczna dla wszystkich.
+   * Warianty Odpowiedzi (Środek/Dół): Warianty odpowiedzi (od 0 do 4, oznaczone literami A, B, C, D) wyświetlane są poniżej tekstu pytania. Mogą być ułożone:
+     * Pionowo: Jeden pod drugim.
+     * Poziomo (w dwóch kolumnach): Jeśli warianty są krótkie.
+   * Każdy wariant odpowiedzi powinien być wyraźnie oznaczony literą i oddzielony od pozostałych, aby uniknąć pomyłek.
+Elementy Wizualne i Stylistyka:
+ * Tło Kontenera: Tło kontenera może być półprzezroczyste lub mieć jednolity kolor, zapewniający dobry kontrast z tekstem pytania i odpowiedziami. Stylistyka powinna być zgodna z ogólnym motywem overlayu (np. neonowy).
+ * Ramka (Opcjonalnie): Kontener może posiadać cienką ramkę, która oddziela go od tła overlayu i innych elementów.
+ * Czcionka: Czcionka tekstu pytania i odpowiedzi powinna być czytelna i dobrze widoczna, nawet przy szybkim spojrzeniu. Rozmiar czcionki powinien być dostosowany do długości pytania i odpowiedzi.
+ * Kolor Tekstu: Kolor tekstu powinien kontrastować z tłem kontenera, zapewniając dobrą widoczność.
+ * Podświetlenie (Hover/Aktywne - Opcjonalne): W interaktywnych implementacjach (np. panel gracza, jeśli istnieje taka opcja wyboru odpowiedzi), warianty odpowiedzi mogą zmieniać wygląd po najechaniu kursorem lub po wybraniu.
+ * Animacje (Opcjonalne): Kontener pytania może pojawiać się z subtelną animacją po wybraniu pytania przez hosta.
+Funkcjonalność (Związana z Wyświetlaniem):
+ * Dynamiczne Wyświetlanie: Treść pytania i warianty odpowiedzi są dynamicznie pobierane z backendu i wyświetlane w kontenerze po wyborze pytania przez hosta w panelu.
+ * Dostosowanie do Długości Tekstu: Kontener powinien dynamicznie dostosowywać swoją wysokość do długości tekstu pytania i wariantów odpowiedzi, unikając przycinania treści.
+ * Opcjonalne Elementy Dodatkowe:
+   * Logo Kategorii (Małe): Mała ikona lub logo powiązane z kategorią pytania może być wyświetlane w rogu kontenera.
+   * Wskaźnik Poziomu Trudności (Wizualny): Mały element graficzny (np. liczba gwiazdek) wskazujący poziom trudności pytania.
+Położenie względem Innych Elementów Overlayu (Runda 1):
+ * Kamera Hosta (Lewo): Kontener pytania znajduje się bezpośrednio po prawej stronie kamery hosta.
+ * Tabela Pytań (Prawo): Kontener pytania znajduje się po lewej stronie tabeli pytań, która jest widoczna przez całą Rundę 1.
+ * Pasy z Kamerami Graczy (Góra i Dół): Kontener pytania jest umieszczony między górnym i dolnym pasem z kamerami graczy.
+Podsumowując, kontener pytania w Rundzie 1 jest kluczowym elementem wizualnym overlayu, który w czytelny i atrakcyjny sposób prezentuje aktualne pytanie oraz warianty odpowiedzi dla graczy i widzów, ułatwiając śledzenie rozgrywki. Jego wygląd i zachowanie powinny być spójne z ogólną stylistyką aplikacji.
+
+3. Dolna Część (Około 1/3 wysokości):
+ * Kamery Uczestników (5): Pięć prostokątnych ramek na kamery uczestników, rozmieszczonych równomiernie w dolnej części ekranu, analogicznie do górnej części (neonowe obwódki i nicki nad ramkami).
+ * Wskaźniki Życia (Pod Kamerami): Pod każdą kamerą uczestnika w dolnej części znajduje się pasek procentowy (neonowy zielony) reprezentujący jego poziom życia (np. "100%").
+Styl Ogólny:
+ * Tło: Ciemne, głębokie tło, które sprawia, że neonowe elementy się wyróżniają. Możliwe subtelne gradienty w tle.
+ * Czcionki: Czytelna, nowoczesna czcionka (np. Montserrat) z neonowymi efektami "glow" dla nicków i ważnych informacji.
+ * Animacje: Subtelne animacje pulsowania neonowych obwódek, podświetleń, pojawiania się i znikania elementów.
+Przykładowy Scenariusz (Po Wyborze Pytania):
+ * Tabela pytań znika z centralnej części.
+ * W jej miejsce płynnie pojawia się kontener z pytaniem.
+ * Timery (mogą być umieszczone w rogach ekranu, w neonowych okręgach) zaczynają odliczać 30 sekund.
+
+Timer: Okrągły timer w miejscu do ustalenia (neonowy pomarańcz), pulsujący coraz szybciej w ostatnich 5 sekundach.
+ * Informacje Kontekstowe: Neonowa ramka u góry z napisem "RUNDA 1 – ZRÓŻNICOWANA WIEDZA".
+ * Logo: Małe, pulsujące logo gry w lewym górnym rogu.
+Makieta - Panel Gracza (Kompletna Wersja)
+Standardowa rozdzielczość: 1920*1080 px
+Wyobraź sobie ciemne tło z pulsującymi neonowymi elementami.
+1. Górna Belka - Status Gracza (Około 10%-15% wysokości ekranu):
+ * Nick Gracza: Duży, centralnie umieszczony tekst z nickiem gracza, podświetlony jego unikalnym neonowym kolorem (np. "TWÓJ NICK").
+ * Punkty: Mniejszy tekst po lewej stronie: "PUNKTY: 10" (neonowy zielony).
+ * Życia: Po prawej stronie dynamiczny wskaźnik życia:
+   * : "ŻYCIE: ilość jaką ma gracz np 80%" (neonowy pasek zmiana kolor im mniej życia)
+    * Karty Specjalne: Do trzech ikon kart specjalnych (zgodnie z Twoimi wizerunkami) umieszczonych poniżej nicku, każda z subtelnym "glow". Aktywna karta ma mocniejszy efekt "glow" lub obramowanie. Po najechaniu kursorem wyświetla się tooltip z nazwą karty i opisem działania 
+2. Środek Ekranu - Overlay (Około 85-90% wysokości ekranu):
+To jest obszar, w którym "widać" podstawowy overlay ( widok dopasowy)
+ aby był interaktywny należy dodać w górnej części przyciski 
+ * Użyj Karty: Przycisk z neonowym obramowaniem i białym tekstem: "UŻYJ KARTY ▼". Po kliknięciu rozwija menu z ikonami dostępnych kart (z wizerunkami). Po wybraniu karty, odtwarzana jest specyficzna animacja i dźwięk dla danej karty 
+Dodatkowo, po kliknięciu "Użyj Karty" lub wybraniu karty z menu, wyświetla się informacja na overlay : 
+Gracz “nick” używa karty: “ nazwą karty” 
+Wyświetla się również w panelu hosta 
+Wywołuje reakcję systemu zgodnie z opisana kartą 
+ * Zgłoś Problem (Opcjonalnie): Mniejszy przycisk w rogu z szarym tekstem i neonowym obramowaniem.
+ Styl i UX:
+ * Dominujące ciemne tło z pulsującymi elementami w jaskrawych neonowych kolorach.
+ * Reakcje na interakcję (hover, kliknięcie) z efektami "glow".
+ * Czytelna czcionka (np. Montserrat) z neonowymi akcentami dla nagłówków i ważnych informacji.
+ * Spójne animacje i efekty dźwiękowe dla interakcji z kartami
+
+Makieta - Overlay Runda 1 (1920x1080px)
+Wyobraź sobie ciemne tło (ciemny szary lub czerń), które będzie tłem dla całego overlay'a.
+1. Górna Część (Około 1/3 wysokości):
+ * Kamery Uczestników (5): Pięć prostokątnych ramek na kamery uczestników, rozmieszczonych równomiernie w górnej części ekranu. Każda ramka ma cienką, pulsującą neonową obwódkę w unikalnym kolorze dla danego gracza. Pod każdą ramką, w neonowym kolorze gracza, wyświetla się jego nick (np. "GRACZ 1").
+2. Środkowa Część (Około 1/3 wysokości):
+ * Kamera Prowadzącego: zajmuje ⅓ szerokości czyli około 640px 
+* Tabela Pytań około 640px po lewej stronie środkowego obszaru 
+Siatka z komórkami, każda z cienką neonową obwódką. Pierwszy wiersz zawiera nazwy kategorii w jaskrawych neonowych kolorach. Pierwsza kolumna zawiera wartości punktowe/trudności w neonowych kolorach. Wybrana komórka (kategoria i trudność) jest podświetlona pulsującym, kontrastującym neonowym kolorem (np. jasnoróżowym na niebieskim).
+
+ * Kontener Pytania około 640 px
+Kontener Pytania w Rundzie 1 (Overlay)
+Cel: Wyświetlenie aktualnie zadanego pytania oraz dostępnych wariantów odpowiedzi dla graczy i widzów podczas Rundy 1 (Eliminacje). Kontener ten jest centralnym elementem środkowego pasa overlayu w tej rundzie.
+Położenie i Układ:
+ * Środkowy Pas Overlayu: Kontener pytania zajmuje środkową część środkowego pasa overlayu (obok kamery hosta po lewej stronie i tabeli pytań po prawej stronie) Jego szerokość jest dynamicznie dostosowywana, aby pomieścić treść pytania i warianty odpowiedzi, nie zasłaniając innych kluczowych elementów.
+ * Układ Wewnętrzny:
+   * Tekst Pytania (Góra): Treść pytania wyświetlana jest w górnej części kontenera, zazwyczaj większą i bardziej czytelną czcionką, aby była dobrze widoczna dla wszystkich.
+   * Warianty Odpowiedzi (Środek/Dół): Warianty odpowiedzi (od 0 do 4, oznaczone literami A, B, C, D) wyświetlane są poniżej tekstu pytania. Mogą być ułożone:
+     * Pionowo: Jeden pod drugim.
+     * Poziomo (w dwóch kolumnach): Jeśli warianty są krótkie.
+   * Każdy wariant odpowiedzi powinien być wyraźnie oznaczony literą i oddzielony od pozostałych, aby uniknąć pomyłek.
+Elementy Wizualne i Stylistyka:
+ * Tło Kontenera: Tło kontenera może być półprzezroczyste lub mieć jednolity kolor, zapewniający dobry kontrast z tekstem pytania i odpowiedziami. Stylistyka powinna być zgodna z ogólnym motywem overlayu (np. neonowy).
+ * Ramka (Opcjonalnie): Kontener może posiadać cienką ramkę, która oddziela go od tła overlayu i innych elementów.
+ * Czcionka: Czcionka tekstu pytania i odpowiedzi powinna być czytelna i dobrze widoczna, nawet przy szybkim spojrzeniu. Rozmiar czcionki powinien być dostosowany do długości pytania i odpowiedzi.
+ * Kolor Tekstu: Kolor tekstu powinien kontrastować z tłem kontenera, zapewniając dobrą widoczność.
+ * Podświetlenie (Hover/Aktywne - Opcjonalne): W interaktywnych implementacjach (np. panel gracza, jeśli istnieje taka opcja wyboru odpowiedzi), warianty odpowiedzi mogą zmieniać wygląd po najechaniu kursorem lub po wybraniu.
+ * Animacje (Opcjonalne): Kontener pytania może pojawiać się z subtelną animacją po wybraniu pytania przez hosta.
+Funkcjonalność (Związana z Wyświetlaniem):
+ * Dynamiczne Wyświetlanie: Treść pytania i warianty odpowiedzi są dynamicznie pobierane z backendu i wyświetlane w kontenerze po wyborze pytania przez hosta w panelu.
+ * Dostosowanie do Długości Tekstu: Kontener powinien dynamicznie dostosowywać swoją wysokość do długości tekstu pytania i wariantów odpowiedzi, unikając przycinania treści.
+ * Opcjonalne Elementy Dodatkowe:
+   * Logo Kategorii (Małe): Mała ikona lub logo powiązane z kategorią pytania może być wyświetlane w rogu kontenera.
+   * Wskaźnik Poziomu Trudności (Wizualny): Mały element graficzny (np. liczba gwiazdek) wskazujący poziom trudności pytania.
+Położenie względem Innych Elementów Overlayu (Runda 1):
+ * Kamera Hosta (Lewo): Kontener pytania znajduje się bezpośrednio po prawej stronie kamery hosta.
+ * Tabela Pytań (Prawo): Kontener pytania znajduje się po lewej stronie tabeli pytań, która jest widoczna przez całą Rundę 1.
+ * Pasy z Kamerami Graczy (Góra i Dół): Kontener pytania jest umieszczony między górnym i dolnym pasem z kamerami graczy.
+Podsumowując, kontener pytania w Rundzie 1 jest kluczowym elementem wizualnym overlayu, który w czytelny i atrakcyjny sposób prezentuje aktualne pytanie oraz warianty odpowiedzi dla graczy i widzów, ułatwiając śledzenie rozgrywki. Jego wygląd i zachowanie powinny być spójne z ogólną stylistyką aplikacji.
+
+3. Dolna Część (Około 1/3 wysokości):
+ * Kamery Uczestników (5): Pięć prostokątnych ramek na kamery uczestników, rozmieszczonych równomiernie w dolnej części ekranu, analogicznie do górnej części (neonowe obwódki i nicki nad ramkami).
+ * Wskaźniki Życia (Pod Kamerami): Pod każdą kamerą uczestnika w dolnej części znajduje się pasek procentowy (neonowy zielony) reprezentujący jego poziom życia (np. "100%").
+Styl Ogólny:
+ * Tło: Ciemne, głębokie tło, które sprawia, że neonowe elementy się wyróżniają. Możliwe subtelne gradienty w tle.
+ * Czcionki: Czytelna, nowoczesna czcionka (np. Montserrat) z neonowymi efektami "glow" dla nicków i ważnych informacji.
+ * Animacje: Subtelne animacje pulsowania neonowych obwódek, podświetleń, pojawiania się i znikania elementów.
+Przykładowy Scenariusz (Po Wyborze Pytania):
+ * Tabela pytań znika z centralnej części.
+ * W jej miejsce płynnie pojawia się kontener z pytaniem.
+ * Timery (mogą być umieszczone w rogach ekranu, w neonowych okręgach) zaczynają odliczać 30 sekund.
+
+Timer: Okrągły timer w miejscu do ustalenia (neonowy pomarańcz), pulsujący coraz szybciej w ostatnich 5 sekundach.
+ * Informacje Kontekstowe: Neonowa ramka u góry z napisem "RUNDA 1 – ZRÓŻNICOWANA WIEDZA".
+ * Logo: Małe, pulsujące logo gry w lewym górnym rogu.
+
+Panel Gracza (/player) – założenia główne:
+
+Cel panelu:
+Zapewnić graczowi:
+jasny podgląd pytania i odpowiedzi,
+dostęp do informacji o swojej sytuacji (życie, punkty, karty),
+neonowy klimat i lekką adrenalinę.
+Układ i funkcje panelu (propozycja)
+
+1. Górna belka  czyli 15-20% ekranu – status gracza
+Zawsze widoczna.
+Nick gracza, Punkty (w R1 i R3), Ikony życia / serca (R2 i R3), Procent życia (w R1, np. „75%” – tekst lub graficzny pasek)
+Karty specjalne (maks. 3 – z ikonami, podświetleniem aktywnej, tooltipami po najechaniu)
+
+2. Środek ekranu –  
+Czyli 60-70% całości 
+Tu powinien wyświetlać się overlay 
+
+3. Dolna sekcja – timer i przyciski akcji 15-20% 
+„Użyj Karty” – rozwijane menu (lub ikonki do kliknięcia)
+„Zgłoś problem” (opcjonalnie – np. kamera nie działa)
+(W R3) Ewentualne info o wybranej kategorii z Koła Fortuny
+
+Styl i UX
+Minimalistyczny, nowoczesny neon: tło ciemne, elementy reagujące światłem
+
+Efekty glow na hover i kliknięcie
+Responsywność – układ musi dobrze działać w przeglądarce mobilnej lub mniejszym oknie (np. streamerzy z laptopem)
+
+Gracz powinien móc w każdej chwili:
+Widzieć swoje życie, punkty i dostępne karty
+Zobaczyć pytanie i opcje odpowiedzi
+Kliknąć w  kartę
+Zobaczyć potwierdzenie działania
+Czuć klimat gry (efekty, kolory, światła)
+
+
+
++---------------------------------------------------------------------+
+|                       GÓRNA BELKA - STATUS GRACZA                   | (Około 15-20% wysokości ekranu)
+| +-----------------------------------------------------------------+ |
+| | [NICK GRACZA]                                                    | |
+| +-----------------------------------------------------------------+ |
+| +-----------------+     +-----------------+     +---------------+   |
+| | PUNKTY: [XXX]   |     | ŻYCIA: [❤️❤️❤️] / [YY%] |     | KARTY: [IKONY] |   |
+| +-----------------+     +-----------------+     +---------------+   |
+|                                                                     |
+| +-----------------------------------------------------------------+ |
+| | KARTY SPECJALNE: [IKONA 1] [IKONA 2] [IKONA 3] (PODŚWIETLENIE AKTYWNEJ) | |
+| +-----------------------------------------------------------------+ |
++---------------------------------------------------------------------+
+|                       ŚRODEK EKRANU - OVERLAY                       | (Około 60-70% wysokości ekranu)
+|                                                                     |
+|                     [WIDOK TRANSMISJI / OVERLAY]                    |
+|                                                                     |
++---------------------------------------------------------------------+
+|                       DOLNA SEKCJA - AKCJE                          | (Około 15-20% wysokości ekranu)
+| +-----------------------------------------------------------------+ |
+| | +-----------------------+     +-----------------------+         | |
+| | | UŻYJ KARTY (ROZWIJANE)| <=> | ZGŁOŚ PROBLEM (OPCJON.)|         | |
+| | +-----------------------+     +-----------------------+         | |
+| |                                                                     |
+| | (W RUNDZIE 3: EWENTUALNE INFO O WYBRANEJ KATEGORII)                 | |
+| +-----------------------------------------------------------------+ |
++---------------------------------------------------------------------+
+
+Dostosowane wireframe'y (uwzględniając Twoje przykłady):
+
+Wireframe - Runda 1 (Overlay)
+
++-----------------------------------------------------+
+|                       GÓRA                          |
+| +-----+ +-----+ +-----+ +-----+ +-----+             |
+| |KAM1 | |KAM2 | |KAM3 | |KAM4 | |KAM5 |             |
+| |NICK1| |NICK2| |NICK3| |NICK4| |NICK5|             |
+| +-----+ +-----+ +-----+ +-----+ +-----+             |
++-----------------------------------------------------+
+|                      ŚRODEK                         |
+| +---------------+                   +---------------+ |
+| | KAMERA HOST   |                   | KONTAJNER     | |
+| |               |                   | PYTANIA/TABELA| |
+| +---------------+                   +---------------+ |
++-----------------------------------------------------+
+|                       DÓŁ                           |
+| +-----+ +-----+ +-----+ +-----+ +-----+             |
+| |KAM6 | |KAM7 | |KAM8 | |KAM9 | |KAM10|             |
+| |NICK6| |NICK7| |NICK8| |NICK9| |NICK10|             |
+| |ŻYCIA6| |ŻYCIA7| |ŻYCIA8| |ŻYCIA9| |ŻYCIA10|         |
+| +-----+ +-----+ +-----+ +-----+ +-----+             |
++-----------------------------------------------------+
+Wireframe - Runda 2 (Overlay)
+
++-----------------------------------------------------+
+|                       GÓRA                          |
+| +-----+ +-----+ +-----+                             |
+| |KAM1 | |KAM2 | |KAM3 |                             |
+| |NICK1| |NICK2| |NICK3|                             |
+| |ŻYCIA1| |ŻYCIA2| |ŻYCIA3|                             |
+| +-----+ +-----+ +-----+                             |
++-----------------------------------------------------+
+|                      ŚRODEK                         |
+| +---------------+     +---------+                   |
+| | KAMERA HOST   |     | TIMER   |                   |
+| +---------------+     +---------+                   |
++-----------------------------------------------------+
+|                       DÓŁ                           |
+| +-----+ +-----+ +-----+                             |
+| |KAM4 | |KAM5 | |KAM6 |                             |
+| |NICK4| |NICK5| |NICK6|                             |
+| |ŻYCIA4| |ŻYCIA5| |ŻYCIA6|                             |
+| +-----+ +-----+ +-----+                             |
++-----------------------------------------------------+
+Wireframe - Runda 3 (Overlay)
+
++-----------------------------------------------------+
+|                       GÓRA                          |
+| +-----+ +-----+ +-----+                             |
+| |KAM1 | |KAM2 | |KAM3 |                             |
+| |NICK1| |NICK2| |NICK3|                             |
+| |ŻYCIA1| |ŻYCIA2| |ŻYCIA3|                             |
+| +-----+ +-----+ +-----+                             |
++-----------------------------------------------------+
+|                      ŚRODEK                         |
+|                                                     |
+|               +-------------+                       |
+|               | KOŁO FORTUNY |                       |
+|               +-------------+                       |
+|                                                     |
++-----------------------------------------------------+
+|                       DÓŁ                           |
+| +---------------+     +-----------------------+       |
+| | KAMERA HOST   |     |  KONTAJNER PYTANIA    |       |
+| +---------------+     |     (questionDisplay) |       |
+|                       +-----------------------+       |
++-----------------------------------------------------+
+```
++---------------------------------------------------------------------+
+|                       GÓRNA BELKA                                     | (Wysokość: ok. 10-15% ekranu)
+| +-----------------------------------------------------------------+ |
+| | AKTUALNA RUNDA: RUNDA 1 / 2 / 3 (DUŻY, NEONOWY)                     | |
+| +-----------------------------------------------------------------+ |
+| +-----------------+      +---------+      +---------------------+ |
+| | TIMER (NEONOWY) | <--> | START   | STOP  | RESET (NEONOWY BLOK)| |
+| |    (R1-30s...)   |      +---------+      +---------------------+ |
+| +-----------------+      +---------------------------------------+ |
+|                                 | ZMIEŃ RUNDĘ (ROZWIJANE MENU/PRZYCISK) | |
+|                                 +---------------------------------------+ |
++---------------------------------------------------------------------+
+|                     GŁÓWNA SIATKA GRACZY                             | (Zajmuje większość centralnej części)
+| +-------------+ +-------------+ +-------------+ +-------------+ +-------------+ |
+| | GRACZ 1     | | GRACZ 2     | | GRACZ 3     | | GRACZ 4     | | GRACZ 5     | |
+| | NICK/AVATAR | | NICK/AVATAR | | NICK/AVATAR | | NICK/AVATAR | | NICK/AVATAR | |
+| | ŻYCIA/%     | | ŻYCIA/%     | | ŻYCIA/%     | | ŻYCIA/%     | | ŻYCIA/%     | |
+| | PUNKTY      | | PUNKTY      | | PUNKTY      | | PUNKTY      | | PUNKTY      | |
+| | KARTY       | | KARTY       | | KARTY       | | KARTY       | | KARTY       | |
+| | [ZUŻYJ/ODR.]| | [ZUŻYJ/ODR.]| | [ZUŻYJ/ODR.]| | [ZUŻYJ/ODR.]| | [ZUŻYJ/ODR.]| |
+| +-------------+ +-------------+ +-------------+ +-------------+ +-------------+ |
+| +-------------+ +-------------+ +-------------+ +-------------+ +-------------+ |
+| | GRACZ 6     | | GRACZ 7     | | GRACZ 8     | | GRACZ 9     | | GRACZ 10    | |
+| | NICK/AVATAR | | NICK/AVATAR | | NICK/AVATAR | | NICK/AVATAR | | NICK/AVATAR | |
+| | ŻYCIA/%     | | ŻYCIA/%     | | ŻYCIA/%     | | ŻYCIA/%     | | ŻYCIA/%     | |
+| | PUNKTY      | | PUNKTY      | | PUNKTY      | | PUNKTY      | | PUNKTY      | |
+| | KARTY       | | KARTY       | | KARTY       | | KARTY       | | KARTY       | |
+| | [ZUŻYJ/ODR.]| | [ZUŻYJ/ODR.]| | [ZUŻYJ/ODR.]| | [ZUŻYJ/ODR.]| | [ZUŻYJ/ODR.]| |
+| +-------------+ +-------------+ +-------------+ +-------------+ +-------------+ |
+|                                                                     |
+|           (W tym obszarze dynamicznie wyświetlane panele specyficzne |
+|            dla danej rundy: wybór kategorii/trudności (R1),           |
+|            przyciski odp. (R2), przycisk koła (R3))                   |
+|                                                                     |
++---------------------------------------------------------------------+
+|                       PRAWA KOLUMNA                                   | (Wysokość: dopasowana do siatki graczy, szerokość: ok. 15-20% ekranu, po prawej)
+| +-----------------------------------------------------------------+ |
+| | PRZEJŚCIE RUNDY / RESET RUNDY (IKONY + TEKST)                     | |
+| +-----------------------------------------------------------------+ |
+| | PRZERWA (PRZYCISK/TOGGLE)                                         | |
+| +-----------------------------------------------------------------+ |
+| | POMIŃ PYTANIE (PRZYCISK)                                          | |
+| +-----------------------------------------------------------------+ |
+| | ZAKOŃCZ GRĘ (DUŻY, WYRÓŻNIONY PRZYCISK)                           | |
+| +-----------------------------------------------------------------+ |
++---------------------------------------------------------------------+
+|                       DOLNA BELKA                                     | (Cienka linia na dole ekranu)
+| > OSTATNIE WYDARZENIA: "Gracz X użył Turbo!", "Runda 2 rozpoczęta", ... | (Przewijający się tekst/paski powiadomień z kolorowym tłem)
++---------------------------------------------------------------------+
+```
+
+**Opis Wireframe:**
+
+* **Górna Belka:** Umieszczona na samej górze, zawiera kluczowe informacje o statusie gry i szybkie akcje związane z rundami i timerem.
+* **Główna Siatka Graczy:** Centralna część panelu, wyświetlająca informacje o wszystkich graczach. Każdy gracz ma swój blok z podstawowymi danymi i opcjami interakcji (zużycie/odrzucenie karty).
+* **Dynamiczny Obszar Środkowy (wewnątrz siatki graczy):** To miejsce, gdzie będą się pojawiać specyficzne elementy sterowania dla danej rundy (np. panel wyboru kategorii w R1, przyciski odpowiedzi w R2, przycisk koła w R3).
+* **Prawa Kolumna:** Zawiera globalne akcje sterowania grą, takie jak zmiana rundy, pauza czy zakończenie teleturnieju.
+* **Dolna Belka:** Informuje o najważniejszych wydarzeniach w grze w formie przewijających się komunikatów lub pasków powiadomień z różnymi kolorami tła w zależności od typu zdarzenia.
+
+1. Zasady Punktacji
+
+Runda 1: Zróżnicowana wiedza z polskiego internetu
+
+Punkty przyznawane za każdą poprawną odpowiedź – według trudności pytania: 5,10,15,20
+
+Brak odpowiedzi lub błędna odpowiedź = strata procentu życia za pytanie 5 i 10 -10% za15 i 20 -20%
+Gracze widzą swoje życie w procentach (100%, 70%, 50%...).
+
+Top 5 graczy z najwyższą punktacją przechodzi dalej. + 1 Lucky Loser – najlepszy spośród pozostałych (patrz pkt 5).
+
+
+Runda 2: Runda 5 sekund
+
+ liczy się przetrwanie.
+Każdy gracz ma 100% życia na start rundy 
+Błędna odpowiedź lub brak odpowiedzi = strata 15% życia . Poprawna odpowiedź+15 pkt
+Odpowiedzi oceniane ręcznie przez hosta 
+Po stracie wszystkich żyć gracz odpada.
+Kamera robi się szara
+
+
+Runda 3: Koło Fortuny
+
+Gracze mają odnowione życia po 3 .
+Życia tracone tak samo jak w R2.
+Poprawna odpowiedź+25 pkt
+Błędna odpowiedź - 20% życia 
+Zwycięzca to gracz który jest ostatni żywy!
+
+2. Zasady dotyczące życia
+Runda 1 – życie = procentowy pasek; każda zła odpowiedź na pytanie za 5 i 10 pkt to -10% a za pytania za 15 i 20 pkt -20% życia w zależności od wybranego pytania 
+
+Runda 2 
+Na początku 100% życia (graficznie tak samo w każdej rundzie)
+Poprawna odpowiedź+15 pkt błędna odpowiedź i -15% życia 
+Utrata całego życia = odpadasz z rundy (kamera/awatar staje się szary).
+
+Życia są odnawiane przy wejściu w nową rundę.
+
+3. Karty Specjalne
+Zasady ogólne
+Każdy gracz może mieć do 3 kart.
+Losowanie kart odbywa się automatycznie 
+Karty Specjalne będą przyznawane automatycznie przez system w następujących momentach i na podstawie określonych warunków:
+ -Seria Poprawnych Odpowiedzi: Po udzieleniu przez gracza trzech poprawnych odpowiedzi z rzędu (w dowolnej rundzie), system automatycznie przyzna mu jedną losową Kartę Specjalną (z wyłączeniem kart "Na Ratunek").
+ -Punkty w R1: Po zakończeniu Rundy 1, system sprawdzi liczbę punktów każdego gracza. Gracze, którzy zdobyli 50 lub więcej punktów, otrzymają jedną losową Kartę Specjalną (z wyłączeniem kart "Na Ratunek").
+ -Runda Bez Utraty Życia: Po zakończeniu Rundy 1 oraz Rundy 2, system sprawdzi, którzy gracze nie stracili w danej rundzie żadnego życia. Ci gracze otrzymają jedną losową Kartę Specjalną (z wyłączeniem kart "Na Ratunek").
+ -Najwięcej Punktów w R1: Po zakończeniu Rundy 1, system wyłoni gracza z najwyższą liczbą punktów  Ten gracz otrzyma jedną losową Kartę Specjalną (z wyłączeniem kart "Na Ratunek").
+ -Przejście Rundy 1: Każdy gracz, który zakwalifikował się do Rundy 2 (top 5 + lucky loser), automatycznie otrzyma jedną losową Kartę Specjalną (z wyłączeniem kart "Na Ratunek").
+ -Przejście Rundy 2: Każdy gracz, który zakwalifikował się do Rundy 3 (finału), automatycznie otrzyma jedną losową Kartę Specjalną (z wyłączeniem kart "Na Ratunek").
+ -Na Ratunek (Po R1): Po zakończeniu Rundy 1, system zidentyfikuje gracza z najmniejszą liczbą punktów. Ten gracz automatycznie otrzyma Kartę Specjalną "Na Ratunek". Jeśli więcej niż jeden gracz ma najmniejszą liczbę punktów, karta zostanie przyznana losowo jednemu z nich.
+ -Na Ratunek (Początek Finału - Runda 3): Na początku Rundy 3, system sprawdzi liczbę żyć każdego gracza. Gracz z najmniejszą liczbą żyć (minimum 1) automatycznie otrzyma Kartę Specjalną "Na Ratunek". Jeśli więcej niż jeden gracz ma najmniejszą liczbę żyć, karta zostanie przyznana losowo jednemu z nich.
+
+Host aktywuje kartę po zgłoszeniu głosowym gracza (przycisk „Zużyj kartę”).
+
+
+Przykładowe Karty
+- Dejavu: "Użyj tej karty, aby otrzymać drugą szansę na odpowiedź na to samo pytanie. Masz możliwość ponownego przemyślenia i podania nowej odpowiedzi."
+
+- Kontra: "Po usłyszeniu pytania, możesz 'skontrować' i wskazać innego uczestnika, który będzie musiał na nie odpowiedzieć. Pamiętaj, to on poniesie konsekwencje błędnej odpowiedzi, ale poprawna odpowiedź da mu punkty."
+
+-Reanimacja: "Ta karta daje Ci dodatkowe 'życie'  Jeśli odpowiesz błędnie, 'reanimujesz' się i pozostajesz w grze."
+
+-Skip: "Kiedy pytanie Cię zaskoczy, użyj 'Skip', aby nie musieć na nie odpowiadać. Twoja kolejka przejdzie dalej bez konsekwencji."
+
+- Turbo: "Aktywuj 'Turbo' przed udzieleniem odpowiedzi, a jeśli będzie poprawna, otrzymasz podwójną liczbę punktów za to pytanie."
+
+- Refleks 2: "Wykorzystaj 'Refleks 2', aby podwoić czas na udzielenie odpowiedzi na aktualne pytanie."
+
+ - Refleks 3: "Użyj 'Refleks 3', aby potroić czas na udzielenie odpowiedzi na aktualne pytanie."
+
+ - Lustro: "Kiedy pytanie zostanie wyświetlone, użyj 'Lustro', aby usunąć jedną błędną opcję odpowiedzi (jeśli są wyświetlane)."
+
+ -Oświecenie: "Skorzystaj z 'Oświecenia', aby otrzymać krótką podpowiedź do aktualnie zadanego pytania."
+
+Skąd wiedzieć co to jest:
+Prosta Lista/Podpowiedź Wizualna (Widok Gracza): Nawet w prostym widoku gracza (/player), można by w dyskretnym miejscu wyświetlać ikony posiadanych kart. Po kliknięciu ikony, pojawiałby się krótki opis. To wymagałoby jednak pewnej interaktywności w widoku gracza.
+
+Jak zdobyć karty:
+-Seria Poprawnych Odpowiedzi: Otrzymanie karty za 3 poprawne odpowiedzi z rzędu (w dowolnej rundzie),
+-Punkty w R1: Otrzymanie karty za zdobycie 50 punktów w R1,
+-Runda Bez Utraty Życia : Otrzymanie karty za ukończenie Rundy 1 lub 3 bez utraty ani jednego życia
+-kartę otrzymuje gracz który zdobył najwięcej pkt w rundzie 1,
+-po jednej karcie dla każdego kto przeszedł rundę 1 
+-po jednej karcie dla każdego kto przeszedł rundę 2, 
+-Na Ratunek: przyznana po zakończeniu rundy 1 graczowi z najmniejszą liczbą punktów 
+ - Ratunek: "dla gracza który rozpoczyna z najmniejszą liczbą żyć w Finale - Runda 3)
+
+4. Przebieg Rund
+
+Runda 1
+
+10 graczy, pytania z internetu.
+
+Ocenianie: przez hosta lub automatyczne (jeśli pytania zamknięte).
+
+Po rundzie – system wybiera top 5 + lucky loser.
+
+
+Runda 2
+
+6 graczy, pełne życia, 5-sekundowe pytania.
+
+Gracze odpadają po utracie całego życia 
+
+Gdy zostanie 3 graczy – przejście do R3.
+
+
+Runda 3
+
+3 graczy, Koło Fortuny wybiera kategorię.
+
+Odpada ten kto stracił wszystkie życia
+
+5. Lucky Loser (Runda 1)
+Spośród graczy, którzy nie znaleźli się w Top 5.
+System wybiera osobę z najwyższym wynikiem punktowym spośród reszty.
+W razie remisu decyduje szybkość odpowiedzi (opcjonalnie).
+
+6. Koło Fortuny
+
+6 kategorii (np. Język internetu, Polska scena Twitcha, Zagadki...).
+Host klika „Zakręć” – animacja koła, losowana kategoria.
+
+Pytanie pobierane z odpowiedniej puli.
+Każda kategoria ma równe szanse 
+
+7. Zasady Wyłaniania Zwycięzcy
+
+Wygra ten kto przeżyje 
+System automatycznie pokazuje zwycięzcę.
+
+Wyświetlany ekran zwycięstwa: nick, fanfary, confetti.
+
+Host może wygenerować statystyki PDF.
+
+
+
+
+
+User Flow: Zarządzanie Rundami (Host) - Doprecyzowany
+1. Ekran Startowy Hosta
+[ ] Prowadzący widzi:
+ * Nazwę aktualnej gry.
+ * Liczbę dołączonych graczy.
+ * Stan przygotowania (np. "Oczekiwanie na graczy").
+[ ] Dostępne przyciski:
+ * Rozpocznij Grę: Inicjuje teleturniej i przechodzi do Rundy 1.
+ * Tryb testowy: Uruchamia symulację z fejk uczestnikami i pytaniami testowymi, pozwalając na sprawdzenie funkcjonalności.
+ * Reset gry: Odświeża widok, prawdopodobnie wracając do stanu oczekiwania na graczy (do potwierdzenia).
+2. Runda 1 – Zróżnicowana wiedza z Internetu
+[ ] Po kliknięciu „Rozpocznij Grę”:
+ * Overlay wyświetla wybrany przez gracza kafelek (wiersz - kategoria, kolumna - trudność/punkty), prezentując pytanie.
+ * Automatycznie uruchamia się timer 30 sekund na overlayu i panelu hosta.
+[ ] Host:
+ * Widzi wszystkie kamery graczy na swoim panelu (układ 2x5).
+ * Widzi listę poprawnych odpowiedzi dla każdego pytania (systemowo ustawione).
+ * Ocenia odpowiedzi graczy wizualnie i manualnie klika przycisk: „Odpowiedź poprawna” lub „Odpowiedź błędna” (prawdopodobnie przypisane do każdego gracza w siatce).
+[ ] Po zakończeniu czasu lub po ocenieniu wszystkich odpowiedzi:
+ * System wybiera 5 najlepszych graczy z największą liczbą punktów oraz 1 "lucky loser" (zasady do doprecyzowania).
+ * Wyświetla listę osób przechodzących dalej na panelu hosta.
+ * Host klika: „Przejdź do Rundy 2”. Na overlayu uruchamia się animacja przejścia, a scena zmienia się na Rundę 2.
+3. Runda 2 – Runda 5 sekund
+[ ] Wyświetla się tylko 6 graczy na overlayu i panelu hosta, każdy oznaczony 3 graficznymi ikonami życia (serca).
+[ ] Timer na overlayu i panelu hosta automatycznie ustawiony na 5 sekund.
+[ ] Host ma dostępne przyciski:
+ * „Nowe pytanie”: Wyświetla kolejne pytanie na overlayu.
+ * „Pomiń pytanie”: Pomija aktualne pytanie bez konsekwencji dla graczy.
+ * „Zużyj kartę”: Aktywuje kartę specjalną, gdy gracz jej użyje (host nie wybiera karty, tylko zatwierdza akcję gracza).
+[ ] System:
+ * Automatycznie odejmuje jedno życie graczowi przy błędnej odpowiedzi (wizualnie na panelu hosta i overlayu).
+ * Automatycznie eliminuje gracza po utracie 3 żyć (wizualnie znika z overlayu i jest oznaczony jako wyeliminowany na panelu hosta).
+[ ] Gdy zostanie 3 graczy z życiem:
+ * System automatycznie wyświetla komunikat „Koniec rundy 2” na panelu hosta.
+ * Host klika: „Przejdź do Rundy 3”.
+4. Runda 3 – Koło Fortuny
+[ ] Host klika przycisk „Zakręć kołem” na swoim panelu.
+ * Na overlayu wyświetla się animacja kręcącego się koła fortuny, losując jedną z 6 dostępnych kategorii.
+ * Wylosowana kategoria jest widoczna na overlayu.
+ * Pojawia się pytanie z wylosowanej kategorii na overlayu.
+[ ] Gracze:
+ * Ponownie mają po 3 życia (widoczne na overlayu i panelu hosta).
+ * Po utracie 3 żyć, kamera gracza na overlayu staje się szara (efekt systemowy).
+[ ] Host widzi na swoim panelu:
+ * Aktualne pytanie i listę poprawnych odpowiedzi (systemowo).
+ * Aktualną liczbę żyć i punktów każdego gracza.
+ * Informacje o aktywnych kartach specjalnych graczy.
+ * Przycisk „Zakończ grę” (do ręcznego zakończenia teleturnieju, jeśli zajdzie taka potrzeba).
+5. Zakończenie gry
+[ ] Gdy na koniec Rundy 3 pozostanie 1 gracz z życiem (lub host ręcznie zakończy grę):
+ * Host klika przycisk „Zakończ grę”.
+ * Na overlayu wyświetla się ekran zwycięzcy z nickiem wygranego.
+ * Na overlayu pojawia się animacja konfetti i słyszalne są fanfary.
+ * Host ma opcję „Eksportuj do PDF” na swoim panelu (do zapisania statystyk gry).
+ * Przycisk „Powrót do startu” na panelu hosta kończy aktualną grę i wraca do ekranu startowego.
+.
+
+STYLISTYKA I UX
+
+
+
+Motyw: Neonowy styl z animacjami i efektami dźwiękowymi.
+
+Język: Polski dla panelu hosta i ustawień oraz opisów w overlayu.
+
+Responsywność: Aplikacja i overlay powinny działać poprawnie w rozdzielczości 1920x1080.
+
+Płynność i Przejrzystość: Interfejs użytkownika powinien być intuicyjny i łatwy w obsłudze zarówno dla hosta, jak i graczy.
+
+Animacje: Wykorzystanie animacji dla kluczowych akcji (np. użycie karty, eliminacja gracza, losowanie koła fortuny, poprawne/błędne odpowiedzi).
+
+Dźwięki: Wykorzystanie efektów dźwiękowych podkreślających akcje w grze (np. poprawne/błędne odpowiedzi, użycie karty, eliminacja, wygrana, kręcenie kołem).
+
+Konfetti: Animacja konfetti przy wygranej w Rundzie 3.
+
+Podświetlenia Kamer: Animacje podświetlające aktywne kamery graczy.
+
+Paski Życia: Dynamiczna redukcja pasków życia z płynnymi animacjami i zmianą kolorów.
+
+
+9. ZASOBY (ASSETS)
+
+
+
+Folder assets/cards/: Zawierający animacje kart (webm) i dźwięki (mp3) dla każdej karty specjalnej.
+
+Folder assets/sounds/: Zawierający inne efekty dźwiękowe (sukces, porażka, eliminacja, wygrana, koło fortuny).
+
+Folder assets/logo/: Miejsce na logo użytkownika (do uploadu w panelu ustawień).
+
+
+10. POSTĘPY TECHNICZNE (NA DZIEŃ 2025-04-30)
+
+
+
+Projekt rozwijany w repozytorium: AnnaIza2020/Discord-game-show-
+
+
+11. WYMAGANIA DODATKOWE
+
+
+
+Wszystkie funkcje muszą działać zgodnie z opisaną logiką i być w pełni zintegrowane.
+
+Aplikacja musi być stabilna i gotowa do testów oraz transmisji na żywo na Twitchu.
+
+Należy zapewnić responsywność interfejsów w docelowej rozdzielczości.
+
+
+Rundy 1:
+Runda 1 – Finalny Brief Funkcjonalno-Wizualny (z Boosterami/Kartami i Doprecyzowaniem)
+
+Układ Ekranu (1920x1080)
+   * Górny pas (360px):
+     * 5 okienek wideo uczestników (ok. 384px szerokości każde).
+     * Pod kamerą każdego gracza:
+       * Nick
+       * Pasek życia: Poziomy, umieszczony pod nickiem.
+       * Liczba punktów
+   * Środkowy pas (360px):
+     * Przed wyborem pytania:
+       * Lewa część: kamera hosta (384px)
+       * Prawa część: tabela z kategoriami i trudnościami
+     * Po wyborze pytania:
+       * Kamera hosta zostaje.
+       * Pojawia się pytanie + warianty odpowiedzi (zależnie od poziomu trudności).
+   * Dolny pas (360px):
+     * 5 kolejnych graczy z identycznym layoutem (kamera, nick, pasek życia, punkty).
+
+Logika Rundy 1 – Interakcja i Eliminacja
+   * Start rundy:
+     * Każdy gracz zaczyna z:
+       * 100% życia
+       * 0 punktów
+   * Przebieg rundy:
+     * Host wybiera kategorię i poziom trudności.
+     * Wczytywane pytanie, 30s timer odlicza czas.
+     * Kolejność odpowiedzi: Gracze odpowiadają po kolei, w ustalonej kolejności widocznej na ekranie (np. od lewej do prawej w górnym pasie, a następnie w dolnym). Host może również wskazać konkretnego gracza do odpowiedzi.
+     * Ocena odpowiedzi: Host w panelu ręcznie zaznacza, czy odpowiedź gracza była poprawna, błędna, czy nie udzielono odpowiedzi.
+   * Punktacja:
+     * Poprawna odpowiedź: przyznanie punktów (5, 10, 15, 20)
+     * Błąd lub brak odpowiedzi: gracz traci życie
+       * –10% życia przy pytaniach za 5 i 10 pkt
+       * –20% życia przy pytaniach za 15 i 20 pkt
+   * Odpadający gracz:
+     * Gdy gracz ma 0% życia:
+       * Odpada z rundy
+       * Jego kamera robi się wyszarzona
+       * Nie bierze już udziału w odpowiedziach
+
+Graficzne Elementy:
+   * Pasek życia:
+     * Poziomy bar z dynamiczną redukcją wartości (0–100%).
+     * Animacja spadku życia: Płynna, trwająca 0.5 sekundy. Kolor zmienia się stopniowo: zielony (70-100%), żółty (30-69%), czerwony (0-29%).
+   * Punkty widoczne obok lub pod nickiem
+   * Kamera gracza robi się szara, gdy gracz odpada
+
+Logika „Lucky Loser” (koniec rundy)
+   * Na zakończenie Rundy 1:
+     * Top 5 graczy z najwyższą liczbą punktów i aktywnym życiem → przechodzą do Rundy 2
+     * Spośród graczy, którzy odpadli, wybierany jest jeden gracz z najwyższą liczbą punktów jako „Lucky Loser”
+     * Razem: 6 graczy przechodzi do Rundy 2
+
+Boostery / Karty – działają przez wszystkie 3 rundy
+   * Nazwy i Opisy Kart Specjalnych: (bez zmian)
+   * Mechanizmy Przyznawania Kart Specjalnych: (bez zmian)
+   * Limit Kart Specjalnych: Maksymalnie 3 Karty Specjalne na gracza w jednym momencie. Po użyciu karty i spełnieniu warunków, gracz może otrzymać nową.
+   * Wyświetlanie Kart w Widoku Gracza: Lista ikon posiadanych kart z boku ekranu. Po najechaniu kursorem - krótki opis.
+   * Wyświetlanie Statusu Kart w Panelu Hosta: Ikony posiadanych kart obok nicków graczy.
+   * Panel Ustawień Kart Specjalnych: Dodawanie, edycja, usuwanie kart oraz konfiguracja zasad ich zdobywania.
+   * Używanie Kart przez Graczy: Zgłoszenie głosowe do hosta.
+   * Panel Hosta - Zużycie Kart: Przycisk "Zużyj Kartę" obok nicku gracza.
+   * Animacja Użycia Karty (Overlay): Po zatwierdzeniu użycia przez hosta, na overlayu pojawia się animacja karty z jej nazwą i krótkim opisem efektu. Czas trwania animacji: 1 sekunda.
+   * Efekty Dźwiękowe: Dodatkowe efekty dźwiękowe przy użyciu poszczególnych kart. Dźwięk efektu karty odtwarzany jest globalnie (słyszą go wszyscy: host, gracze, widzowie).
+   * Wygląd i animacje kart: (bez zmian)
+   * Konflikt efektów kart:
+     * Niedozwolone jednoczesne użycie: Gracz nie może aktywować "Turbo" i "Dejavu" do jednego pytania. Wybrana musi zostać jedna karta na daną próbę odpowiedzi.
+     * Wykluczające się karty: "Skip" i "Turbo" wykluczają się. Nie można użyć "Turbo" na pytanie, które się pomija.
+
+Interfejs Hosta – Stan Graczy:
+   * W panelu hosta widoczny jest aktualny procent życia każdego gracza (np. liczbowo obok ikony życia).
+   * Po odpadnięciu gracza, host otrzymuje wizualne powiadomienie (np. kamera gracza staje się szara na liście graczy w panelu hosta) oraz krótki sygnał dźwiękowy.
+
+Wersje Awaryjne / Fallback:
+   * Cofnij ostatnią akcję karty: W panelu hosta dostępny jest przycisk "Cofnij użycie karty", który pozwala anulować ostatnio aktywowaną kartę, jeśli host się pomyli. Przycisk jest aktywny przez krótki czas po użyciu karty (np. 10 sekund).
+Host w swoim panelu włącza timer 40 sekund, uczestnicy słyszą timer, host ma przyciski dedykowane timerowi czyli start,stop,reset
+
+
+Runda 2 – Finalny Brief Funkcjonalno-Wizualny (wersja pełna i spójna)
+
+Uczestnicy:
+
+6 graczy (po 3 w górnym i dolnym obszarze ekranu).
+
+Układ Ekranu (1920x1080):
+
+Górny Obszar (360px):
+
+3 okienka wideo graczy (rozmieszczone równomiernie).
+
+Pasek życia:
+     * Poziomy bar z dynamiczną redukcją wartości (0–100%).
+     * Animacja spadku życia: Płynna, trwająca 0.5 sekundy. Kolor zmienia się stopniowo: zielony (70-100%), żółty (30-69%), czerwony (0-29%).
+   * Punkty widoczne obok lub pod nickiem
+   * Kamera gracza robi się szara, gdy gracz odpada
+
+Środkowy Obszar (360px):
+
+Lewa strona: kamera prowadzącego.
+
+Prawa strona: duży, wyraźny timer odliczający 5 sekund.
+
+Dolny Obszar (360px):
+
+3 okienka pozostałych graczy.
+
+Pod każdym: nick życie i punkty (w każdej rundzie)
+
+Panel Hosta – Funkcjonalności:
+
+Zarządzanie rundą:
+
+Przycisk „Rozpocznij Rundę 2” (resetuje życia wszystkich graczy do 3, przygotowuje interfejs).
+
+Przycisk „Zakończ Rundę 2”.
+
+Wyświetlanie pytania:
+
+Pytanie widoczne tylko w panelu hosta (nie wyświetla się na overlayu).
+
+Sterowanie odpowiedziami:
+
+Przycisk „Dobra odpowiedź” – podświetla gracza na zielono.
+
+Przycisk „Zła odpowiedź” – podświetla gracza na czerwono i odejmuje % życia zgodnie z regułami rundy
+
+Zarządzanie timerem:
+
+Start / Stop / Reset timera (odliczanie 5 sekund).
+
+Wybór aktywnego gracza:
+
+Lista/przyciski z graczami – host wybiera tego, który zgłosił się głosowo.
+
+Status kart graczy:
+
+Ikony posiadanych kart specjalnych widoczne obok nicków graczy.
+
+Możliwość aktywacji/anulowania karty gracza na jego zgłoszenie.
+
+Logika Rundy 2:
+
+Gracze odpowiadają głosowo w ciągu 5 sekund – timer startuje po wybraniu aktywnego gracza.
+
+Host ocenia odpowiedź (dobra/zła) przyciskami.
+
+Poprawna odpowiedź: gracz podświetlony na zielono.
+
+Błędna odpowiedź: gracz podświetlony na czerwono, traci 15% zycia
+
+Gracze z 0 % życia  zostają wyeliminowani (np. ich ramka może być wygaszona).
+
+Runda kończy się automatycznie, gdy zostaje 3 graczy z życiem – ci przechodzą do Rundy 3.
+
+Karty Specjalne:
+
+Działają identycznie jak w innych rundach.
+
+Gracze mogą je zgłaszać głosowo, a host obsługuje to w panelu.
+
+Animacje i dźwięki:
+
+Odpowiedź dobra/zła powinna mieć animację (np. błysk ramki w kolorze + krótki efekt dźwiękowy).
+
+Szczegóły animacji i dźwięków powinny być konfigurowalne z poziomu panelu ustawień (np. style, kolory, dźwięki dla „dobra” i „zła” odpowiedź).
+
+Runda 3 – Finalny Brief Funkcjonalno-Wizualny (pełna wersja)
+
+Uczestnicy:
+
+3 graczy, każdy rozpoczyna z 100% zycia
+
+
+---
+
+Układ Ekranu (1920x1080)
+
+1. Górny Obszar (450px):
+
+
+
+3 równomiernie rozmieszczone okna wideo graczy.
+
+Pod każdym graczem: nick punkty i życie 
+
+2. Środkowy Obszar (300px):
+
+
+
+Centralny kontener z pytaniem.
+
+Przez 2–3 sekundy wyświetlana nazwa kategorii (po zakręceniu kołem).
+
+3. Dolny Obszar (330px):
+
+
+
+Lewa strona: kamera prowadzącego.
+
+Środek: koło fortuny z animacją i dźwiękiem.
+
+Prawa strona: duży, czytelny 30-sekundowy timer.
+
+
+---
+
+Panel Hosta
+
+Przycisk „Zakręć kołem”
+
+Animacja + dźwięk.
+
+Po zakończeniu: wyświetlenie kategorii.
+
+Pytanie:
+
+Automatyczne losowanie z wybranej kategorii (pula rundy 3).
+
+Pokazuje się w kontenerze.
+
+Wybór aktywnego gracza (kliknięcie na ikonę gracza lub dropdown).
+
+Ocena odpowiedzi:
+
+„Dobra odpowiedź” – gracz podświetla się na zielono, animacja pozytywna.
+
+„Zła odpowiedź” – gracz podświetla się na czerwono, traci % życia według zasad rund 
+
+Gdy gracz ma 0 % odpada
+
+Szare podświetlenie, zgaszone okno, animacja eliminacji + dźwięk.
+
+Timer 30 sekund:
+
+Start / Stop / Reset.
+
+Obsługa kart:
+
+Ikony widoczne obok graczy.
+
+Ręczna aktywacja działania karty (np. kliknięcie „Użyj karty”).
+
+
+---
+
+Logika Gry
+
+1. Host klika „Zakręć kołem”.
+
+
+2. Koło losuje kategorię → animacja → nazwa kategorii na overlayu.
+
+
+3. Automatycznie wyświetla się pytanie z tej kategorii.
+
+
+4. Host wybiera gracza → timer startuje.
+
+
+5. Gracz odpowiada głosowo.
+
+
+6. Host ocenia odpowiedź.
+
+
+
+Poprawna:
+
+Zielone podświetlenie + pozytywny dźwięk + krótkie świecenie kamery gracza.
+
+Błędna:
+
+Czerwone podświetlenie + negatywny dźwięk.
+
+Utrata % życia 
+
+7. Gracz z 0 % ❤️:
+
+
+
+Szara ramka, „gaśnie” kamera (animacja), dźwięk eliminacji.
+
+8. Runda trwa aż zostanie tylko 1 gracz z życiem → Zwycięzca.
+
+
+
+
+---
+
+Efekty Audio-Wizualne
+
+Koło fortuny:
+
+Animacja kręcenia (ustawialna długość, efekt zwalniania).
+
+Dźwięk obrotów i kliknięcia zatrzymania.
+
+Gracz odpowiada poprawnie:
+
+Zielone podświetlenie.
+
+Dźwięk „success” (fanfarowy lub klik).
+
+Kamera lekko się rozświetla.
+
+Gracz odpowiada błędnie:
+
+Czerwone podświetlenie.
+
+Dźwięk „fail”.
+
+Serce odlatuje lub znika z animacją.
+
+Eliminacja gracza:
+
+Kamera zanika lub ciemnieje.
+
+Ikony i nick wyszarzone.
+
+Dźwięk „eliminacji” (np. „glass shatter” lub „boom”).
+
+Zwycięzca:
+
+Kamera świeci się na złoto.
+
+Animacja zwycięstwa + dźwięk fanfar.
+
+Overlay z napisem „Zwycięzca!” + confetti.
+
+
+---
+
+Panel Ustawień
+
+Zakładka „Koło Fortuny”
+
+Dodawanie/edycja kategorii.
+
+Zmiana:
+
+Kolorów segmentów i tła.
+
+Czcionek.
+
+Czasu animacji kręcenia.
+
+Efektu zwalniania.
+
+Dźwięków kręcenia i zatrzymania (upload własnych plików).
+
+Zakładka „Pytania”
+
+Edycja bazy pytań:
+
+Dodawanie nowych.
+
+Przypisywanie do kategorii.
+
+Edycja treści i trudności.
+
+Import/eksport (CSV).
+
+Wyszukiwanie i filtrowanie.
+
+Zakładka „Animacje i dźwięki” (Nowa)
+
+Możliwość:
+
+Wgrania własnych dźwięków (success, fail, eliminacja, zwycięstwo).
+
+Włączenia/wyłączenia poszczególnych efektów animacji.
+
+Testowania efektów z poziomu panelu.
+
+Brief: Panel Prowadzącego (Hosta)
+
+Cel: Zarządzanie przebiegiem gry w czasie rzeczywistym: wybór aktywnego gracza, ocena odpowiedzi, kontrola czasu, obsługa rund i kart, test overlayu.
+
+Układ Ogólny Panelu
+   * Górny pasek informacji:
+     * Numer rundy
+     * Liczba graczy (aktywnych i ogółem)
+     * Licznik pytań/rundy
+     * Zegar/stoper ogólny (pomocniczy)
+   * Zakładki główne:
+     * Runda 1
+     * Runda 2
+     * Runda 3
+     * Karty
+     * Kamera / Tryb testowy
+Funkcje Wspólne (dla wszystkich rund)
+   * Start / Zakończ rundę
+   * Wybór aktywnego gracza (klik lub rozwijana lista)
+   * Podgląd overlayu (na żywo lub testowy)
+   * Podświetlanie aktywnego gracza
+   * Podgląd i edycja życia oraz punktów graczy
+   * Reset rundy lub konkretnych danych (np. życia, punktów)
+   * Obsługa i aktywacja kart graczy
+   * Ręczna eliminacja gracza
+   * Możliwość pominięcia pytania lub ręcznego wyboru pytania
+   * Pauza / wznowienie rozgrywki
+
+Zakładka: Runda 1
+   * Wyświetlenie pytania i jego treści
+   * Przycisk „Następne pytanie”
+   * Przycisk: „Oceń odpowiedź” (poprawna / niepoprawna)
+   * Automatyczna redukcja życia za błędną odpowiedź
+   * Wyłanianie 5 graczy z największą liczbą żyć + lucky loser
+   * Możliwość ręcznego wyboru lucky losera
+   * Ręczne przypisanie pytania w razie potrzeby
+
+Zakładka: Runda 2
+   * Lista 5–6 graczy z pełnym życiem 
+   * Timer 5 sekund z dużym przyciskiem START
+   * Przycisk: Poprawna / Błędna odpowiedź
+   * Automatyczna eliminacja gracza po utracie wszystkich żyć
+   * Obsługa kart
+   * Informacja o liczbie pozostałych graczy
+
+Zakładka: Runda 3
+   * Przycisk „Zakręć kołem fortuny”
+   * Możliwość ręcznego wyboru kategorii (awaryjnie)
+   * Automatyczne losowanie pytania z wylosowanej kategorii
+   * Timer 30 sekund: Start / Stop / Reset
+   * Przycisk: Poprawna / Błędna odpowiedź
+   * Automatyczne odejmowanie życia i eliminacja
+   * Obsługa kart
+   * Efekty dźwiękowe, podświetlenie gracza
+   * Informacja o zwycięzcy
+
+Zakładka: Karty Specjalne
+Cel: Umożliwienie administratorom i moderatorom tworzenia, edytowania, zarządzania wyglądem, efektami i zasadami przyznawania kart specjalnych w grze.
+Podział Zakładki:
+ * Biblioteka Kart: Przegląd istniejących kart.
+ * Kreator Nowej Karty / Edycja Karty: Tworzenie i modyfikacja definicji kart.
+ * Zasady Przyznawania Kart: Konfiguracja mechanizmów otrzymywania kart przez graczy.
+ * Ręczne Przydzielanie Kart: Narzędzie do manualnego dodawania kart graczom.
+Szczegółowy Opis Sekcji:
+ * Biblioteka Kart:
+   * Lista Kart: Wyświetlanie wszystkich zdefiniowanych kart w formie listy lub siatki. Każdy element powinien zawierać:
+     * Nazwę karty.
+     * Ikonę / miniaturę grafiki karty.
+     * Krótki opis.
+     * Informację o liczbie aktualnie aktywnych instancji tej karty wśród graczy.
+     * Status (aktywna / nieaktywna).
+   * Filtrowanie i Sortowanie: Możliwość filtrowania kart po nazwie, statusie, sposobie przyznawania oraz sortowania alfabetycznie lub według daty utworzenia/edycji.
+   * Podgląd Szczegółów: Po kliknięciu karty, wyświetlane są szczegółowe informacje: pełny opis, grafika w większym rozmiarze, powiązany efekt dźwiękowy, definicja efektu JavaScript, zasady przyznawania.
+   * Test Animacji: Przycisk umożliwiający podgląd animacji powiązanej z użyciem karty.
+   * Test Dźwięku: Przycisk umożliwiający odtworzenie dźwięku powiązanego z użyciem karty.
+   * Opcje Edycji i Usuwania: Przyciski do edycji definicji karty oraz jej trwałego usunięcia (z potwierdzeniem).
+ * Kreator Nowej Karty / Edycja Karty:
+   * Podstawowe Informacje:
+     * Nazwa Karty: Input tekstowy (unikalna nazwa).
+     * Opis Karty: Obszerne pole tekstowe opisujące działanie karty dla gracza.
+     * Ikona / Grafika Karty: Pole do wgrania pliku graficznego (SVG, PNG, JPG) lub podania URL-a. Możliwość podglądu wgranego obrazu.
+   * Efekt Karty:
+     * Definicja Efektu (JavaScript Hook): Duże pole tekstowe do wprowadzenia kodu JavaScript (React Hook), który definiuje działanie karty. Powinien istnieć edytor z podświetlaniem składni i ewentualnymi podpowiedziami API gry.
+     * Powiązany Dźwięk: Dropdown z biblioteki dźwięków (wgranych i systemowych) do przypisania efektu dźwiękowego przy użyciu karty. Możliwość odsłuchania dźwięku.
+     * Powiązana Animacja: Dropdown z listy dostępnych animacji (wbudowanych lub wgranych jako Lottie/JSON) do przypisania przy użyciu karty. Możliwość podglądu animacji.
+   * Zaawansowane Opcje Efektu:
+     * Typ Efektu: Wybór kategorii efektu (np. "Zmiana Punktów", "Zmiana Życia", "Interakcja z Pytaniem", "Blokada"). Może to ułatwić tworzenie i zarządzanie efektami.
+     * Parametry Efektu: Dynamicznie generowane pola formularza w zależności od wybranego typu efektu (np. ilość punktów do dodania/odjęcia, procent życia do zmiany, czas trwania blokady).
+   * Testowanie Karty:
+     * Symulator Użycia: Opcja symulacji użycia karty na wybranym graczu (bez wpływu na aktualną grę) w celu przetestowania jej efektu i wizualizacji.
+     * Logi Testowe: Wyświetlanie logów i rezultatów symulacji użycia karty.
+ * Zasady Przyznawania Kart:
+   * Mechanizmy Automatyczne:
+     * Co X Punktów: Input numeryczny określający próg punktowy, po osiągnięciu którego gracz otrzymuje kartę.
+     * Losowo Co Y Pytań: Input numeryczny określający co ile pytań system losowo przyznaje kartę z określonym prawdopodobieństwem (procentowy input).
+     * Za Określone Akcje: Lista checkboxów lub dropdownów umożliwiających przyznawanie kart za specyficzne akcje (np. pierwsza poprawna odpowiedź w rundzie, przejście do kolejnej rundy).
+   * Prawdopodobieństwo Kart: Możliwość ustawienia wag (prawdopodobieństw) dla poszczególnych kart w przypadku losowego przyznawania.
+   * Limit Kart na Gracza: Opcja ustawienia maksymalnej liczby kart, jaką gracz może posiadać jednocześnie.
+   * Reset Kart po Rundzie: Przełącznik decydujący, czy karty są resetowane na początku każdej nowej rundy.
+ * Ręczne Przydzielanie Kart:
+   * Wybór Gracza: Lista rozwijana lub wyszukiwarka do wyboru gracza, któremu ma zostać przyznana karta.
+   * Wybór Karty: Lista rozwijana lub siatka ikon dostępnych kart.
+   * Przycisk "Przyznaj Kartę": Po wybraniu gracza i karty, przycisk dodaje kartę do puli kart wybranego gracza.
+   * Informacja o Posiadanych Kartach Gracza: Wyświetlanie aktualnej listy kart posiadanych przez wybranego gracza.
+   * Opcja Usunięcia Karty Graczowi: Możliwość manualnego usunięcia konkretnej karty z puli kart wybranego gracza.
+Dodatkowe Funkcje i Uwagi UX:
+ * Grupy Kart: Możliwość tworzenia grup kart (np. "Karty Atakujące", "Karty Obron
+ * Historia Przyznanych Kart: Logi informujące o tym, kiedy i komu zostały przyznane karty (automatycznie i manualnie).
+ * Import/Eksport Definicji Kart: Możliwość importowania i eksportowania definicji kart do pliku (np. JSON) w celu łatwego przenoszenia konfiguracji.
+ * Wizualne Oznaczenia: Wyraźne ikony i nazwy kart, tooltipy z opisami.
+ * Potwierdzenia Akcji: Wymaganie potwierdzenia przy usuwaniu kart lub zmianie zasad przyznawania.
+ * Walidacja: Sprawdzanie unikalności nazw kart i poprawności wprowadzanych danych.
+Implementacja tych opcji w zakładce "Karty Specjalne" zapewni bogate i elastyczne narzędzia do tworzenia unikalnych mechanik rozgrywki za pomocą kart, co znacząco zwiększy strategiczną głębię i interaktywność teleturnieju.
+ zakładki Karty Specjalne sekcję Talie Kart (Decks):
+Nowa Sekcja: Talie Kart (Decks)
+Cel: Umożliwienie tworzenia i zarządzania zestawami kart (taliami), które będą aktywne podczas konkretnej rozgrywki. Pozwoli to na kontrolowanie, które karty są dostępne, w jakiej liczbie i z jaką częstotliwością mogą się pojawiać.
+Elementy Sekcji:
+ * Lista Talii:
+   * Wyświetlanie listy zapisanych talii kart. Każdy element powinien zawierać:
+     * Nazwę talii.
+     * Krótki opis (opcjonalny).
+     * Informację o liczbie kart w talii.
+     * Status (aktywna / nieaktywna).
+   * Możliwość filtrowania i sortowania talii.
+   * Opcje edycji, duplikowania i usuwania talii.
+ * Kreator / Edytor Talii:
+   * Nazwa Talii: Input tekstowy dla nazwy tworzonej/edytowanej talii.
+   * Opis Talii: Opcjonalne pole tekstowe na opis talii.
+   * Dostępne Karty: Lista wszystkich zdefiniowanych kart w systemie (z biblioteki kart).
+   * Zawartość Talii: Lista kart aktualnie znajdujących się w tworzonej/edytowanej talii. Dla każdej karty w talii powinny być widoczne:
+     * Nazwa karty.
+     * Ilość w talii (input numeryczny z możliwością zwiększania/zmniejszania liczby wystąpień danej karty w talii).
+     * Możliwość usunięcia karty z talii.
+   * Ograniczenia Talii (Opcjonalne):
+     * Maksymalna Liczba Kart w Talii: Input numeryczny ograniczający łączną liczbę kart w talii.
+     * Limit Powtórzeń Kart: Możliwość ustawienia maksymalnej liczby powtórzeń danej karty w talii (globalnie lub indywidualnie dla każdej karty).
+     * Rzadkość Kart (Opcjonalne): Możliwość przypisania "rzadkości" do kart i kontrolowania ogólnego rozkładu rzadkości w talii (np. więcej kart "częstych", mniej "rzadkich").
+   * Wybór Kart do Talii: Mechanizm przeciągnij i upuść lub przyciski dodawania/usuwania kart między listą dostępnych kart a zawartością talii.
+   * Podgląd Talii: Wizualne podsumowanie zawartości talii (np. ikony kart i ich ilości).
+   * Zapisz / Zapisz Jako Nową Talię: Przyciski do zapisania zmian w istniejącej talii lub zapisania nowej talii.
+ * Aktywacja Talii dla Rozgrywki:
+   * Dropdown lub pole wyboru umożliwiające wskazanie, która z utworzonych talii ma być używana podczas danej sesji teleturnieju (możliwość wyboru w ustawieniach ogólnych rozgrywki lub bezpośrednio w panelu hosta przed rozpoczęciem gry).
+   * Informacja o aktualnie aktywnej talii.
+Korzyści z Implementacji Talii Kart:
+ * Personalizacja Rozgrywki: Prowadzący może dostosować pulę kart do tematu odcinka, poziomu graczy, czy preferowanego stylu gry.
+ * Kontrola Częstotliwości Kart: Możliwość ograniczenia liczby wystąpień potężnych lub specyficznych kart, co wpływa na balans rozgrywki.
+ * Strategiczne Planowanie: Tworzenie talii pozwala na bardziej przemyślane podejście do mechaniki kart specjalnych.
+ * Zmienność Rozgrywki: Różne talie mogą być używane w różnych odcinkach, co zwiększa nieprzewidywalność i świeżość teleturnieju.
+Dzięki dodaniu sekcji "Talie Kart", zarządzanie kartami specjalnymi stanie się jeszcze bardziej zaawansowane i dostosowane do potrzeb konkretnej rozgrywki. To z pewnością wzbogaci możliwości kreatywne i strategiczne aplikacji Discord Game Show.
