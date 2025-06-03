@@ -53,7 +53,8 @@ export const useQuestions = () => {
           categoryId: question.categoryId || category.id,
           category: question.category || category.name,
           timeLimit: question.timeLimit || question.time || 30,
-          type: question.type || 'multiple_choice'
+          type: question.type || 'multiple_choice',
+          points: question.points || 10
         });
       });
     });
@@ -120,7 +121,8 @@ export const useQuestions = () => {
             ...question,
             category: question.category || 'Unknown',
             timeLimit: question.timeLimit || question.time || 30,
-            type: question.type || 'multiple_choice'
+            type: question.type || 'multiple_choice',
+            points: question.points || 10
           };
           
           const existingQuestion = questions.find(q => q.id === question.id);

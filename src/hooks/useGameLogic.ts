@@ -54,10 +54,9 @@ export const useGameLogic = () => {
       round3: 25
     },
     lifePenalties: { 
-      easy: 10, 
-      medium: 15, 
-      hard: 20, 
-      expert: 25 
+      round1: 10,
+      round2: 15,
+      round3: 20
     }
   };
 

@@ -87,7 +87,7 @@ const Round3Questions: React.FC = () => {
     console.log("Toggle used status for question:", questionId);
   }, []);
 
-  // Convert categories to the expected type with proper round type
+  // Convert categories to the expected type with proper description field
   const convertedCategories: Category[] = round3Categories.map(cat => ({
     ...cat,
     description: cat.description || '',
