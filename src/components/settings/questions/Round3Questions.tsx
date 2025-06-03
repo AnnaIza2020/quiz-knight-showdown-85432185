@@ -88,10 +88,10 @@ const Round3Questions: React.FC = () => {
   }, []);
 
   // Convert categories to the expected type with proper round type
-  const convertedCategories = round3Categories.map(cat => ({
+  const convertedCategories: Category[] = round3Categories.map(cat => ({
     ...cat,
     description: cat.description || '',
-    round: 3 as const, // Ensure round is treated as the literal value 3
+    round: cat.round,
     questions: cat.questions || []
   }));
   
