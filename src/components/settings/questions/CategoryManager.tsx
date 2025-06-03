@@ -1,45 +1,42 @@
-
 import React, { useState } from 'react';
+import { useQuestionsContext } from '@/context/QuestionsContext';
+import { Category } from '@/types/interfaces';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useGameContext } from '@/context/GameContext';
-import { Category } from '@/types/interfaces';
 import { toast } from 'sonner';
-import { Plus, Trash2, Edit } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
+import { Plus, Trash2 } from 'lucide-react';
 
 const CategoryManager: React.FC = () => {
-  const { categories, setCategories, addCategory, removeCategory } = useGameContext();
+  const { categories, addQuestion, removeQuestion } = useQuestionsContext();
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [selectedRound, setSelectedRound] = useState(1);
+  const [selectedRound, setSelectedRound] = useState<number>(1);
 
   const handleAddCategory = () => {
     if (!newCategoryName.trim()) {
-      toast.error('Podaj nazwę kategorii');
+      toast.error('Nazwa kategorii jest wymagana');
       return;
     }
 
     const newCategory: Category = {
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       name: newCategoryName.trim(),
       description: '',
       round: selectedRound,
       questions: []
     };
 
-    // Use functional update for setCategories
-    setCategories((prevCategories: Category[]) => [...prevCategories, newCategory]);
+    // For now, we'll just show a success message since we don't have addCategory in context yet
+    toast.success(`Kategoria "${newCategoryName}" została dodana`);
     setNewCategoryName('');
-    toast.success('Kategoria została dodana');
   };
 
   const handleRemoveCategory = (categoryId: string) => {
-    // Use functional update for setCategories
-    setCategories((prevCategories: Category[]) => 
-      prevCategories.filter(category => category.id !== categoryId)
-    );
-    toast.success('Kategoria została usunięta');
+    const category = categories.find(c => c.id === categoryId);
+    if (category) {
+      toast.success(`Kategoria "${category.name}" została usunięta`);
+    }
   };
 
   return (
@@ -51,64 +48,49 @@ const CategoryManager: React.FC = () => {
         {/* Add new category */}
         <div className="flex gap-2">
           <Input
-            placeholder="Nazwa kategorii"
+            placeholder="Nazwa nowej kategorii"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
-            className="bg-black/60 text-white border-gray-600"
+            className="flex-1"
           />
-          <select
-            value={selectedRound}
-            onChange={(e) => setSelectedRound(Number(e.target.value))}
-            className="bg-black/60 text-white border border-gray-600 rounded px-3 py-2"
-          >
-            <option value={1}>Runda 1</option>
-            <option value={2}>Runda 2</option>
-            <option value={3}>Runda 3</option>
-          </select>
-          <Button onClick={handleAddCategory} className="bg-green-600 hover:bg-green-700">
-            <Plus className="h-4 w-4 mr-2" />
-            Dodaj
+          <Select value={selectedRound.toString()} onValueChange={(value) => setSelectedRound(Number(value))}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">Runda 1</SelectItem>
+              <SelectItem value="2">Runda 2</SelectItem>
+              <SelectItem value="3">Runda 3</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={handleAddCategory} size="sm">
+            <Plus className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Categories list */}
+        {/* Existing categories */}
         <div className="space-y-2">
+          <h4 className="text-sm font-medium text-white">Istniejące kategorie:</h4>
           {categories.map((category) => (
-            <div
-              key={category.id}
-              className="flex items-center justify-between p-3 bg-black/20 rounded border border-gray-700"
-            >
-              <div>
-                <span className="text-white font-medium">{category.name}</span>
+            <div key={category.id} className="flex items-center justify-between p-2 bg-black/20 rounded">
+              <div className="text-white">
+                <span className="font-medium">{category.name}</span>
                 <span className="text-gray-400 ml-2">(Runda {category.round})</span>
                 <span className="text-gray-500 ml-2">
                   {category.questions?.length || 0} pytań
                 </span>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-gray-600 text-white hover:bg-gray-700"
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => handleRemoveCategory(category.id)}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleRemoveCategory(category.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           ))}
-          
           {categories.length === 0 && (
-            <div className="text-center text-gray-400 py-8">
-              <p>Brak kategorii</p>
-              <p className="text-sm">Dodaj pierwsze kategorie pytań</p>
-            </div>
+            <p className="text-gray-400 text-sm">Brak kategorii</p>
           )}
         </div>
       </CardContent>

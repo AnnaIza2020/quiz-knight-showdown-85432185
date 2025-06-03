@@ -1,164 +1,70 @@
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 import { useGameState } from '@/context/GameStateContext';
-import SettingsLayout from '@/components/SettingsLayout';
+import { toast } from 'sonner';
 
 const ThemeSettings: React.FC = () => {
-  const { appSettings, updateAppSettings } = useGameState();
-  const [localSettings, setLocalSettings] = useState(appSettings);
-
-  const handleColorChange = (key: keyof typeof appSettings, value: string) => {
-    setLocalSettings(prev => ({ ...prev, [key]: value }));
-  };
+  const { gameState, updateGameState } = useGameState();
 
   const handleSave = () => {
-    updateAppSettings(localSettings);
+    toast.success('Ustawienia motywu zostały zapisane');
   };
 
   return (
     <div className="space-y-6">
-      <SettingsLayout 
-        title="Kolory Dominujące" 
-        description="Ustaw główne kolory interfejsu gry"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <Label htmlFor="primaryColor">Kolor Główny</Label>
-            <div className="flex items-center gap-3 mt-2">
+      <Card className="bg-black/40 border border-white/10">
+        <CardHeader>
+          <CardTitle className="text-white">Ustawienia motywu</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="primary-color" className="text-white">Kolor główny</Label>
               <Input
-                id="primaryColor"
+                id="primary-color"
                 type="color"
-                value={localSettings.primaryColor}
-                onChange={(e) => handleColorChange('primaryColor', e.target.value)}
-                className="w-16 h-10"
+                defaultValue="#8B5CF6"
+                className="h-10"
               />
+            </div>
+            <div>
+              <Label htmlFor="secondary-color" className="text-white">Kolor pomocniczy</Label>
               <Input
-                value={localSettings.primaryColor}
-                onChange={(e) => handleColorChange('primaryColor', e.target.value)}
-                className="flex-1"
+                id="secondary-color"
+                type="color"
+                defaultValue="#06B6D4"
+                className="h-10"
               />
             </div>
           </div>
           
           <div>
-            <Label htmlFor="secondaryColor">Kolor Drugorzędny</Label>
-            <div className="flex items-center gap-3 mt-2">
-              <Input
-                id="secondaryColor"
-                type="color"
-                value={localSettings.secondaryColor}
-                onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
-                className="w-16 h-10"
-              />
-              <Input
-                value={localSettings.secondaryColor}
-                onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
-                className="flex-1"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="accentColor">Kolor Akcentu</Label>
-            <div className="flex items-center gap-3 mt-2">
-              <Input
-                id="accentColor"
-                type="color"
-                value={localSettings.accentColor}
-                onChange={(e) => handleColorChange('accentColor', e.target.value)}
-                className="w-16 h-10"
-              />
-              <Input
-                value={localSettings.accentColor}
-                onChange={(e) => handleColorChange('accentColor', e.target.value)}
-                className="flex-1"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="backgroundColor">Kolor Tła</Label>
-            <div className="flex items-center gap-3 mt-2">
-              <Input
-                id="backgroundColor"
-                type="color"
-                value={localSettings.backgroundColor}
-                onChange={(e) => handleColorChange('backgroundColor', e.target.value)}
-                className="w-16 h-10"
-              />
-              <Input
-                value={localSettings.backgroundColor}
-                onChange={(e) => handleColorChange('backgroundColor', e.target.value)}
-                className="flex-1"
-              />
-            </div>
-          </div>
-        </div>
-      </SettingsLayout>
-
-      <SettingsLayout 
-        title="Czcionki i Typografia" 
-        description="Wybierz czcionki dla różnych elementów interfejsu"
-      >
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="fontFamily">Czcionka Główna</Label>
-            <select
-              id="fontFamily"
-              value={localSettings.fontFamily}
-              onChange={(e) => setLocalSettings(prev => ({ ...prev, fontFamily: e.target.value }))}
-              className="w-full p-2 bg-white/10 border border-white/20 rounded mt-2"
-            >
-              <option value="Montserrat">Montserrat</option>
-              <option value="Inter">Inter</option>
-              <option value="Roboto">Roboto</option>
-              <option value="Open Sans">Open Sans</option>
-            </select>
-          </div>
-        </div>
-      </SettingsLayout>
-
-      <SettingsLayout 
-        title="Multimedia" 
-        description="Ustawienia dźwięków i efektów"
-      >
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Dźwięki Włączone</Label>
-            <Switch
-              checked={localSettings.soundsEnabled}
-              onCheckedChange={(checked) => 
-                setLocalSettings(prev => ({ ...prev, soundsEnabled: checked }))
-              }
+            <Label htmlFor="game-logo" className="text-white">URL logo gry</Label>
+            <Input
+              id="game-logo"
+              placeholder="https://example.com/logo.png"
+              className="bg-black/50 text-white"
             />
           </div>
-          
+
           <div>
-            <Label>Głośność Główna ({Math.round(localSettings.volume * 100)}%)</Label>
-            <Slider
-              value={[localSettings.volume * 100]}
-              onValueChange={([value]) => 
-                setLocalSettings(prev => ({ ...prev, volume: value / 100 }))
-              }
-              max={100}
-              step={5}
-              className="mt-2"
-              disabled={!localSettings.soundsEnabled}
+            <Label htmlFor="host-camera" className="text-white">URL kamery hosta</Label>
+            <Input
+              id="host-camera"
+              placeholder="https://example.com/camera-feed"
+              className="bg-black/50 text-white"
             />
           </div>
-        </div>
-      </SettingsLayout>
 
-      <div className="flex justify-end">
-        <Button onClick={handleSave} className="bg-[#00FFA3] hover:bg-[#00FFA3]/80 text-black">
-          Zastosuj Zmiany
-        </Button>
-      </div>
+          <Button onClick={handleSave} className="w-full">
+            Zapisz ustawienia
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 };

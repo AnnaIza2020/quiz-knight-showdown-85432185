@@ -21,6 +21,14 @@ const defaultGameState: GameStateInterface = {
 
 const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
 
+export const useGameState = () => {
+  const context = useContext(GameStateContext);
+  if (!context) {
+    throw new Error('useGameState must be used within a GameStateProvider');
+  }
+  return context;
+};
+
 export const useGameStateContext = () => {
   const context = useContext(GameStateContext);
   if (!context) {
@@ -33,7 +41,7 @@ interface GameStateContextProviderProps {
   children: ReactNode;
 }
 
-export const GameStateContextProvider: React.FC<GameStateContextProviderProps> = ({ children }) => {
+export const GameStateProvider: React.FC<GameStateContextProviderProps> = ({ children }) => {
   const [gameState, setGameState] = useState<GameStateInterface>(defaultGameState);
 
   const updateGameState = (state: Partial<GameStateInterface>) => {
@@ -56,3 +64,5 @@ export const GameStateContextProvider: React.FC<GameStateContextProviderProps> =
     </GameStateContext.Provider>
   );
 };
+
+export const GameStateContextProvider = GameStateProvider;

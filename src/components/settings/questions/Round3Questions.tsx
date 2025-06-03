@@ -1,12 +1,14 @@
 
 import React, { useState, useCallback } from 'react';
 import { useQuestionsContext } from '@/context/QuestionsContext';
-import { Question, Category, GameRound } from '@/types/game-types';
+import { Question, Category } from '@/types/interfaces';
+import { GameRound } from '@/types/game-types';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import QuestionTable from './QuestionTable';
 import QuestionForm from './QuestionForm';
 import CategoryManager from './CategoryManager';
+import { createQuestionWithDefaults } from '@/utils/createQuestionWithDefaults';
 
 const Round3Questions: React.FC = () => {
   const { 
@@ -22,8 +24,8 @@ const Round3Questions: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   
-  // Filter categories for Round 3
-  const round3Categories = categories.filter(cat => cat.round === GameRound.ROUND_THREE);
+  // Filter categories for Round 3 - compare with number 3 instead of GameRound enum
+  const round3Categories = categories.filter(cat => cat.round === 3);
   
   // Get questions for selected category
   const questions = selectedCategory 
@@ -33,7 +35,8 @@ const Round3Questions: React.FC = () => {
   // Add question handler
   const handleAddQuestion = (question: Question) => {
     if (selectedCategory) {
-      addQuestion(selectedCategory, question);
+      const fullQuestion = createQuestionWithDefaults(question);
+      addQuestion(selectedCategory, fullQuestion);
       setIsFormOpen(false);
     } else {
       toast.error('Wybierz kategorię, aby dodać pytanie');
@@ -54,7 +57,8 @@ const Round3Questions: React.FC = () => {
   const handleUpdateQuestion = (question: Question) => {
     const category = findCategoryByQuestionId(question.id);
     if (category) {
-      updateQuestion(category.id, question);
+      const fullQuestion = createQuestionWithDefaults(question);
+      updateQuestion(category.id, fullQuestion);
       setEditingQuestion(null);
     } else {
       toast.error('Nie można znaleźć kategorii dla tego pytania');
@@ -81,9 +85,15 @@ const Round3Questions: React.FC = () => {
 
   // Toggle question used status (for QuestionTable)
   const handleToggleUsed = useCallback((questionId: string) => {
-    // This will be connected to the actual functionality when needed
     console.log("Toggle used status for question:", questionId);
   }, []);
+
+  // Convert categories to the expected type
+  const convertedCategories = round3Categories.map(cat => ({
+    ...cat,
+    description: cat.description || '',
+    round: cat.round
+  }));
   
   return (
     <div className="space-y-6">
@@ -125,7 +135,7 @@ const Round3Questions: React.FC = () => {
           <QuestionForm
             onSubmit={editingQuestion ? handleUpdateQuestion : handleAddQuestion}
             initialData={editingQuestion}
-            categories={round3Categories}
+            categories={convertedCategories}
             currentCategoryId={selectedCategory || undefined}
           />
           <Button variant="secondary" onClick={handleCloseForm} className="mt-4">

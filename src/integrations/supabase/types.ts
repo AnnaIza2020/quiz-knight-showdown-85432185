@@ -81,6 +81,77 @@ export type Database = {
         Update: {}
         Relationships: []
       }
+      game_cards: {
+        Row: {
+          card_limit: number
+          cooldown: number
+          created_at: string | null
+          description: string
+          icon: string | null
+          id: string
+          name: string
+          type: string
+        }
+        Insert: {
+          card_limit?: number
+          cooldown?: number
+          created_at?: string | null
+          description: string
+          icon?: string | null
+          id?: string
+          name: string
+          type: string
+        }
+        Update: {
+          card_limit?: number
+          cooldown?: number
+          created_at?: string | null
+          description?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      game_results: {
+        Row: {
+          created_at: string | null
+          eliminated_in_round: number | null
+          final_lives: number | null
+          game_id: string
+          rank: number
+          score: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          eliminated_in_round?: number | null
+          final_lives?: number | null
+          game_id: string
+          rank?: number
+          score?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          eliminated_in_round?: number | null
+          final_lives?: number | null
+          game_id?: string
+          rank?: number
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_results_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_settings: {
         Row: {
           created_at: string | null
@@ -146,6 +217,39 @@ export type Database = {
           },
         ]
       }
+      games: {
+        Row: {
+          created_at: string
+          current_round: number
+          game_state: string
+          host_id: string
+          id: string
+          max_players: number
+          name: string
+          theme: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_round?: number
+          game_state?: string
+          host_id: string
+          id?: string
+          max_players?: number
+          name: string
+          theme?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_round?: number
+          game_state?: string
+          host_id?: string
+          id?: string
+          max_players?: number
+          name?: string
+          theme?: string | null
+        }
+        Relationships: []
+      }
       player_availability: {
         Row: {
           created_at: string
@@ -181,56 +285,118 @@ export type Database = {
           },
         ]
       }
+      player_cards: {
+        Row: {
+          assigned_at: string | null
+          card_id: string | null
+          id: string
+          player_id: string | null
+          used: boolean
+          used_at: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          card_id?: string | null
+          id?: string
+          player_id?: string | null
+          used?: boolean
+          used_at?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          card_id?: string | null
+          id?: string
+          player_id?: string | null
+          used?: boolean
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_cards_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "game_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_cards_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           avatar_url: string | null
+          avatar_url_new: string | null
           camera_url: string | null
           cards: Json | null
           color: string | null
           created_at: string | null
+          game_id: string | null
           id: string
           is_active: boolean | null
           life_percent: number | null
+          lives: number
           nickname: string
           points: number | null
           status: string | null
           token: string
           token_expires_at: string | null
           unique_link_token: string | null
+          user_id: string | null
         }
         Insert: {
           avatar_url?: string | null
+          avatar_url_new?: string | null
           camera_url?: string | null
           cards?: Json | null
           color?: string | null
           created_at?: string | null
+          game_id?: string | null
           id?: string
           is_active?: boolean | null
           life_percent?: number | null
+          lives?: number
           nickname: string
           points?: number | null
           status?: string | null
           token: string
           token_expires_at?: string | null
           unique_link_token?: string | null
+          user_id?: string | null
         }
         Update: {
           avatar_url?: string | null
+          avatar_url_new?: string | null
           camera_url?: string | null
           cards?: Json | null
           color?: string | null
           created_at?: string | null
+          game_id?: string | null
           id?: string
           is_active?: boolean | null
           life_percent?: number | null
+          lives?: number
           nickname?: string
           points?: number | null
           status?: string | null
           token?: string
           token_expires_at?: string | null
           unique_link_token?: string | null
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "players_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       questions: {
         Row: {
@@ -238,33 +404,42 @@ export type Database = {
           correct_answer: string
           created_at: string | null
           difficulty: number
+          game_id: string | null
           id: string
           image_url: string | null
           options: Json | null
+          round_type: number
           text: string
           updated_at: string | null
+          used: boolean
         }
         Insert: {
           category_id?: string | null
           correct_answer: string
           created_at?: string | null
           difficulty: number
+          game_id?: string | null
           id?: string
           image_url?: string | null
           options?: Json | null
+          round_type?: number
           text: string
           updated_at?: string | null
+          used?: boolean
         }
         Update: {
           category_id?: string | null
           correct_answer?: string
           created_at?: string | null
           difficulty?: number
+          game_id?: string | null
           id?: string
           image_url?: string | null
           options?: Json | null
+          round_type?: number
           text?: string
           updated_at?: string | null
+          used?: boolean
         }
         Relationships: [
           {
@@ -272,6 +447,48 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rounds: {
+        Row: {
+          end_time: string | null
+          game_id: string
+          id: string
+          round_number: number
+          start_time: string | null
+          status: string
+        }
+        Insert: {
+          end_time?: string | null
+          game_id: string
+          id?: string
+          round_number: number
+          start_time?: string | null
+          status?: string
+        }
+        Update: {
+          end_time?: string | null
+          game_id?: string
+          id?: string
+          round_number?: number
+          start_time?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rounds_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
             referencedColumns: ["id"]
           },
         ]
