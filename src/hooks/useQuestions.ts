@@ -2,7 +2,8 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { useQuestionsContext } from '@/context/QuestionsContext';
-import { Question, GameRound } from '@/types/game-types';
+import { Question } from '@/types/interfaces';
+import { GameRound } from '@/types/game-types';
 import { QuestionFilterOptions, QuestionImportExport } from '@/types/questions-types';
 import { toast } from 'sonner';
 
@@ -41,7 +42,7 @@ export const useQuestions = () => {
     return textMatches || optionsMatch || answerMatches || categoryMatches;
   }, []);
 
-  // Extract all questions from all categories
+  // Extract all questions from all categories and ensure they have timeLimit
   const questions = useMemo(() => {
     const allQuestions: Question[] = [];
     
@@ -50,7 +51,8 @@ export const useQuestions = () => {
         allQuestions.push({
           ...question,
           categoryId: category.id,
-          category: category.name  // Use category property which exists in Question type
+          category: category.name,
+          timeLimit: question.timeLimit || question.time || 30 // Ensure timeLimit is always present
         });
       });
     });
@@ -90,7 +92,7 @@ export const useQuestions = () => {
     toast.success('Wszystkie pytania zostały oznaczone jako niewykorzystane');
   }, [contextResetUsedQuestions]);
 
-  // Import questions from JSON
+  // Import questions from JSON - ensure timeLimit is added
   const importQuestions = useCallback((data: QuestionImportExport): boolean => {
     try {
       if (!data || !data.questions || !Array.isArray(data.questions)) {
@@ -112,12 +114,18 @@ export const useQuestions = () => {
             return;
           }
           
+          // Ensure question has timeLimit
+          const questionWithTimeLimit: Question = {
+            ...question,
+            timeLimit: question.timeLimit || question.time || 30
+          };
+          
           const existingQuestion = questions.find(q => q.id === question.id);
           if (existingQuestion) {
-            updateQuestion(categoryId, question);
+            updateQuestion(categoryId, questionWithTimeLimit);
             updated++;
           } else {
-            addQuestion(categoryId, question);
+            addQuestion(categoryId, questionWithTimeLimit);
             created++;
           }
         } catch (e) {

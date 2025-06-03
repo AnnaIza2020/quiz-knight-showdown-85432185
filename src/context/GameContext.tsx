@@ -137,7 +137,7 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
   const [gameTitle, setGameTitle] = useState('Discord Game Show');
   const [usedQuestionIds, setUsedQuestionIds] = useState<string[]>([]);
   
-  // Extended round settings with all required properties
+  // Extended round settings with all required properties including pointValues and lifePenalties
   const [roundSettings, setRoundSettings] = useState<RoundSettings>({
     round1: {
       startingHealth: 100,
@@ -180,6 +180,17 @@ export const GameContextProvider: React.FC<GameContextProviderProps> = ({ childr
       round1: 30,
       round2: 15,
       round3: 45
+    },
+    pointValues: { 
+      round1: { easy: 5, medium: 10, hard: 15, expert: 20 },
+      round2: 15,
+      round3: 25
+    },
+    lifePenalties: { 
+      easy: 10, 
+      medium: 15, 
+      hard: 20, 
+      expert: 25 
     }
   });
 

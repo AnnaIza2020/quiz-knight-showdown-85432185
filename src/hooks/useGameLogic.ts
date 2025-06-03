@@ -1,62 +1,6 @@
 
 import { useState } from 'react';
-import { Player } from '@/types/interfaces';
-
-export interface RoundSettings {
-  round1: {
-    startingHealth: number;
-    pointValues: { easy: number; medium: number; hard: number; expert: number };
-    healthLoss: { easy: number; medium: number; hard: number; expert: number };
-    questionsPerCategory: number;
-    maxQuestions: number;
-    pointsForCorrectAnswer: number;
-    pointsForIncorrectAnswer: number;
-    livesCount: number;
-    healthDeductionPercentage: number;
-    eliminateCount: number;
-    luckyLoserEnabled: boolean;
-  };
-  round2: {
-    startingHealth: number;
-    pointValue: number;
-    healthLoss: number;
-    timeLimit: number;
-    maxQuestions: number;
-    pointsForCorrectAnswer: number;
-    pointsForIncorrectAnswer: number;
-    livesCount: number;
-    livesDeductedOnIncorrectAnswer: number;
-  };
-  round3: {
-    startingHealth: number;
-    pointValue: number;
-    healthLoss: number;
-    timeLimit: number;
-    wheelCategories: string[];
-    maxSpins: number;
-    pointsForCorrectAnswer: number;
-    pointsForIncorrectAnswer: number;
-    livesCount: number;
-    livesDeductedOnIncorrectAnswer: number;
-    finalRoundEnabled: boolean;
-  };
-  timerDurations: {
-    round1: number;
-    round2: number;
-    round3: number;
-  };
-  pointValues: { 
-    round1: { easy: number; medium: number; hard: number; expert: number };
-    round2: number;
-    round3: number;
-  };
-  lifePenalties: { 
-    round1: number; 
-    round2: number; 
-    round3: number; 
-  };
-  luckyLoserThreshold?: number;
-}
+import { Player, RoundSettings } from '@/types/interfaces';
 
 export const useGameLogic = () => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -110,9 +54,10 @@ export const useGameLogic = () => {
       round3: 25
     },
     lifePenalties: { 
-      round1: 10, 
-      round2: 20, 
-      round3: 25 
+      easy: 10, 
+      medium: 15, 
+      hard: 20, 
+      expert: 25 
     }
   };
 

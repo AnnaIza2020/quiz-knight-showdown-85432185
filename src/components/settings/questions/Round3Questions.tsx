@@ -2,7 +2,6 @@
 import React, { useState, useCallback } from 'react';
 import { useQuestionsContext } from '@/context/QuestionsContext';
 import { Question, Category } from '@/types/interfaces';
-import { GameRound } from '@/types/game-types';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import QuestionTable from './QuestionTable';
@@ -88,11 +87,12 @@ const Round3Questions: React.FC = () => {
     console.log("Toggle used status for question:", questionId);
   }, []);
 
-  // Convert categories to the expected type
+  // Convert categories to the expected type - ensure questions is always defined
   const convertedCategories = round3Categories.map(cat => ({
     ...cat,
     description: cat.description || '',
-    round: cat.round
+    round: cat.round,
+    questions: cat.questions || [] // Ensure questions is always an array
   }));
   
   return (
