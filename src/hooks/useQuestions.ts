@@ -42,7 +42,7 @@ export const useQuestions = () => {
     return textMatches || optionsMatch || answerMatches || categoryMatches;
   }, []);
 
-  // Extract all questions from all categories and ensure they have timeLimit
+  // Extract all questions from all categories and ensure they have required fields
   const questions = useMemo(() => {
     const allQuestions: Question[] = [];
     
@@ -50,9 +50,9 @@ export const useQuestions = () => {
       category.questions?.forEach(question => {
         allQuestions.push({
           ...question,
-          categoryId: category.id,
-          category: category.name,
-          timeLimit: question.timeLimit || question.time || 30 // Ensure timeLimit is always present
+          categoryId: question.categoryId || category.id,
+          category: question.category || category.name,
+          timeLimit: question.timeLimit || question.time || 30
         });
       });
     });
@@ -92,7 +92,7 @@ export const useQuestions = () => {
     toast.success('Wszystkie pytania zostały oznaczone jako niewykorzystane');
   }, [contextResetUsedQuestions]);
 
-  // Import questions from JSON - ensure timeLimit is added
+  // Import questions from JSON - ensure required fields are added
   const importQuestions = useCallback((data: QuestionImportExport): boolean => {
     try {
       if (!data || !data.questions || !Array.isArray(data.questions)) {
@@ -114,18 +114,19 @@ export const useQuestions = () => {
             return;
           }
           
-          // Ensure question has timeLimit
-          const questionWithTimeLimit: Question = {
+          // Ensure question has required fields
+          const questionWithRequiredFields: Question = {
             ...question,
+            category: question.category || 'Unknown',
             timeLimit: question.timeLimit || question.time || 30
           };
           
           const existingQuestion = questions.find(q => q.id === question.id);
           if (existingQuestion) {
-            updateQuestion(categoryId, questionWithTimeLimit);
+            updateQuestion(categoryId, questionWithRequiredFields);
             updated++;
           } else {
-            addQuestion(categoryId, questionWithTimeLimit);
+            addQuestion(categoryId, questionWithRequiredFields);
             created++;
           }
         } catch (e) {
@@ -160,7 +161,7 @@ export const useQuestions = () => {
         categories: categories.map(cat => ({
           id: cat.id,
           name: cat.name,
-          round: cat.round as GameRound // Ensure proper type conversion
+          round: cat.round as GameRound
         })),
         exportDate: new Date().toISOString(),
         version: '1.0.0'

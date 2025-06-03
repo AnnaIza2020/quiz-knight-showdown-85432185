@@ -23,7 +23,7 @@ const Round3Questions: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   
-  // Filter categories for Round 3 - compare with number 3 instead of GameRound enum
+  // Filter categories for Round 3
   const round3Categories = categories.filter(cat => cat.round === 3);
   
   // Get questions for selected category
@@ -87,12 +87,12 @@ const Round3Questions: React.FC = () => {
     console.log("Toggle used status for question:", questionId);
   }, []);
 
-  // Convert categories to the expected type - ensure questions is always defined
+  // Convert categories to the expected type with proper round type
   const convertedCategories = round3Categories.map(cat => ({
     ...cat,
     description: cat.description || '',
-    round: cat.round,
-    questions: cat.questions || [] // Ensure questions is always an array
+    round: 3 as const, // Ensure round is treated as the literal value 3
+    questions: cat.questions || []
   }));
   
   return (

@@ -67,3 +67,5 @@ export const useGameLogic = () => {
     defaultRoundSettings
   };
 };
+
+export type { RoundSettings };

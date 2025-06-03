@@ -1,0 +1,339 @@
+
+/* Accessibility-focused CSS utilities and overrides */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-primary-500: #00FF00;
+    --color-secondary-500: #0080FF;
+    --color-neon-green: #00FF00;
+    --color-neon-blue: #0080FF;
+  }
+  
+  .btn {
+    border-width: 3px !important;
+    font-weight: 700 !important;
+  }
+  
+  .card {
+    border-width: 2px !important;
+  }
+  
+  .text-neon {
+    font-weight: 700 !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .animate-pulse,
+  .animate-pulse-neon,
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-scale-in {
+    animation: none !important;
+  }
+  
+  .hover\\:scale-105:hover,
+  .hover\\:scale-110:hover {
+    transform: none !important;
+  }
+}
+
+/* Focus management */
+.focus-visible {
+  outline: 3px solid var(--color-neon-blue) !important;
+  outline-offset: 2px !important;
+  border-radius: 4px !important;
+}
+
+.focus-trap {
+  position: relative;
+}
+
+.focus-trap::before,
+.focus-trap::after {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.sr-only-focusable:focus,
+.sr-only-focusable:active {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  padding: inherit !important;
+  margin: inherit !important;
+  overflow: visible !important;
+  clip: auto !important;
+  white-space: inherit !important;
+}
+
+/* Skip links */
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--color-neon-green);
+  color: var(--color-dark-900);
+  padding: 0.5rem 1rem;
+  border-radius: 0 0 0.5rem 0;
+  font-weight: 600;
+  text-decoration: none;
+  z-index: 9999;
+  transform: translateY(-100%);
+  transition: transform 0.2s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* Color vision accessibility */
+.colorblind-friendly {
+  /* Ensure sufficient contrast for color-blind users */
+}
+
+.colorblind-friendly .text-neon-green {
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 2px;
+}
+
+.colorblind-friendly .text-neon-blue {
+  font-style: italic;
+}
+
+.colorblind-friendly .text-neon-pink {
+  font-weight: 700;
+}
+
+/* High contrast theme overrides */
+.high-contrast {
+  filter: contrast(1.5) brightness(1.2);
+}
+
+.high-contrast .card {
+  border-width: 3px !important;
+  border-color: currentColor !important;
+}
+
+.high-contrast .btn {
+  border-width: 3px !important;
+  font-weight: 800 !important;
+}
+
+/* Windows High Contrast Mode */
+@media (prefers-contrast: high) {
+  .btn {
+    border: 3px solid ButtonText !important;
+  }
+  
+  .btn:hover {
+    background: Highlight !important;
+    color: HighlightText !important;
+  }
+  
+  .card {
+    border: 2px solid WindowText !important;
+    background: Window !important;
+    color: WindowText !important;
+  }
+}
+
+/* Dark mode accessibility improvements */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Ensure sufficient contrast in dark mode */
+    --color-foreground: #ffffff;
+    --color-background: #000000;
+  }
+}
+
+/* Print styles for accessibility */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .text-neon,
+  .text-neon-green,
+  .text-neon-blue,
+  .text-neon-pink {
+    color: #000000 !important;
+    text-shadow: none !important;
+    font-weight: 700 !important;
+  }
+  
+  .card {
+    border: 2px solid #000000 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+  
+  .btn {
+    border: 2px solid #000000 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Text size preferences */
+@media (prefers-text-size: large) {
+  .text-sm {
+    font-size: 1rem !important;
+  }
+  
+  .text-base {
+    font-size: 1.125rem !important;
+  }
+  
+  .text-lg {
+    font-size: 1.25rem !important;
+  }
+  
+  .text-xl {
+    font-size: 1.5rem !important;
+  }
+}
+
+/* Touch targets - ensure minimum 44px for mobile accessibility */
+@media (hover: none) and (pointer: coarse) {
+  .btn,
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  a {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+  
+  .btn-sm {
+    min-height: 44px !important;
+    padding: 0.75rem 1rem !important;
+  }
+}
+
+/* Keyboard navigation indicators */
+.keyboard-user .btn:focus,
+.keyboard-user .input:focus,
+.keyboard-user [tabindex]:focus {
+  outline: 3px solid var(--color-neon-blue) !important;
+  outline-offset: 2px !important;
+  border-radius: 4px !important;
+}
+
+/* Error and validation states */
+.error {
+  color: #ff4444 !important;
+  border-color: #ff4444 !important;
+}
+
+.success {
+  color: #00ff88 !important;
+  border-color: #00ff88 !important;
+}
+
+.warning {
+  color: #ffaa00 !important;
+  border-color: #ffaa00 !important;
+}
+
+/* Loading states */
+.loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ARIA live regions */
+[aria-live] {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+[aria-live="assertive"] {
+  /* Make assertive announcements visible for testing */
+}
+
+/* Tooltip accessibility */
+[role="tooltip"] {
+  background: var(--color-dark-900) !important;
+  color: var(--color-foreground) !important;
+  border: 1px solid var(--color-border) !important;
+  font-size: 0.875rem !important;
+  padding: 0.5rem !important;
+  border-radius: 0.375rem !important;
+  max-width: 200px !important;
+  z-index: 9999 !important;
+}
+
+/* Modal and dialog accessibility */
+[role="dialog"],
+[role="alertdialog"] {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 9999 !important;
+  background: var(--color-background) !important;
+  border: 2px solid var(--color-border) !important;
+  border-radius: 0.5rem !important;
+  padding: 1.5rem !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.modal-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  z-index: 9998 !important;
+}
