@@ -14,7 +14,7 @@ export enum GameRound {
 export interface Player {
   id: string;
   name: string;
-  nickname?: string; // Add for compatibility
+  nickname?: string;
   points: number;
   health: number;
   lives: number;
@@ -26,8 +26,8 @@ export interface Player {
   avatar_url?: string;
   camera_url?: string;
   uniqueLinkToken?: string;
-  avatar?: string; // For backward compatibility
-  cameraUrl?: string; // For backward compatibility
+  avatar?: string;
+  cameraUrl?: string;
   forcedEliminated?: boolean;
 }
 
@@ -40,19 +40,20 @@ export interface Question {
   difficulty: number;
   imageUrl?: string;
   points?: number;
+  timeLimit?: number; // Add missing timeLimit property
   time?: number;
   used?: boolean;
   type?: 'text' | 'multiple_choice' | 'true_false';
-  category?: string; // For backward compatibility
-  question?: string; // For backward compatibility
-  answer?: string; // For backward compatibility
-  image_url?: string; // For backward compatibility
+  category?: string;
+  question?: string;
+  answer?: string;
+  image_url?: string;
 }
 
 export interface Category {
   id: string;
   name: string;
-  description: string;
+  description: string; // Make description required to match interfaces.ts
   questions: Question[];
   round?: GameRound | string;
   color?: string;
@@ -74,7 +75,6 @@ export interface SpecialCardAwardRule {
   active: boolean;
   effect: string;
   
-  // Additional properties for card distribution
   isEnabled?: boolean;
   roundApplicable?: GameRound[];
   condition?: 'points' | 'health' | 'elimination' | 'round_completion' | 'points_milestone' | 'consecutive_correct' | 'survive_round' | 'lowest_score';
@@ -91,7 +91,6 @@ export interface GameBackup {
   data: any;
 }
 
-// Define GameSound type
 export interface GameSound {
   name: string;
   file: string;
@@ -99,7 +98,6 @@ export interface GameSound {
   category?: string;
 }
 
-// Define LogEntry type
 export interface LogEntry {
   id: string;
   timestamp: Date;
@@ -132,7 +130,7 @@ export interface GameContextType {
   usedQuestionIds: string[];
   gameTitle: string;
   
-  // Logs - added for error tracking
+  // Logs
   logs: string[];
   addLog: (log: string) => void;
   clearLogs: () => void;

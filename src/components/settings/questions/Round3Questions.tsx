@@ -1,7 +1,8 @@
 
 import React, { useState, useCallback } from 'react';
 import { useQuestionsContext } from '@/context/QuestionsContext';
-import { Question, Category } from '@/types/interfaces';
+import { Question } from '@/types/interfaces';
+import { Category as GameCategory } from '@/types/game-types';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import QuestionTable from './QuestionTable';
@@ -88,7 +89,7 @@ const Round3Questions: React.FC = () => {
   }, []);
 
   // Convert categories to the expected type with proper description field
-  const convertedCategories: Category[] = round3Categories.map(cat => ({
+  const convertedCategories: GameCategory[] = round3Categories.map(cat => ({
     ...cat,
     description: cat.description || '',
     round: cat.round,
