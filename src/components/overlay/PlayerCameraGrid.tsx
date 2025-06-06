@@ -50,16 +50,16 @@ const PlayerCameraGrid: React.FC<PlayerCameraGridProps> = ({
             <>
               {/* Player Camera */}
               <div className="aspect-video bg-gray-800 relative">
-                {player.camera_url ? (
+                {player.cameraUrl ? (
                   <iframe 
-                    src={player.camera_url} 
+                    src={player.cameraUrl} 
                     className="w-full h-full" 
                     allowFullScreen
                     title={`${player.name} camera`}
                   />
-                ) : player.avatar_url ? (
+                ) : player.avatar ? (
                   <img 
-                    src={player.avatar_url} 
+                    src={player.avatar} 
                     alt={player.name} 
                     className="w-full h-full object-cover"
                   />

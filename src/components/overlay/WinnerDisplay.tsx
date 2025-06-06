@@ -6,23 +6,22 @@ import { Trophy, Star, Award } from 'lucide-react';
 import { useGameContext } from '@/context/GameContext';
 
 interface WinnerDisplayProps {
-  show: boolean;
-  winners: (Player | undefined)[];
+  winners: Player[];
 }
 
-const WinnerDisplay: React.FC<WinnerDisplayProps> = ({ show, winners }) => {
+const WinnerDisplay: React.FC<WinnerDisplayProps> = ({ winners }) => {
   const [displayed, setDisplayed] = useState(false);
   const { playSound } = useGameContext();
   
   useEffect(() => {
-    if (show && winners.length > 0) {
+    if (winners.length > 0) {
       setDisplayed(true);
       // Play victory sound
       playSound('victory');
     } else {
       setDisplayed(false);
     }
-  }, [show, winners]);
+  }, [winners, playSound]);
   
   if (!displayed || winners.length === 0) return null;
 
@@ -66,9 +65,8 @@ const WinnerDisplay: React.FC<WinnerDisplayProps> = ({ show, winners }) => {
               transition={{ delay: 1.4 }}
             >
               {winners.map((winner, index) => (
-                winner && (
                 <motion.div
-                  key={winner.id || index}
+                  key={winner.id}
                   className="bg-black/30 rounded-lg p-6 border border-white/20"
                   initial={{ x: -50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
@@ -94,7 +92,6 @@ const WinnerDisplay: React.FC<WinnerDisplayProps> = ({ show, winners }) => {
                     <span className="text-xl font-semibold">{winner.points} punktów</span>
                   </div>
                 </motion.div>
-                )
               ))}
             </motion.div>
             
