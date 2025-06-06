@@ -1,83 +1,66 @@
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { useGameContext } from '@/context/GameContext';
-import GameOverlayHeader from './GameOverlayHeader';
-import PlayerCameraGrid from './PlayerCameraGrid';
-import MiddleSection from './MiddleSection';
-import { useGameState } from '@/context/GameStateContext';
+import { GameRound } from '@/types/game-types';
+import GameGrid from './GameGrid';
+import WinnerDisplay from './WinnerDisplay';
+import RoundTransition from './RoundTransition';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const GameOverlay: React.FC = () => {
   const { 
     round, 
     players, 
-    currentQuestion, 
-    timerRunning, 
-    timerSeconds, 
-    activePlayerId,
-    gameTitle,
+    winnerIds, 
     hostCameraUrl,
-    categories
+    activePlayerId,
+    gameTitle 
   } = useGameContext();
-  
-  const { gameState } = useGameState();
-  
-  // Get categories for Round 3 wheel
-  const round3Categories = categories
-    .filter(cat => cat.round === 3)
-    .map(cat => cat.name);
+
+  const activePlayers = players.filter(p => !p.isEliminated);
+  const maxPlayers = 10; // Standard max for the overlay layout
+  const lastActivePlayer = null; // TODO: Implement last active player tracking
+  const latestPoints = null; // TODO: Implement latest points tracking
+
+  // Show winner display if game is finished
+  if (round === GameRound.FINISHED && winnerIds.length > 0) {
+    const winners = players.filter(p => winnerIds.includes(p.id));
+    return <WinnerDisplay winners={winners} />;
+  }
+
+  // Show transition between rounds
+  if (round === GameRound.SETUP) {
+    return (
+      <div className="min-h-screen bg-neon-background flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <h1 className="text-6xl font-bold text-neon-green mb-4">
+            {gameTitle || 'Discord Game Show'}
+          </h1>
+          <p className="text-2xl text-white">Przygotowanie do gry...</p>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
-    <motion.div 
-      className="fixed inset-0 bg-gradient-to-br from-purple-900/20 to-blue-900/20 backdrop-blur-sm"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      {/* Game Title and Round Info */}
-      <GameOverlayHeader
-        round={round}
-        gameTitle={gameTitle}
-        timerSeconds={timerSeconds}
-        timerRunning={timerRunning}
-      />
-      
-      <div className="h-full flex flex-col p-4 pt-20">
-        {/* Top player area */}
-        <div className="h-[300px] mb-4">
-          <PlayerCameraGrid 
-            players={players}
-            position="top"
-            activePlayerId={activePlayerId}
-          />
-        </div>
-
-        {/* Middle area with host and question */}
-        <div className="h-[360px] mb-4">
-          <MiddleSection 
-            round={round} 
-            hostCameraUrl={hostCameraUrl}
-            currentQuestion={currentQuestion}
-            timerRunning={timerRunning}
-            timerSeconds={timerSeconds}
-            categories={round3Categories}
-            onCategorySelected={(category) => {
-              console.log('Selected category:', category);
-              // This would trigger question selection from the category
-            }}
-          />
-        </div>
-
-        {/* Bottom player area */}
-        <div className="h-[300px]">
-          <PlayerCameraGrid 
-            players={players}
-            position="bottom"
-            activePlayerId={activePlayerId}
-          />
-        </div>
-      </div>
-    </motion.div>
+    <div className="min-h-screen bg-neon-background">
+      <AnimatePresence mode="wait">
+        <GameGrid
+          key={round}
+          activePlayers={activePlayers}
+          maxPlayers={maxPlayers}
+          round={round}
+          hostCameraUrl={hostCameraUrl}
+          activePlayerId={activePlayerId}
+          lastActivePlayer={lastActivePlayer}
+          latestPoints={latestPoints}
+        />
+      </AnimatePresence>
+    </div>
   );
 };
 

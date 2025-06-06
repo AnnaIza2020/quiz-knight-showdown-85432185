@@ -67,6 +67,13 @@ const WheelControls: React.FC<WheelControlsProps> = memo(({
     startSpin();
   }, [isSpinning, lastSpinTime, categories, startSpin]);
 
+  // Mock onResult handler for FortuneWheel component
+  const handleWheelResult = useCallback((category: string) => {
+    if (onCategorySelected) {
+      onCategorySelected(category);
+    }
+  }, [onCategorySelected]);
+
   return (
     <Card className={`w-full ${className}`}>
       <CardHeader>
@@ -133,6 +140,7 @@ const WheelControls: React.FC<WheelControlsProps> = memo(({
           categories={categories}
           isSpinning={isSpinning}
           selectedCategory={selectedCategory}
+          onResult={handleWheelResult}
         />
         
         {selectedCategory && (

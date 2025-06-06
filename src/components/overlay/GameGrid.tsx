@@ -27,7 +27,22 @@ const GameGrid: React.FC<GameGridProps> = ({
   latestPoints
 }) => {
   // Get context values for required props
-  const { currentQuestion, timerRunning, timerSeconds } = useGameContext();
+  const { currentQuestion, timerRunning, timerSeconds, categories } = useGameContext();
+  
+  // Mock categories if not available
+  const wheelCategories = categories?.map(cat => cat.name) || [
+    "Język polskiego internetu",
+    "Polska scena Twitcha", 
+    "Zagadki",
+    "Czy jesteś mądrzejszy od 8-klasisty",
+    "Gry, które podbiły Polskę",
+    "Technologie i internet w Polsce"
+  ];
+
+  // Mock category selection handler
+  const handleCategorySelected = (category: string) => {
+    console.log('Selected category:', category);
+  };
   
   return (
     <motion.div 
@@ -54,6 +69,8 @@ const GameGrid: React.FC<GameGridProps> = ({
         currentQuestion={currentQuestion}
         timerRunning={timerRunning}
         timerSeconds={timerSeconds}
+        categories={wheelCategories}
+        onCategorySelected={handleCategorySelected}
       />
       
       {/* Bottom row with remaining 5 players */}
