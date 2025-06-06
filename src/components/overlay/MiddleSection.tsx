@@ -22,7 +22,7 @@ const MiddleSection: React.FC<MiddleSectionProps> = ({
   currentQuestion,
   timerRunning,
   timerSeconds,
-  categories,
+  categories = [],
   onCategorySelected
 }) => {
   return (

@@ -4,7 +4,7 @@ import { useGameContext } from '@/context/GameContext';
 import { GameRound } from '@/types/game-types';
 import TopBar from '@/components/hostpanel/TopBar';
 import EventsBar from '@/components/hostpanel/EventsBar';
-import GameActions from '@/components/hostpanel/GameActions';
+import GameActions from '@/components/host/GameActions';
 import GameControlPanel from '@/components/host/GameControlPanel';
 import PlayersManagementPanel from '@/components/host/PlayersManagementPanel';
 import { toast } from 'sonner';

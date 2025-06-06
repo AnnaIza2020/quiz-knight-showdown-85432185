@@ -8,12 +8,14 @@ interface FortuneWheelProps {
   categories: string[];
   onResult: (category: string) => void;
   isSpinning: boolean;
+  selectedCategory?: string;
 }
 
 const FortuneWheel: React.FC<FortuneWheelProps> = ({
   categories,
   onResult,
-  isSpinning
+  isSpinning,
+  selectedCategory
 }) => {
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
@@ -93,6 +95,13 @@ const FortuneWheel: React.FC<FortuneWheelProps> = ({
         {/* Pointer */}
         <div className="absolute top-0 left-1/2 -ml-3 -mt-4 w-6 h-8 bg-neon-gold clip-triangle" />
       </div>
+
+      {/* Selected Category Display */}
+      {selectedCategory && (
+        <div className="bg-neon-gold text-black px-6 py-2 rounded-lg font-bold text-lg">
+          Wybrana kategoria: {selectedCategory}
+        </div>
+      )}
 
       {/* Spin Button */}
       <Button
