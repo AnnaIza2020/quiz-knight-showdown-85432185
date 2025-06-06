@@ -8,7 +8,6 @@ import { GameContextProvider } from "@/context/GameContext";
 import { QuestionsContextProvider } from "@/context/QuestionsContext";
 import { GameStateProvider } from "@/context/GameStateContext";
 import SoundPreloader from "@/components/SoundPreloader";
-import MainLayout from "@/layouts/MainLayout";
 
 // Lazy load components
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -29,25 +28,23 @@ function App() {
           <GameStateProvider>
             <TooltipProvider>
               <Router>
-                <MainLayout>
-                  <Suspense fallback={
-                    <div className="min-h-screen bg-neon-background flex items-center justify-center">
-                      <div className="text-white text-xl">Ładowanie...</div>
-                    </div>
-                  }>
-                    <Routes>
-                      <Route path="/" element={<HomePage />} />
-                      <Route path="/setup" element={<Setup />} />
-                      <Route path="/host" element={<HostPanel />} />
-                      <Route path="/overlay" element={<OverlayView />} />
-                      <Route path="/player/:playerId?" element={<PlayerView />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
-                  <SoundPreloader />
-                  <Toaster />
-                </MainLayout>
+                <Suspense fallback={
+                  <div className="min-h-screen bg-neon-background flex items-center justify-center">
+                    <div className="text-white text-xl">Ładowanie...</div>
+                  </div>
+                }>
+                  <Routes>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/setup" element={<Setup />} />
+                    <Route path="/host" element={<HostPanel />} />
+                    <Route path="/overlay" element={<OverlayView />} />
+                    <Route path="/player/:playerId?" element={<PlayerView />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+                <SoundPreloader />
+                <Toaster />
               </Router>
             </TooltipProvider>
           </GameStateProvider>

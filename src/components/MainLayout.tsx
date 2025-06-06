@@ -1,13 +1,16 @@
 
-import React from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { ReactNode } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import SoundPreloader from './SoundPreloader';
 
-const MainLayout = () => {
+interface MainLayoutProps {
+  children: ReactNode;
+}
+
+const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   return (
     <>
-      <Outlet />
+      {children}
       <Toaster position="top-right" richColors closeButton />
       <SoundPreloader />
     </>

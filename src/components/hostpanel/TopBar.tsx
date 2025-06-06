@@ -1,200 +1,82 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useGameContext } from '@/context/GameContext';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Pencil, Save, X } from 'lucide-react';
 import { GameRound } from '@/types/game-types';
-import { supabase, loadGameSetting, saveGameSetting } from '@/lib/supabase';
-import { toast } from 'sonner';
+import { Users, Clock, Trophy } from 'lucide-react';
 
-const TopBar = () => {
-  const { round, gameTitle, setGameTitle } = useGameContext();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedTitle, setEditedTitle] = useState('');
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [password, setPassword] = useState('');
-  const [storedPassword, setStoredPassword] = useState('');
-  const [isPasswordChecked, setIsPasswordChecked] = useState(false);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
+const TopBar: React.FC = () => {
+  const { 
+    round, 
+    players, 
+    timerSeconds, 
+    timerRunning,
+    gameTitle 
+  } = useGameContext();
 
-  // Load game password on component mount
-  useEffect(() => {
-    const fetchPassword = async () => {
-      try {
-        const password = await loadGameSetting('game_password');
-        if (password) {
-          setStoredPassword(password);
-        }
-      } catch (error) {
-        console.error('Error loading game password:', error);
-      }
-    };
+  const activePlayers = players.filter(p => !p.isEliminated);
+  const totalPoints = players.reduce((sum, p) => sum + p.points, 0);
 
-    fetchPassword();
-  }, []);
-
-  const handleEditClick = () => {
-    if (storedPassword && !isPasswordChecked) {
-      setIsPasswordDialogOpen(true);
-    } else {
-      startEditing();
+  const getRoundName = () => {
+    switch (round) {
+      case GameRound.SETUP: return 'Przygotowanie';
+      case GameRound.ROUND_ONE: return 'Runda 1';
+      case GameRound.ROUND_TWO: return 'Runda 2'; 
+      case GameRound.ROUND_THREE: return 'Runda 3';
+      case GameRound.FINISHED: return 'Zakończona';
+      default: return 'Nieznana';
     }
   };
 
-  const startEditing = () => {
-    setIsEditing(true);
-    setEditedTitle(gameTitle);
-  };
-
-  const handleSaveClick = () => {
-    setGameTitle(editedTitle);
-    setIsEditing(false);
-  };
-
-  const handleCancelClick = () => {
-    setIsEditing(false);
-  };
-
-  const checkPassword = () => {
-    setIsAuthenticating(true);
-    
-    setTimeout(() => {
-      if (password === storedPassword) {
-        setIsPasswordChecked(true);
-        setIsPasswordDialogOpen(false);
-        startEditing();
-        toast.success('Password verified!');
-      } else {
-        toast.error('Incorrect password!');
-      }
-      setPassword('');
-      setIsAuthenticating(false);
-    }, 500);
-  };
-
-  const getRoundLabel = () => {
-    switch(round) {
-      case GameRound.SETUP:
-        return 'Przygotowanie';
-      case GameRound.ROUND_ONE:
-        return 'Runda 1';
-      case GameRound.ROUND_TWO:
-        return 'Runda 2';
-      case GameRound.ROUND_THREE:
-        return 'Runda 3';
-      case GameRound.FINISHED:
-        return 'Zakończono';
-      default:
-        return `Runda ${round}`;
-    }
-  };
-
-  const getBadgeColor = () => {
-    switch(round) {
-      case GameRound.SETUP:
-        return 'bg-blue-500';
-      case GameRound.ROUND_ONE:
-        return 'bg-green-500';
-      case GameRound.ROUND_TWO:
-        return 'bg-yellow-500';
-      case GameRound.ROUND_THREE:
-        return 'bg-purple-500';
-      case GameRound.FINISHED:
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
+  const getRoundColor = () => {
+    switch (round) {
+      case GameRound.SETUP: return 'bg-gray-500';
+      case GameRound.ROUND_ONE: return 'bg-neon-blue';
+      case GameRound.ROUND_TWO: return 'bg-neon-purple';
+      case GameRound.ROUND_THREE: return 'bg-neon-gold';
+      case GameRound.FINISHED: return 'bg-neon-green';
+      default: return 'bg-gray-500';
     }
   };
 
   return (
-    <div className="flex items-center justify-between px-4 py-2 bg-slate-800 rounded-lg mb-4">
-      <div className="flex items-center">
-        <Badge 
-          variant="secondary" 
-          className={`${getBadgeColor()} text-white mr-4 px-3 py-1`}
-        >
-          {getRoundLabel()}
-        </Badge>
-        
-        {isEditing ? (
-          <div className="flex items-center gap-2">
-            <Input
-              value={editedTitle}
-              onChange={(e) => setEditedTitle(e.target.value)}
-              className="w-64 bg-slate-700 border-slate-600"
-            />
-            <Button 
-              size="sm" 
-              variant="ghost" 
-              onClick={handleSaveClick}
-              className="text-green-400 hover:text-green-500 hover:bg-slate-700"
-            >
-              <Save size={16} className="mr-1" /> Zapisz
-            </Button>
-            <Button 
-              size="sm" 
-              variant="ghost" 
-              onClick={handleCancelClick}
-              className="text-red-400 hover:text-red-500 hover:bg-slate-700"
-            >
-              <X size={16} /> Anuluj
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center">
-            <h2 className="text-lg font-semibold text-white mr-2">
-              {gameTitle || 'Discord Game Show'}
-            </h2>
-            <Button 
-              size="sm" 
-              variant="ghost" 
-              onClick={handleEditClick}
-              className="text-blue-400 hover:text-blue-500 hover:bg-slate-700"
-            >
-              <Pencil size={14} />
-            </Button>
-          </div>
-        )}
-      </div>
+    <div className="bg-black/50 border-b border-white/10 p-4 mb-4">
+      <div className="flex items-center justify-between">
+        {/* Game Title */}
+        <div className="flex items-center space-x-4">
+          <h1 className="text-2xl font-bold text-white">
+            {gameTitle || 'Discord Game Show'}
+          </h1>
+          <Badge className={`${getRoundColor()} text-white font-bold px-3 py-1`}>
+            {getRoundName()}
+          </Badge>
+        </div>
 
-      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Wymagane hasło</DialogTitle>
-            <DialogDescription>
-              Podaj hasło aby edytować nazwę gry
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="flex items-center space-x-2">
-              <div className="grid flex-1 gap-2">
-                <Label htmlFor="password">Hasło</Label>
-                <Input 
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Wprowadź hasło"
-                  className="bg-slate-700 border-slate-600"
-                  onKeyDown={(e) => e.key === 'Enter' && checkPassword()}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <Button
-                disabled={!password || isAuthenticating}
-                onClick={checkPassword}
-              >
-                {isAuthenticating ? 'Sprawdzanie...' : 'Weryfikuj'}
-              </Button>
-            </div>
+        {/* Game Stats */}
+        <div className="flex items-center space-x-6">
+          {/* Players Count */}
+          <div className="flex items-center space-x-2 text-neon-green">
+            <Users className="w-5 h-5" />
+            <span className="font-bold">{activePlayers.length}/{players.length}</span>
+            <span className="text-gray-400 text-sm">graczy</span>
           </div>
-        </DialogContent>
-      </Dialog>
+
+          {/* Timer */}
+          <div className="flex items-center space-x-2">
+            <Clock className={`w-5 h-5 ${timerRunning ? 'text-neon-gold animate-pulse' : 'text-gray-400'}`} />
+            <span className={`font-bold ${timerRunning ? 'text-neon-gold' : 'text-gray-400'}`}>
+              {timerRunning ? `${timerSeconds}s` : '--'}
+            </span>
+          </div>
+
+          {/* Total Points */}
+          <div className="flex items-center space-x-2 text-neon-purple">
+            <Trophy className="w-5 h-5" />
+            <span className="font-bold">{totalPoints}</span>
+            <span className="text-gray-400 text-sm">pkt</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
